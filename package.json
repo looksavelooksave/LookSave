@@ -12,7 +12,7 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "node node_modules/patch-package/index.js",
+    "postinstall": "node scripts/postinstall.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
