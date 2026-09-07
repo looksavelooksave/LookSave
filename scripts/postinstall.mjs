@@ -24,10 +24,14 @@ try {
   entry = require.resolve('patch-package');
 } catch {
   if (process.env.VERCEL) {
-    console.warn('[postinstall] patch-package o\'rnatilmagan — Vercel muhiti, patch veb uchun keraksiz, o\'tkazib yuborildi.');
+    console.warn(
+      "[postinstall] patch-package o'rnatilmagan — Vercel muhiti, patch veb uchun keraksiz, o'tkazib yuborildi.",
+    );
     process.exit(0);
   }
-  console.error('[postinstall] patch-package topilmadi — bu muhitda patch MAJBURIY (expo-localization). `npm install` to\'liq o\'tganini tekshiring.');
+  console.error(
+    "[postinstall] patch-package topilmadi — bu muhitda patch MAJBURIY (expo-localization). `npm install` to'liq o'tganini tekshiring.",
+  );
   process.exit(1);
 }
 
