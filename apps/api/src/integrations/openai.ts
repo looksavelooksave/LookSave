@@ -76,13 +76,34 @@ const PLACEMENT: Record<GarmentKind, string> = {
  */
 export function buildPrompt(
   kind: GarmentKind,
-  extras: { face?: boolean; print?: boolean } = {},
+  extras: { face?: boolean; print?: boolean; layer?: boolean } = {},
 ): string {
   const lines = [
     'Photorealistic virtual try-on.',
     `Dress the person from the first image in the garment from the second image, ${PLACEMENT[kind]}.`,
     "Keep the person's face, hair, skin tone and body proportions completely unchanged.",
   ];
+
+  /*
+   * ⚠️ QATLAM UCHUN ALOHIDA KO'RSATMA — SHUSIZ ZANJIR MA'NOSIZ.
+   *
+   * Qatlamda birinchi rasm — allaqachon kiyintirilgan odam (masalan
+   * futbolkada), ikkinchisi esa kurtka. Model erkin qoldirilsa
+   * «kiyintir» ko'rsatmasini ALMASHTIRISH deb tushunadi va futbolkani
+   * kurtka bilan almashtirib qo'yadi. Natijada ekranda yana bitta kiyim
+   * qoladi — komplekt esa yig'ilmaydi.
+   *
+   * Uchta jumla ham kerak: «ustiga», «ostidagilar ko'rinib tursin» va
+   * «olib tashlama». Ikkitasi bilan sinovda model yengni yoki yoqani
+   * baribir yeb qo'yardi.
+   */
+  if (extras.layer) {
+    lines.push(
+      'The person in the first image is ALREADY DRESSED — put the new garment ON TOP of what they are wearing, as an additional outer layer.',
+      'The existing garments must stay visible where they naturally would be: collar, sleeves, hem and any part not covered by the new garment.',
+      'Do NOT remove, replace or redraw the clothing already on the person.',
+    );
+  }
 
   /*
    * ⚠️ RAQAMLAR DINAMIK HISOBLANADI. Prompt rasmlarni «third/fourth
@@ -201,6 +222,13 @@ export interface OpenAiTryonInput {
    * gavda suratidan taxmin qilmaydi, haqiqiysini ko'radi.
    */
   faceReferenceUrl?: string | null;
+  /**
+   * Model surati allaqachon kiyintirilganmi (qatlam).
+   *
+   * ⚠️ PROMPTNI O'ZGARTIRADI: usiz model mavjud kiyimni almashtirib
+   * qo'yadi va komplekt yig'ilmaydi.
+   */
+  layer?: boolean;
 }
 
 /**
@@ -243,7 +271,14 @@ export async function generateTryon(input: OpenAiTryonInput): Promise<Buffer> {
   // ⚠️ TARTIB PROMPTDAGI RAQAMLAR BILAN BOG'LIQ — o'zgartirmang
   if (face) form.append('image[]', face, 'face.jpg');
   if (print) form.append('image[]', print, 'print.jpg');
-  form.append('prompt', buildPrompt(input.kind, { face: Boolean(face), print: Boolean(print) }));
+  form.append(
+    'prompt',
+    buildPrompt(input.kind, {
+      face: Boolean(face),
+      print: Boolean(print),
+      layer: Boolean(input.layer),
+    }),
+  );
   // Tik kadr — odam to'liq bo'yi bilan sig'adi
   form.append('size', '1024x1536');
   form.append('quality', 'high');

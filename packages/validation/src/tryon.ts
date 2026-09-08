@@ -102,11 +102,40 @@ export const favoriteQuerySchema = z.object({
 
 // ── AI kiyintirish ──
 
-/** Bitta kiyimni kiyintirishni so'rash. */
+/**
+ * Bitta kiyimni kiyintirishni so'rash.
+ *
+ * ⚠️ `baseRenderId` — QATLAM. Berilmasa kiyim foydalanuvchining ASL
+ * suratiga kiydiriladi. Berilsa esa o'sha tayyor natijaning ustiga:
+ * futbolka kiyingan surat ustiga kurtka. Ketma-ketlik shunday yig'iladi
+ * (shim → futbolka → ko'ylak → xudi → kurtka).
+ *
+ * Server uchun bu shunchaki «model surati boshqa manzildan olinadi»
+ * degani, ya'ni kesh mexanizmi o'zgarishsiz ishlaydi: `source_hash` ga
+ * o'sha manzil kiradi va har qatlam kombinatsiyasi alohida keshlanadi.
+ */
 export const renderRequestSchema = z.object({
   variantId: z.string().uuid(),
   /** Ko'rish burchagi — har biri alohida natija va alohida to'lov */
   angle: z.enum(['front', 'side', 'back']).default('front'),
+  baseRenderId: z.string().uuid().nullish(),
+});
+
+/**
+ * Bir so'rovda ko'p kiyimni navbatga qo'yish.
+ *
+ * ⚠️ NEGA KERAK. Ilova tasmadagi HAMMA kiyimni oldindan kiyintiradi —
+ * foydalanuvchi svayp qilganda kutib turmasin. Har biri uchun alohida
+ * `POST` yuborilsa 30 ta parallel so'rov ketardi va ularning yarmi
+ * kunlik chegaraga urilib xato qaytarardi.
+ *
+ * Bu yerda esa server o'zi navbatga qo'yadi va chegaraga yetganda
+ * QOLGANINI TASHLAB YUBORADI — xato emas, `limitReached` belgisi bilan.
+ */
+export const renderBatchSchema = z.object({
+  variantIds: z.array(z.string().uuid()).min(1).max(30),
+  angle: z.enum(['front', 'side', 'back']).default('front'),
+  baseRenderId: z.string().uuid().nullish(),
 });
 
 /**
@@ -115,13 +144,67 @@ export const renderRequestSchema = z.object({
  * ⚠️ CHEGARA BOR: bir so'rovda 50 tagacha. Bu `IN` so'rovining o'lchamini
  * va javob hajmini ushlab turadi — ilova baribir svayp oynasidan ko'pini
  * bir vaqtda ko'rsatmaydi.
+ *
+ * ⚠️ `baseRenderId` FILTR SIFATIDA HAM KERAK. Bitta variantning bir
+ * necha natijasi bo'lishi mumkin: asl suratga kiydirilgani va boshqa
+ * kiyim ustiga kiydirilgani. Filtrsiz `DISTINCT ON` ulardan tasodifiy
+ * bittasini qaytarardi — foydalanuvchi kurtkani futbolka ustida
+ * kutayotganda yalang'och gavdadagisini ko'rardi.
  */
 export const renderStatusQuerySchema = z.object({
   angle: z.enum(['front', 'side', 'back']).default('front'),
+  baseRenderId: z.string().uuid().optional(),
+  /*
+   * ⚠️ `all` — QATLAM ZANJIRINI TIKLASH UCHUN. Ilova komplektni
+   * yig'ayotganda har qatlamning asosi qaysi ekanini HALI BILMAYDI: u
+   * pastdagi natijaning `id` siga bog'liq, o'sha esa shu so'rovdan
+   * keladi. Tovuq-tuxum. `all` bilan barcha natijalar keladi va ilova
+   * zanjirni o'zi tiklaydi (`src/ai/outfit.ts`).
+   *
+   * Tasma uchun esa `base` yetarli va u ARZONROQ: bir variantga bitta
+   * qator.
+   */
+  scope: z.enum(['base', 'all']).default('base'),
   variantIds: z
     .string()
     .transform((value) => value.split(',').filter((id) => id.length > 0))
     .pipe(z.array(z.string().uuid()).max(50)),
+});
+
+/**
+ * AI kiyintirish uchun kiyimlar ro'yxati.
+ *
+ * ⚠️ `storeId` VA `size` — OQIMNING MA'NOSI. Foydalanuvchi sehrgarda
+ * do'kon tanlagan va o'lchovlarini kiritgan; ro'yxat shu ikkisiga
+ * bo'ysunmasa, u kiyintirib bo'lgach «bu o'lchamda yo'q» yoki «bu boshqa
+ * do'konda» degan javob olardi — ya'ni sarflangan kredit behuda ketardi.
+ */
+export const garmentQuerySchema = z.object({
+  /*
+   * ⚠️ FAQAT KIYIM SLOTLARI. Model oyoq kiyim, soat va sumka uchun
+   * o'qitilmagan — ularni ro'yxatga qo'shsak, foydalanuvchi bosadi,
+   * pul sarflanadi va natija yaroqsiz chiqadi.
+   */
+  slot: z.enum(['top', 'outer', 'bottom']).optional(),
+  /*
+   * Kategoriya — slotdan ANIQROQ filtr. Futbolka, xudi va ko'ylak
+   * uchalasi `top` slotida, lekin foydalanuvchi uchun uch xil narsa.
+   */
+  category: z.string().trim().min(1).max(64).optional(),
+  gender: z.enum(['male', 'female', 'unisex']).optional(),
+  storeId: uuidSchema.optional(),
+  /** Faqat shu o'lcham omborda bo'lganlari (`S`, `M`, `42` …) */
+  size: z.string().trim().min(1).max(16).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(30),
+});
+
+/** AI kiyintirish uchun mos do'konlar — pastdagi «boshqa do'kon» ro'yxati. */
+export const tryonStoresQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+  gender: z.enum(['male', 'female', 'unisex']).optional(),
+  size: z.string().trim().min(1).max(16).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 /**
@@ -140,4 +223,7 @@ export type CreateLookInput = z.output<typeof createLookSchema>;
 export type SuggestLookInput = z.output<typeof suggestLookSchema>;
 export type TryonEventInput = z.output<typeof tryonEventSchema>;
 export type RenderRequestInput = z.output<typeof renderRequestSchema>;
+export type RenderBatchInput = z.output<typeof renderBatchSchema>;
+export type GarmentQuery = z.output<typeof garmentQuerySchema>;
+export type TryonStoresQuery = z.output<typeof tryonStoresQuerySchema>;
 export type BodyPhotoInput = z.output<typeof bodyPhotoSchema>;

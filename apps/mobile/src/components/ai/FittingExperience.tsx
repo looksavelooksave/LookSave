@@ -14,16 +14,26 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  baseForCategory,
+  indexRenders,
+  nextPending,
+  recommendSize,
+  renderKey,
+  resolveOutfit,
+  topReady,
+} from '@looksave/validation';
+
+import {
   ANGLE_LABEL,
   ANGLE_ORDER,
   addToCart,
   getAvatar,
   getFullProfile,
   getGarments,
-  getRender,
   getRenders,
   requestAvatarAngle,
   requestRender,
+  requestRenderBatch,
   type AvatarAngle,
   type Garment,
   type TryonRender,
@@ -33,12 +43,13 @@ import { AvatarStage } from '../../components/ai/AvatarStage';
 import { Icon, type IconName } from '../../components/Icon';
 import { SignInRequired } from '../../components/SignInRequired';
 import { Button, Screen } from '../../components/ui';
-import { recommendSize } from '../../sizing';
-import { STYLES, useAiFlowStore } from '../../store/aiFlowStore';
+
+import { useAiFlowStore } from '../../store/aiFlowStore';
 import { useAuthStore } from '../../store/authStore';
 import { money } from '../../theme/format';
 import { colors, radius, spacing, text } from '../../theme/tokens';
 import { PhotoSwipe } from './PhotoSwipe';
+import { StorePicker } from './StorePicker';
 import { goBack } from '../../navigation/back';
 
 /**
@@ -50,17 +61,30 @@ import { goBack } from '../../navigation/back';
  *
  * ⚠️ NEGA EKRAN EMAS, KOMPONENT. Bir xil kiyintirish IKKI joydan
  * ochiladi: pastdagi «Kiyib ko'rish» tabidan va AI oqimidan
- * (`/ai/fitting`). Ilgari tab 3D sahnani ko'rsatardi va ikkalasi butunlay
- * boshqa ekran edi — bir xil ish ikki marta yozilgan, tuzatish esa faqat
- * bittasiga tushardi. Endi tana shu yerda, marshrutlar faqat qobiq.
+ * (`/ai/fitting`). Tana shu yerda, marshrutlar faqat qobiq.
  *
- * ⚠️ SO'ROV FAQAT TUGMA BOSILGANDA YUBORILADI. Kiyimni tanlash bepul —
- * tasmani surish, svayp qilish, rang va o'lcham tanlash hech narsa
- * turmaydi. AI faqat "Shuni kiyintir" bosilganda chaqiriladi va har
- * chaqiruv PUL turadi.
+ * ── UCHTA QOIDA, UCHALASI HAM O'ZGARTIRILGAN ──
  *
- * Avtomatik yasash qulayroq ko'rinardi, lekin foydalanuvchi tasmani bir
- * marta surganda o'nlab kredit yo'qolardi.
+ * 1. ⚠️ KIYIM USTIGA KIYIM. Ilgari har kiyintirish ASL suratdan
+ *    boshlanardi va ekranda doim BITTA kiyim ko'rinardi: kurtka
+ *    tanlansa futbolka yo'qolardi. Endi komplekt qatlam-qatlam
+ *    yig'iladi (`src/ai/outfit.ts`), zanjir esa serverga `baseRenderId`
+ *    bo'lib boradi.
+ *
+ * 2. ⚠️ TASMA OLDINDAN TAYYORLANADI. Ilgari so'rov faqat «Kiyintirish»
+ *    tugmasi bosilganda ketardi — pul tejash uchun. Endi turkumdagi
+ *    hamma kiyim fonda kiyintiriladi va foydalanuvchi tasmani surganda
+ *    tayyor suratlarni ko'radi.
+ *
+ *    BU SARF QARORI: bitta turkumni ochish 30 tagacha kredit turadi.
+ *    Chegara `TRYON_DAILY_LIMIT` da va unga yetilganda ekran silliq
+ *    to'xtaydi (banner), xato oynasi chiqmaydi.
+ *
+ * 3. ⚠️ RO'YXAT DO'KON VA O'LCHAM BO'YICHA FILTRLANADI. Ilgari sehrgarda
+ *    tanlangan do'kon `aiFlowStore` da yotardi va HECH QAYERDA
+ *    ishlatilmasdi; o'lcham esa faqat «sizga M» yozuvi edi. Natijada
+ *    foydalanuvchi boshqa do'konning, o'ziga to'g'ri kelmaydigan
+ *    kiyimini kiyintirib, keyin uni sotib ololmasdi.
  */
 
 export interface FittingExperienceProps {
@@ -73,29 +97,37 @@ export interface FittingExperienceProps {
   showBack?: boolean;
 }
 
-/** Kategoriya tablari — faqat AI qo'llab-quvvatlaydigan slotlar. */
 /** Tasmadagi bitta karta + oraliq — `getItemLayout` uchun. */
 const STRIP_ITEM = 72 + spacing.sm;
 
 /**
  * Kategoriya tablari — maketdagi beshtasi.
  *
- * ⚠️ SLOT EMAS, KATEGORIYA. Ilgari uchta tab bor edi va ular `slot`
- * bo'yicha guruhlanardi (ustki / kurtka / pastki). Maketda esa beshta:
- * T-Shirts, Hoodies, Jackets, Shirts, Pants — bular kategoriya, slot
- * emas. Futbolka, xudi va ko'ylak uchalasi ham `top` slotida, lekin
- * foydalanuvchi uchun uch xil narsa.
+ * ⚠️ SLOT EMAS, KATEGORIYA. Futbolka, xudi va ko'ylak uchalasi ham `top`
+ * slotida, lekin foydalanuvchi uchun uch xil narsa.
  *
- * Bazada bu kategoriyalar allaqachon bor, faqat filtr slot bo'yicha
- * ketardi. Endi kategoriya bo'yicha.
+ * ⚠️ TARTIB — KO'RISH TARTIBI, KIYINISH TARTIBI EMAS. Maketda tablar shu
+ * ketma-ketlikda turadi. Kiyinish tartibi esa boshqa (shim eng pastda) va
+ * u `src/ai/outfit.ts` dagi `LAYER_ORDER` da — shimni kurtkadan keyin
+ * kiyib bo'lmaydi.
+ *
+ * `slot` o'lcham tavsiyasi uchun kerak: ustki kiyim ko'krakdan, pastki
+ * kiyim beldan hisoblanadi.
  */
-const TABS: Array<{ category: string; label: string; icon: IconName }> = [
-  { category: 'tshirt', label: 'Futbolka', icon: 'slotTop' },
-  { category: 'hoodie', label: 'Xudi', icon: 'slotTop' },
-  { category: 'jacket', label: 'Kurtka', icon: 'slotOuter' },
-  { category: 'shirt', label: "Ko'ylak", icon: 'slotTop' },
-  { category: 'trousers', label: 'Shim', icon: 'slotBottom' },
+const TABS: Array<{ category: string; label: string; icon: IconName; slot: string }> = [
+  { category: 'tshirt', label: 'Futbolka', icon: 'slotTop', slot: 'top' },
+  { category: 'hoodie', label: 'Xudi', icon: 'slotTop', slot: 'top' },
+  { category: 'jacket', label: 'Kurtka', icon: 'slotOuter', slot: 'outer' },
+  { category: 'shirt', label: "Ko'ylak", icon: 'slotTop', slot: 'top' },
+  { category: 'trousers', label: 'Shim', icon: 'slotBottom', slot: 'bottom' },
 ];
+
+/** Biror natija hali kelmayotgan bo'lsa ro'yxat qayta so'raladi. */
+function isWorking(renders: readonly TryonRender[] | undefined): boolean {
+  return (renders ?? []).some(
+    (render) => render.status === 'pending' || render.status === 'processing',
+  );
+}
 
 export function FittingExperience({ showBack = false }: FittingExperienceProps): JSX.Element {
   const insets = useSafeAreaInsets();
@@ -104,113 +136,315 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
 
   const [tab, setTab] = useState('tshirt');
-  const [chosen, setChosen] = useState<string | null>(null);
   const [size, setSize] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
   const [angle, setAngle] = useState<AvatarAngle>('front');
   const [notice, setNotice] = useState<string | null>(null);
-
-  /*
-   * Kiyim tasmasining ref'i — svayp bilan bog'lash uchun.
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  /**
+   * O'lcham filtri.
    *
-   * ⚠️ NEGA KERAK. Sahnada svayp qilinganda tanlangan kiyim o'zgaradi,
-   * lekin pastdagi tasma joyida qolardi: foydalanuvchi uchinchi kiyimga
-   * o'tgan bo'lsa ham tasmada birinchisi belgilangan turardi va qaysi
-   * kiyim ko'rsatilayotgani bilinmasdi. Endi tasma svayp ortidan
-   * suriladi.
+   * ⚠️ O'CHIRISH IMKONI QOLDIRILGAN. Filtr sukut bo'yicha YOQIQ — oqimning
+   * ma'nosi «menga mos narsalar» — lekin kichik do'konda u ro'yxatni
+   * butunlay bo'shatib qo'yishi mumkin. Bunday holda foydalanuvchi boshi
+   * berk ko'chaga tushmasligi kerak: yo filtrni o'chiradi, yo do'konni
+   * almashtiradi. Ikkala yo'l ham bo'sh ro'yxat yonida ko'rsatiladi.
    */
+  const [onlyMySize, setOnlyMySize] = useState(true);
+
+  /**
+   * Ko'rilgan kiyimlar keshi.
+   *
+   * ⚠️ NEGA KERAK. Komplektda beshta turkumdan kiyim bo'lishi mumkin,
+   * ro'yxat esa faqat JORIY turkumni yuklaydi. Komplektning umumiy
+   * narxini ko'rsatish va uni savatga qo'shish uchun boshqa
+   * turkumlardagi kiyimlarning ma'lumoti ham kerak.
+   *
+   * Kiyim faqat ro'yxatdan tanlanadi, ya'ni tanlangan payt u albatta
+   * yuklangan bo'ladi — shu payt keshga tushadi.
+   */
+  const [seen, setSeen] = useState<Record<string, Garment>>({});
+
+  /**
+   * Foydalanuvchi ATAYLAB yechgan turkumlar.
+   *
+   * ⚠️ USIZ «YECHISH» ISHLAMASDI. Turkum ochilganda birinchi kiyim
+   * o'zi kiyiladi (quyidagi effekt); yechilgan turkum belgilanmasa
+   * o'sha effekt uni darhol qaytadan kiydirardi va tugma buzuq
+   * ko'rinardi.
+   *
+   * Belgi turkumga qayta kiyim tanlanganda olib tashlanadi.
+   */
+  const [dismissed, setDismissed] = useState<string[]>([]);
+
   const stripRef = useRef<FlatList<Garment>>(null);
 
-  /* Uslub oqim bo'ylab saqlanadi — AI komplekt yasashda ishlatiladi */
-  const style = useAiFlowStore((state) => state.style);
-  const setStyle = useAiFlowStore((state) => state.setStyle);
+  const outfit = useAiFlowStore((state) => state.outfit);
+  const wear = useAiFlowStore((state) => state.wear);
+  const takeOff = useAiFlowStore((state) => state.takeOff);
+  const storeId = useAiFlowStore((state) => state.storeId);
+  const storeName = useAiFlowStore((state) => state.storeName);
+  const setStore = useAiFlowStore((state) => state.setStore);
+
+  /** Kiyintirish — belgini ham tozalaydi, aks holda effekt uni qaytarardi */
+  const putOn = (category: string, variantId: string): void => {
+    setDismissed((current) => current.filter((item) => item !== category));
+    wear(category, variantId);
+    setSize(null);
+    setNotice(null);
+  };
+
+  const remove = (category: string): void => {
+    setDismissed((current) => (current.includes(category) ? current : [...current, category]));
+    takeOff(category);
+    setSize(null);
+    setNotice(null);
+  };
 
   const profile = useQuery({ queryKey: ['profile'], queryFn: getFullProfile, enabled: signedIn });
   const avatar = useQuery({
     queryKey: ['avatar'],
     queryFn: getAvatar,
     enabled: signedIn,
-    // Burchak yasalayotgan bo'lsa kuzatamiz, aks holda so'rov yubormaymiz
     refetchInterval: (query) =>
       (query.state.data as { anglePending?: string | null } | undefined)?.anglePending
         ? 3000
         : false,
   });
 
+  const measurements = profile.data?.measurements;
+  const gender = profile.data?.gender ?? null;
+
   /*
-   * Aylantirish.
+   * ⚠️ TAYYORLIK QADAMLARDAN OLDIN HISOBLANADI, chunki undan SO'ROVLAR
+   * ham bog'liq. Ilgari tekshiruv shartli `return` da, hamma so'rovdan
+   * KEYIN turardi: surati yo'q yangi foydalanuvchi uchun ham kiyimlar
+   * yuklanardi va tasmani oldindan tayyorlash boshlanardi — server esa
+   * har birini «avval avatar yasang» deb rad etardi. Foydalanuvchi
+   * buni ko'rmasdi, lekin log xatoga to'lardi.
    *
-   * ⚠️ HAR BURCHAK ALOHIDA KREDIT. Shuning uchun tugma bosilganda avval
-   * KESHGA qaraladi: burchak allaqachon yasalgan bo'lsa shunchaki
-   * ko'rsatiladi va hech narsa to'lanmaydi. Faqat yo'q bo'lsa so'raladi.
+   * ⚠️ DO'KON HAM SHART: kiyimlar do'konga bog'langan (aks holda
+   * ro'yxat butun katalogdan kelib, komplekt bir necha do'kondan
+   * yig'ilardi va uni bitta buyurtma qilib bo'lmasdi).
    */
+  const hasPhoto = avatar.data?.status === 'ready' || Boolean(profile.data?.bodyPhotoUrl);
+  const hasSizes =
+    typeof measurements?.height === 'number' && typeof measurements?.weight === 'number';
+  const ready = signedIn && hasPhoto && hasSizes && Boolean(storeId);
+
+  const activeTab = TABS.find((item) => item.category === tab) ?? TABS[0];
+
+  /**
+   * Joriy turkum uchun tavsiya etilgan o'lcham.
+   *
+   * ⚠️ TAVSIYA EMAS, FILTR SIFATIDA HAM ISHLATILADI — ro'yxatga faqat
+   * shu o'lchami omborda borlari kiradi (`onlyMySize`).
+   */
+  const fitSize = useMemo(
+    () => (measurements ? recommendSize(activeTab?.slot ?? 'top', measurements) : null),
+    [measurements, activeTab?.slot],
+  );
+
+  const sizeFilter = onlyMySize ? fitSize : null;
+
+  const garments = useQuery({
+    queryKey: ['garments', tab, storeId, sizeFilter, gender],
+    queryFn: () => getGarments({ category: tab, storeId, size: sizeFilter, gender, limit: 30 }),
+    enabled: ready,
+  });
+
+  const items = useMemo(() => garments.data ?? [], [garments.data]);
+
+  // Ro'yxatga tushgan har kiyim keshga yoziladi — komplekt jamlanmasi uchun
+  useEffect(() => {
+    if (items.length === 0) return;
+    setSeen((current) => {
+      const next = { ...current };
+      for (const item of items) next[item.variantId] = item;
+      return next;
+    });
+  }, [items]);
+
+  /*
+   * ── Komplekt zanjiri ──
+   *
+   * `scope: 'all'` — HAR asos ustidagi natija keladi. Aynan shu bilan
+   * zanjir tiklanadi: qaysi qatlam qaysining ustida turgani natijalarning
+   * o'zidan o'qiladi (`resolveOutfit`).
+   */
+  const outfitIds = useMemo(() => outfit.map((layer) => layer.variantId), [outfit]);
+
+  const outfitRenders = useQuery({
+    queryKey: ['renders', 'outfit', angle, outfitIds.join(',')],
+    queryFn: () => getRenders(outfitIds, angle, null, 'all'),
+    enabled: ready && outfitIds.length > 0,
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 2500 : false),
+  });
+
+  const resolved = useMemo(
+    () => resolveOutfit(outfit, indexRenders(outfitRenders.data ?? [])),
+    [outfit, outfitRenders.data],
+  );
+
+  /** Joriy turkumdagi kiyimlar qaysi surat ustiga kiydiriladi */
+  const stripBase = useMemo(() => baseForCategory(resolved, tab), [resolved, tab]);
+
+  const stripIds = useMemo(() => items.map((item) => item.variantId), [items]);
+
+  const stripRenders = useQuery({
+    queryKey: ['renders', 'strip', angle, stripBase.baseRenderId, stripIds.join(',')],
+    queryFn: () => getRenders(stripIds, angle, stripBase.baseRenderId),
+    enabled: ready && stripIds.length > 0 && stripBase.ready,
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 2500 : false),
+  });
+
+  /**
+   * Ikkala ro'yxat bitta jadvalga qo'shiladi.
+   *
+   * ⚠️ TARTIB MUHIM: komplekt ro'yxati OXIRIDA. Bitta kiyim ikkalasida
+   * ham bo'lishi mumkin (kiyilgan kiyim o'z turkumining tasmasida ham
+   * turadi) va komplekt so'rovi yangiroq — u kuzatib turiladi.
+   */
+  const renderIndex = useMemo(
+    () => indexRenders([...(stripRenders.data ?? []), ...(outfitRenders.data ?? [])]),
+    [stripRenders.data, outfitRenders.data],
+  );
+
+  /* ── So'rovlar ── */
+
+  /**
+   * Yuborilgan so'rovlar belgisi.
+   *
+   * ⚠️ `useRef` — HOLAT EMAS. Bu qiymat faqat «shuni allaqachon
+   * so'raganmiz» degan xotira; holatda bo'lsa har yozuv qayta chizishni
+   * keltirib chiqarardi. Va u chizishga umuman ta'sir qilmaydi.
+   *
+   * ⚠️ USIZ PUL SARFLANARDI. Effektlar so'rov natijalari o'zgarganda
+   * qayta ishlaydi; belgisiz har kelgan javob yangi navbat yaratardi.
+   */
+  const asked = useRef(new Set<string>());
+
+  const batch = useMutation({
+    mutationFn: (input: { variantIds: string[]; base: string | null }) =>
+      requestRenderBatch(input.variantIds, angle, input.base),
+    onSuccess: (result) => {
+      if (result.limitReached) setLimitReached(true);
+      void queryClient.invalidateQueries({ queryKey: ['renders'] });
+    },
+    onError: (err) => {
+      if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
+      else setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi');
+    },
+  });
+
+  const single = useMutation({
+    mutationFn: (input: { variantId: string; base: string | null }) =>
+      requestRender(input.variantId, angle, input.base),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['renders'] }),
+    onError: (err) => {
+      if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
+      else setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi');
+    },
+  });
+
+  /*
+   * ── Tasmani oldindan tayyorlash ──
+   *
+   * ⚠️ FAQAT OLD KO'RINISHDA. Aylantirilgan ko'rinish uchun ham butun
+   * tasma yasalsa sarf uch barobar oshardi, foydalanuvchi esa aylantirgan
+   * payt odatda BITTA kiyimni ko'rmoqchi bo'ladi — uni komplekt zanjiri
+   * o'zi yasaydi.
+   */
+  useEffect(() => {
+    if (!ready || angle !== 'front') return;
+    if (!stripBase.ready || stripIds.length === 0) return;
+    if (limitReached) return;
+
+    const missing = stripIds.filter(
+      (variantId) => !renderIndex.has(renderKey(variantId, stripBase.baseRenderId)),
+    );
+    if (missing.length === 0) return;
+
+    const key = `batch:${angle}:${stripBase.baseRenderId ?? 'root'}:${missing.join(',')}`;
+    if (asked.current.has(key)) return;
+    asked.current.add(key);
+
+    /*
+     * ⚠️ `batch` BOG'LIQLIKLARDA YO'Q — ATAYIN. U mutatsiya obyekti va
+     * har chizishda yangi havola bo'ladi; ro'yxatga qo'shilsa effekt
+     * cheksiz takrorlanardi. Ishlatilayotgani esa faqat `mutate`, u
+     * o'zgarmaydi.
+     */
+    batch.mutate({ variantIds: missing, base: stripBase.baseRenderId });
+  }, [ready, angle, stripBase.ready, stripBase.baseRenderId, stripIds, renderIndex, limitReached]);
+
+  /*
+   * ── Komplekt zanjirini tiklash ──
+   *
+   * Bir vaqtda faqat BITTA qatlam so'raladi: keyingisining asosi shu
+   * natija bo'ladi va uning `id` si hali mavjud emas. Natija kelishi
+   * bilan effekt qaytadan ishlaydi va navbatdagisini so'raydi.
+   *
+   * ⚠️ SHU BILAN PASTKI QATLAM ALMASHGANDA TEPADAGILAR O'ZI TIKLANADI.
+   * Foydalanuvchi futbolkani almashtirsa kurtkaning eski surati
+   * yaroqsiz bo'ladi (u boshqa asos ustida edi) — `resolveOutfit` uni
+   * topa olmaydi va shu yerda qaytadan so'raladi.
+   */
+  useEffect(() => {
+    if (!ready || limitReached) return;
+
+    const pending = nextPending(resolved);
+    if (!pending) return;
+
+    const key = `one:${angle}:${renderKey(pending.variantId, pending.baseRenderId)}`;
+    if (asked.current.has(key)) return;
+    asked.current.add(key);
+
+    // `single` bog'liqliklarda yo'q — yuqoridagi bilan bir xil sabab
+    single.mutate({ variantId: pending.variantId, base: pending.baseRenderId });
+  }, [ready, angle, resolved, limitReached]);
+
+  /*
+   * ── Turkum ochilganda birinchi kiyim kiyiladi ──
+   *
+   * ⚠️ MAKETNING VA'DASI SHU. Foydalanuvchi turkumni ochganda o'zini
+   * ALLAQACHON kiyingan holda ko'rishi kerak — bo'sh sahna va
+   * «kiyintirish» tugmasi emas. Keyingi kiyimlar bosilganda almashadi.
+   *
+   * ⚠️ FAQAT BO'SH TURKUMGA. Foydalanuvchi bu turkumda allaqachon kiyim
+   * tanlagan bo'lsa u saqlanadi — aks holda tab almashtirib qaytish
+   * tanlovni yo'qotardi.
+   */
+  useEffect(() => {
+    if (!ready || items.length === 0) return;
+    if (dismissed.includes(tab)) return;
+    if (outfit.some((layer) => layer.category === tab)) return;
+
+    const first = items[0];
+    if (first) wear(tab, first.variantId);
+  }, [ready, items, outfit, tab, wear, dismissed]);
+
+  // Tab almashganda o'lcham tanlovi tozalanadi — eski o'lcham yangi
+  // kiyimda bo'lmasligi mumkin
+  useEffect(() => {
+    setSize(null);
+    setNotice(null);
+  }, [tab]);
+
   const rotate = useMutation({
     mutationFn: requestAvatarAngle,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['avatar'] }),
     onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Aylantirib bo`lmadi'),
   });
 
-  const garments = useQuery({
-    queryKey: ['garments', tab],
-    queryFn: () => getGarments(undefined, undefined, tab),
-  });
-
-  const items = useMemo(() => garments.data ?? [], [garments.data]);
-  const current: Garment | undefined = items.find((item) => item.variantId === chosen) ?? items[0];
-
-  // Tab almashganda tanlov tozalanadi — eski kiyim yangi ro'yxatda yo'q
-  useEffect(() => {
-    setChosen(null);
-    setSize(null);
-    setNotice(null);
-  }, [tab]);
-
-  /*
-   * Tayyor natijalar bir so'rovda olinadi. Har kiyim uchun alohida so'rov
-   * yuborilsa tarmoq bo'g'ilardi va keshdagi natija kech ko'rinardi.
-   */
-  const renders = useQuery({
-    // ⚠️ Burchak kalitda: aks holda yon ko'rinish keshi old ko'rinishniki bilan aralashardi
-    queryKey: ['renders', angle, items.map((item) => item.variantId).join(',')],
-    queryFn: () =>
-      getRenders(
-        items.map((item) => item.variantId),
-        angle,
-      ),
-    enabled: signedIn && items.length > 0,
-  });
-
-  const byVariant = useMemo(() => {
-    const map = new Map<string, TryonRender>();
-    for (const render of renders.data ?? []) map.set(render.variantId, render);
-    return map;
-  }, [renders.data]);
-
-  const active = current ? byVariant.get(current.variantId) : undefined;
-
-  const tracked = useQuery({
-    queryKey: ['render', active?.id],
-    queryFn: () => getRender(active?.id ?? ''),
-    enabled: Boolean(active?.id) && active?.status !== 'ready' && active?.status !== 'failed',
-    refetchInterval: (query) => {
-      const data = query.state.data as TryonRender | undefined;
-      return data?.status === 'ready' || data?.status === 'failed' ? false : 2500;
-    },
-  });
-
-  const shown = tracked.data?.variantId === current?.variantId ? tracked.data : active;
-
-  const start = useMutation({
-    mutationFn: (input: { variantId: string; angle: AvatarAngle }) =>
-      requestRender(input.variantId, input.angle),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['renders'] }),
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi'),
-  });
-
   const cart = useMutation({
-    mutationFn: (input: { variantId: string; chosenSize: string }) =>
-      addToCart(input.variantId, input.chosenSize),
-    onSuccess: () => setNotice('Savatga qo`shildi'),
+    mutationFn: async (lines: Array<{ variantId: string; chosenSize: string }>) => {
+      // Ketma-ket: savat endpointi bitta qator qabul qiladi
+      for (const line of lines) await addToCart(line.variantId, line.chosenSize);
+      return lines.length;
+    },
+    onSuccess: (count) => setNotice(`${count} ta mahsulot savatga qo\`shildi`),
     onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Qo`shilmadi'),
   });
 
@@ -222,122 +456,104 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     );
   }
 
-  /*
-   * ⚠️ TAYYORLIK IKKI QISMDAN: SURAT VA O'LCHAMLAR.
-   *
-   * Ilgari faqat surat tekshirilardi. Natijada o'lchamsiz foydalanuvchi
-   * kiyintirishga o'tib ketardi va u yerda o'lcham tavsiyasi bo'sh
-   * chiqardi — «sizga M» o'rniga hech narsa. Kiyintirishning ma'nosi esa
-   * aynan O'ZIGA mos o'lchamni ko'rish.
-   */
-  const hasPhoto = avatar.data?.status === 'ready' || Boolean(profile.data?.bodyPhotoUrl);
-  const measurements = profile.data?.measurements;
-  const hasSizes =
-    typeof measurements?.height === 'number' && typeof measurements?.weight === 'number';
-  const ready = hasPhoto && hasSizes;
-
-  /*
-   * ⚠️ TANLOV EMAS, TO'G'RIDAN-TO'G'RI SEHRGAR. Ilgari bu yerda ikki
-   * tugmali bo'sh ekran turardi («Yuzni skaner qilish» / «O'z suratimni
-   * yuklash») va foydalanuvchi kiyintirishni ochib, o'rniga savol
-   * oladi. Endi u to'g'ridan-to'g'ri sehrgarga tushadi: yuz skaneri,
-   * so'ng o'lchamlar. Surat yuklash yo'li sehrgarning ichida qoldi.
-   *
-   * `Redirect` ishlatiladi, `useEffect` + `router.replace` emas: bu
-   * shartli `return` lardan keyin va effektni shu yerga qo'yib
-   * bo'lmasdi — hook tartibi buzilardi.
-   */
   if (profile.isSuccess && avatar.isSuccess && !ready) {
     return <Redirect href="/ai/avatar" />;
   }
 
-  /*
-   * Kiyintirilgan natija HAR BURCHAKDA ko'rinadi.
-   *
-   * Sinovda tasdiqlandi: kiyintirish modeli yon ko'rinishda ham pozani
-   * tanidi va kiyimni to'g'ri joyladi. Shuning uchun aylantirilganda
-   * o'sha burchakdagi kiyingan natija ko'rsatiladi.
-   *
-   * ⚠️ HAR BURCHAK ALOHIDA TO'LANADI: bitta kiyimni uch burchakda ko'rish
-   * uch kredit turadi. Shuning uchun ular oldindan yasalmaydi.
-   */
   const angles = avatar.data?.angles ?? {};
   const baseImage = angles[angle] ?? avatar.data?.imageUrl ?? profile.data?.bodyPhotoUrl ?? null;
-  const resultImage = shown?.status === 'ready' ? shown.imageUrl : null;
-
-  /*
-   * Kesimlar — sahna uchun. Ular bo'lmasligi mumkin (serverda yasashda
-   * nosozlik), shunda oddiy surat ishlatiladi va ekran buzilmaydi.
-   *
-   * ⚠️ Burchak old ko'rinishdan boshqa bo'lsa avatar kesimi ishlatilmaydi:
-   * u faqat old ko'rinish uchun yasalgan.
-   */
   const baseCutout = angle === 'front' ? (avatar.data?.cutoutUrl ?? null) : null;
 
-  /*
-   * Svayp tasmasi — tabdagi HAR kiyim uchun bitta karta.
+  /** Komplektning eng tepa tayyor surati — sahnada shu turadi */
+  const worn = topReady(resolved);
+
+  const failed = resolved.find((layer) => layer.render?.status === 'failed');
+
+  /* ── Joriy turkumdagi tanlov ── */
+  const wornHere = outfit.find((layer) => layer.category === tab)?.variantId ?? null;
+  const current: Garment | undefined =
+    items.find((item) => item.variantId === wornHere) ?? items[0];
+
+  /**
+   * Sahnada ko'rsatilayotgan kartaning natijasi.
    *
-   * ⚠️ TAYYOR NATIJA BO'LMASA ODAMNING ASOSIY SURATI QO'YILADI, kiyim
-   * surati emas. Tasmada kiyim rasmi turgan bo'lsa svayp «kiyim
-   * katalogi»ga o'xshab qolardi; bu ekranning ma'nosi esa O'ZINGNI
-   * ko'rish — kiyilgani ham, kiyilmagani ham.
+   * ⚠️ INDIKATOR BUTUN ZANJIRGA EMAS, SHUNGA BOG'LIQ. Ilgari «kutish»
+   * belgisi zanjirda BIROR qatlam tayyor bo'lmasa chiqardi. Komplekt
+   * beshta qatlamdan iborat bo'lgani va har tabga o'tishda yangisi
+   * qo'shilgani uchun bu amalda «doim aylanib turadigan indikator»
+   * degani edi — foydalanuvchi tayyor suratni ham xira parda ostida
+   * ko'rardi.
+   *
+   * Endi u faqat KO'RINAYOTGAN narsa kutilayotganda chiqadi.
    */
-  const deck = items.map((item) => {
-    /*
-     * ⚠️ IKKI MANBA, JORIYSI USTUN. `byVariant` — ro'yxat so'rovi, u
-     * keshdan keladi va kechikishi mumkin. `shown` esa aynan joriy
-     * kiyimni KUZATIB turgan so'rov natijasi.
-     *
-     * Faqat ro'yxatga tayanilsa quyidagi hol chiqadi: kiyintirish tayyor
-     * bo'ladi, tugma «Savatga» ga o'zgaradi — tasmada esa hali kiyimsiz
-     * surat turadi. Foydalanuvchi natijani ko'rmay turib sotib olishga
-     * chaqiriladi.
-     */
-    const render = item.variantId === shown?.variantId ? shown : byVariant.get(item.variantId);
+  const shown = current
+    ? renderIndex.get(renderKey(current.variantId, stripBase.baseRenderId))
+    : undefined;
 
-    /*
-     * ⚠️ KESIM USTUN, ODDIY SURAT ZAXIRA.
-     *
-     * AI natijani DOIM och kulrang studiya foni bilan qaytaradi. Uni
-     * to'g'ridan-to'g'ri qo'ysak, qorong'i sahnada och kulrang
-     * to'rtburchak paydo bo'ladi va maketdagi butun taassurot buziladi —
-     * neon halqalar ham, platforma ham surat ortida qolib ketadi.
-     *
-     * Kesim (`cutout_url`) — fondan ajratilgan shaffof PNG, server
-     * `makeCutout` bilan yasaydi. Uning ostidan sahna bezagi ko'rinib
-     * turadi va odam haqiqatan o'sha sahnada turgandek bo'ladi.
-     *
-     * ⚠️ KESIM BO'LMASLIGI MUMKIN — u BEZAK va yasashda nosozlik bo'lsa
-     * `null` qoladi. Bunda oddiy surat ishlatiladi: ko'rinishi yomonroq,
-     * lekin ekran ishlaydi.
-     */
-    if (render?.status === 'ready') {
-      return { key: item.variantId, url: render.cutoutUrl ?? render.imageUrl };
-    }
-
-    return { key: item.variantId, url: baseCutout ?? baseImage };
-  });
+  /*
+   * ⚠️ CHEGARA TUGAGANDA INDIKATOR CHIQMAYDI. Aks holda u abadiy
+   * aylanardi: yangi so'rov yuborilmaydi, natija esa hech qachon
+   * kelmaydi. Bunday holda foydalanuvchi tepadagi bannerni o'qiydi va
+   * kiyimning oddiy suratini ko'radi.
+   */
+  const currentWorking = Boolean(
+    current &&
+    !(limitReached && !shown) &&
+    (!stripBase.ready || !shown || shown.status === 'pending' || shown.status === 'processing'),
+  );
 
   const deckIndex = Math.max(
     0,
     items.findIndex((item) => item.variantId === current?.variantId),
   );
 
-  /* Joriy mahsulotning boshqa ranglari — ular ro'yxatda alohida yozuv */
-  const colorOptions = current ? items.filter((item) => item.productId === current.productId) : [];
-  const resultCutout = shown?.status === 'ready' ? shown.cutoutUrl : null;
-  const working = shown?.status === 'pending' || shown?.status === 'processing' || start.isPending;
+  /**
+   * Joriy turkumning OSTIDAGI komplekt surati.
+   *
+   * ⚠️ ENG TEPA NATIJA EMAS. Foydalanuvchi futbolkalar tabida turganda
+   * unga futbolkalar KURTKASIZ ko'rsatiladi — u aynan futbolkani
+   * tanlayapti va kurtka uni bekitib turardi. Shuning uchun zaxira
+   * surat ham shu qatlamning asosi bo'lishi kerak; `topReady` olinsa
+   * tayyor kartada kurtkasiz, tayyor bo'lmaganida kurtkali surat
+   * chiqib, tasma sakrab ketardi.
+   */
+  const layerBase = stripBase.baseRenderId
+    ? (resolved.find((layer) => layer.render?.id === stripBase.baseRenderId)?.render ?? null)
+    : null;
 
   /*
-   * ⚠️ O'LCHAM TAVSIYASI SURATDAN EMAS, HAQIQIY O'LCHOVLARDAN.
-   * Yasalgan avatar taxminiy, o'lchovlar esa foydalanuvchi kiritgan aniq
-   * raqamlar — shuning uchun tavsiya aniqligi avatar sifatiga bog'liq emas.
+   * Svayp tasmasi — turkumdagi HAR kiyim uchun bitta karta, hammasi
+   * shu turkum ostidagi komplekt ustida.
+   *
+   * ⚠️ TAYYOR BO'LMAGANIDA KOMPLEKTNING O'ZI TURADI, kiyim surati emas.
+   * Bo'sh karta qo'yilsa svayp «teshik»ka tushardi; kiyim surati
+   * qo'yilsa esa ekran «katalog»ga o'xshab qolardi — bu ekranning
+   * ma'nosi esa O'ZINGNI ko'rish.
    */
-  const recommended =
-    current && profile.data ? recommendSize(current.slot, profile.data.measurements) : null;
+  const deck = items.map((item) => {
+    const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
+
+    if (render?.status === 'ready') {
+      return { key: item.variantId, url: render.cutoutUrl ?? render.imageUrl };
+    }
+
+    return {
+      key: item.variantId,
+      url: layerBase?.cutoutUrl ?? layerBase?.imageUrl ?? baseCutout ?? baseImage,
+    };
+  });
+
+  const colorOptions = current ? items.filter((item) => item.productId === current.productId) : [];
   const sizes = current?.sizes ?? [];
-  const picked =
-    size ?? (recommended && sizes.includes(recommended) ? recommended : sizes[0]) ?? null;
+  const picked = size ?? (fitSize && sizes.includes(fitSize) ? fitSize : sizes[0]) ?? null;
+
+  /* ── Komplekt jamlanmasi ── */
+  const outfitItems = outfit
+    .map((layer) => seen[layer.variantId])
+    .filter((item): item is Garment => Boolean(item));
+
+  const outfitTotal = outfitItems.reduce((sum, item) => sum + Number(item.price), 0);
+  const outfitCurrency = outfitItems[0]?.currency ?? 'UZS';
 
   return (
     <Screen>
@@ -353,12 +569,24 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             <Icon name="back" size={20} color={colors.text} />
           </Pressable>
         ) : (
-          // Bo'sh joy — sarlavha o'ngdagi tugma bilan muvozanatda tursin
           <View style={styles.headerButton} />
         )}
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Kiyintirish</Text>
-          <Text style={styles.headerHint}>Kiyimni tanlang</Text>
+          {/*
+            ⚠️ SARLAVHA OSTIDA DO'KON — VA U BOSILADI. Ilgari bu yerda
+            «Kiyimni tanlang» degan yozuv turardi: u hech narsa
+            aytmasdi va hech qayerga olib bormasdi. Do'kon esa
+            foydalanuvchi ko'rayotgan ro'yxatni belgilaydi va uni
+            almashtirish eng ko'p kerak bo'ladigan amal.
+          */}
+          <Pressable onPress={() => setStoreOpen(true)} hitSlop={8} style={styles.storeChip}>
+            <Icon name="stores" size={12} color={colors.accent} />
+            <Text style={styles.storeChipText} numberOfLines={1}>
+              {storeName ?? "Do'kon tanlang"}
+            </Text>
+            <Icon name="next" size={12} color={colors.textDim} />
+          </Pressable>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -373,58 +601,26 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
       {/* ── Avatar maydoni ── */}
       <View style={styles.stage}>
-        {/*
-          Maketdagi sahna: qorong'i fon, to'r, neon halqalar va o'lchovlar.
-          Odam kesim sifatida qo'yiladi — oddiy surat och kulrang foni bilan
-          kelsa, qora ekranda to'rtburchak bo'lib ko'rinardi.
-        */}
         <AvatarStage
-          imageUrl={resultImage ?? baseImage}
-          cutoutUrl={resultCutout ?? baseCutout}
-          /*
-           * ⚠️ O'LCHOV YOZUVLARI OLIB TASHLANDI. Ular sahna chekkalarida
-           * turardi va CHAPDAGI boshqaruv qatoriga hamda o'ngdagi
-           * «Yechish» tugmasiga tushib qoldi — raqamlar tugma yozuvlari
-           * ustiga chiqib, ikkalasi ham o'qilmaydigan bo'ldi.
-           *
-           * Maketda ham ular yo'q. O'lchovlar profil va «O'lchamlarim»
-           * ekranida bor, ya'ni hech qayerdan yo'qolmaydi.
-           */
-          dimmed={!resultImage && working}
-          /*
-           * ⚠️ HALQALAR NATIJADA HAM QOLADI. Ilgari ular kiyintirilgach
-           * o'chirilardi («kiyim ko'rinsin» degan mulohaza bilan). Lekin
-           * maketda odam AYNAN kiyingan holda halqalar orasida turadi —
-           * ular sahnaning o'zi, chalg'ituvchi bezak emas.
-           *
-           * Kesim shaffof bo'lgani uchun halqalar endi odamning orqasidan
-           * ham o'tadi va u haqiqatan sahnada turgandek ko'rinadi.
-           */
+          imageUrl={worn?.imageUrl ?? baseImage}
+          cutoutUrl={worn?.cutoutUrl ?? baseCutout}
+          dimmed={!worn && currentWorking}
           showRings
         >
-          {/*
-            Svayp tasmasi — har kiyim uchun bitta karta.
-
-            ⚠️ TAYYOR BO'LMAGAN KARTADA ODAMNING O'ZI TURADI. Bo'sh karta
-            qo'yilsa svayp «teshik»ka tushardi va foydalanuvchi nimadir
-            buzilgan deb o'ylardi. Shu holda esa u o'zini ko'radi va
-            «Shuni kiyintir» tugmasi kiyimni qo'shadi.
-          */}
           <PhotoSwipe
             photos={deck}
             index={deckIndex}
             onIndexChange={(next) => {
               const item = items[next];
               if (!item) return;
-              setChosen(item.variantId);
-              setSize(null);
-              setNotice(null);
 
               /*
-               * Tasmani ergashtiramiz. `viewPosition: 0.5` — tanlangan
-               * karta markazga keladi, chetga emas: chetda turgani
-               * keyingisi bormi-yo'qmi bilinmaydi.
+               * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
+               * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
+               * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
                */
+              putOn(tab, item.variantId);
+
               stripRef.current?.scrollToIndex({
                 index: next,
                 animated: true,
@@ -434,13 +630,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           />
         </AvatarStage>
 
-        {/*
-          Boshqaruv — CHAPDA TIK QATOR (maketdagidek).
-
-          ⚠️ ILGARI PASTDA YOTIQ EDI va sahnaning eng qimmatli qismini —
-          odamning oyoq-oyoq qismini — bekitib turardi. Chapda esa ular
-          bo'sh joyda: odam kadrning markazida, chekkalar esa fon.
-        */}
         <View style={styles.sideControls} pointerEvents="box-none">
           <Control
             icon="rotate"
@@ -463,87 +652,125 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           />
           <Control
             icon="reset"
-            label="Qayta"
+            label="Yechish"
             onPress={() => {
-              setZoomed(false);
-              setChosen(null);
-              setSize(null);
-              setNotice(null);
-              setAngle('front');
+              /*
+               * ⚠️ BUTUN KOMPLEKTNI EMAS, JORIY TURKUMNI. Hammasini
+               * yechish tugmasi ham bor edi, lekin u ko'proq tasodifan
+               * bosilardi va o'nlab kredit bilan yig'ilgan komplektni
+               * bir zumda yo'q qilardi. Turkumni yechish esa qaytarib
+               * bo'ladigan amal — kiyim tasmada turibdi.
+               */
+              remove(tab);
             }}
           />
         </View>
 
-        {/* Kiyimni yechish — o'ngda, faqat natija bo'lsa (maketdagidek) */}
-        {resultImage ? (
-          <View style={styles.removeSlot} pointerEvents="box-none">
-            <Control icon="close" label="Yechish" onPress={() => setChosen(null)} danger boxed />
+        {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
+        {resolved.length > 0 ? (
+          <View style={styles.layerRail} pointerEvents="none">
+            {resolved.map((layer) => (
+              <View
+                key={layer.category}
+                style={[
+                  styles.layerDot,
+                  layer.render?.status === 'ready' && styles.layerDotReady,
+                  layer.category === tab && styles.layerDotActive,
+                ]}
+              />
+            ))}
           </View>
         ) : null}
 
-        {working ? (
-          <View style={styles.overlay}>
+        {currentWorking ? (
+          <View style={styles.overlay} pointerEvents="none">
             <ActivityIndicator color={colors.accent} />
             <Text style={styles.overlayText}>AI kiyintirmoqda…</Text>
-            <Text style={styles.overlayHint}>10–20 soniya</Text>
+            <Text style={styles.overlayHint}>
+              {stripBase.ready ? 'Har qatlam 10–20 soniya' : 'Avval ostidagi qatlam tayyorlanmoqda'}
+            </Text>
           </View>
         ) : null}
 
-        {shown?.status === 'failed' ? (
-          <View style={styles.overlay}>
+        {failed && !currentWorking ? (
+          <View style={styles.overlay} pointerEvents="none">
             <Icon name="close" size={26} color={colors.danger} />
             <Text style={styles.overlayText}>Kiyintirib bo`lmadi</Text>
             <Text style={styles.overlayHint} numberOfLines={2}>
-              {shown.error ?? 'Boshqa kiyim bilan urinib ko`ring'}
+              {failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring'}
             </Text>
           </View>
         ) : null}
       </View>
 
       {/* ── Kategoriya tablari ── */}
-      {/* Beshta tab sig'maydi — surilib turadi, maketdagidek */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabs}
         style={styles.tabsWrap}
       >
-        {TABS.map((item) => (
-          <Pressable
-            key={item.category}
-            accessibilityRole="button"
-            onPress={() => setTab(item.category)}
-            style={[styles.tab, tab === item.category && styles.tabActive]}
-          >
-            <Icon
-              name={item.icon}
-              size={18}
-              color={tab === item.category ? colors.accent : colors.textDim}
-            />
-            <Text style={[styles.tabText, tab === item.category && { color: colors.text }]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
+        {TABS.map((item) => {
+          const active = tab === item.category;
+          const dressed = outfit.some((layer) => layer.category === item.category);
+
+          return (
+            <Pressable
+              key={item.category}
+              accessibilityRole="button"
+              onPress={() => setTab(item.category)}
+              style={[styles.tab, active && styles.tabActive]}
+            >
+              <Icon name={item.icon} size={18} color={active ? colors.accent : colors.textDim} />
+              <Text style={[styles.tabText, active && { color: colors.text }]}>{item.label}</Text>
+              {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
+              {dressed ? <View style={styles.tabDressed} /> : null}
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       <ScrollView contentContainerStyle={styles.bottom} showsVerticalScrollIndicator={false}>
+        {limitReached ? (
+          <View style={styles.banner}>
+            <Icon name="clock" size={14} color={colors.warning} />
+            <Text style={styles.bannerText}>
+              Kunlik AI chegarasi tugadi. Tayyor suratlar qoladi, yangilari ertaga.
+            </Text>
+          </View>
+        ) : null}
+
         {/* ── Kiyim tasmasi ── */}
         {garments.isLoading ? (
           <ActivityIndicator color={colors.accent} style={styles.stripLoader} />
         ) : items.length === 0 ? (
-          <Text style={styles.emptyStrip}>Bu turkumda hozircha kiyim yo`q</Text>
+          /*
+            ⚠️ BO'SH RO'YXAT — BOSHI BERK KO'CHA EMAS. Ikkala chiqish
+            yo'li ham shu yerda: filtrni bo'shatish yoki do'konni
+            almashtirish. Ilgari faqat «kiyim yo'q» yozuvi turardi.
+          */
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyStrip}>
+              {sizeFilter
+                ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
+                : 'Bu turkumda hozircha kiyim yo`q'}
+            </Text>
+            <View style={styles.emptyActions}>
+              {sizeFilter ? (
+                <Button
+                  title="Barcha o`lchamlarni ko`rsat"
+                  variant="ghost"
+                  onPress={() => setOnlyMySize(false)}
+                />
+              ) : null}
+              <Button title="Boshqa do`kon tanlash" onPress={() => setStoreOpen(true)} />
+            </View>
+          </View>
         ) : (
           <FlatList
             ref={stripRef}
             data={items}
             keyExtractor={(item) => item.variantId}
-            /*
-             * ⚠️ `getItemLayout` SHART. Usiz `scrollToIndex` hali
-             * chizilmagan elementga surilganda xato beradi — tasma uzun
-             * bo'lsa `FlatList` faqat ko'rinadiganlarini chizadi.
-             * Kartalar bir xil kenglikda, shuning uchun hisob oddiy.
-             */
             getItemLayout={(_data, index) => ({
               length: STRIP_ITEM,
               offset: STRIP_ITEM * index,
@@ -555,51 +782,46 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             removeClippedSubviews
             renderItem={({ item }) => {
               const selected = item.variantId === current?.variantId;
-              const render = byVariant.get(item.variantId);
-              const ready = render?.status === 'ready';
+              const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
+              const isReady = render?.status === 'ready';
+              const busy = render?.status === 'pending' || render?.status === 'processing';
 
               /*
                * ⚠️ KARTOCHKADA ODAMNING O'ZI — MAKETDAGI ASOSIY FIKR.
-               *
-               * Maketda har kartochka kiyimning yassi suratini emas,
-               * MODELNI O'SHA KIYIMDA ko'rsatadi. Ekranni «kiyim
-               * katalogi»dan «o'zingni ko'rish»ga aylantiradigan narsa
-               * aynan shu.
-               *
-               * Bizda bu ma'lumot bepul: tayyor render — aynan odamning
-               * shu kiyimdagi surati. Kesimi bo'lsa u ishlatiladi
-               * (qorong'i kartochkada chiroyliroq turadi).
-               *
-               * ⚠️ HAMMA KARTOCHKADA BO'LMAYDI. Render PUL turadi va u
-               * faqat foydalanuvchi «Shuni kiyintir» bosgandan keyin
-               * yasaladi. Yasalmaganlarida mahsulot surati qoladi —
-               * maketdagidek to'liq emas, lekin har kartochka uchun
-               * oldindan to'lash bundan yomonroq bo'lardi.
+               * Har kartochka kiyimning yassi suratini emas, MODELNI
+               * o'sha kiyimda ko'rsatadi. Endi bu deyarli hamma
+               * kartochkada bor: tasma oldindan tayyorlanadi.
                */
-              const preview = ready ? (render.cutoutUrl ?? render.imageUrl) : item.image;
+              const preview = isReady ? (render.cutoutUrl ?? render.imageUrl) : item.image;
 
               return (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={item.title}
                   onPress={() => {
-                    setChosen(item.variantId);
-                    setSize(null);
-                    setNotice(null);
+                    /*
+                     * ⚠️ BOSISH = KIYINTIRISH. Ilgari bosish faqat
+                     * tanlardi va pastda alohida «Kiyintirish» tugmasi
+                     * bor edi — ya'ni natijani ko'rish uchun ikki
+                     * bosish kerak edi.
+                     */
+                    putOn(tab, item.variantId);
                   }}
                   style={[styles.thumbWrap, selected && styles.thumbSelected]}
                 >
                   <Image
                     source={{ uri: preview ?? undefined }}
-                    style={[styles.thumb, ready && styles.thumbWorn]}
-                    resizeMode={ready ? 'contain' : 'cover'}
+                    style={[styles.thumb, isReady && styles.thumbWorn]}
+                    resizeMode={isReady ? 'contain' : 'cover'}
                   />
 
-                  {/*
-                    Tayyor natija belgilanadi — foydalanuvchi bu kiyim uchun
-                    qayta to'lov ketmasligini ko'rib tursin.
-                  */}
-                  {ready ? (
+                  {busy ? (
+                    <View style={styles.thumbBusy}>
+                      <ActivityIndicator size="small" color={colors.accent} />
+                    </View>
+                  ) : null}
+
+                  {isReady ? (
                     <View style={styles.readyBadge}>
                       <Icon name="authentic" size={10} color={colors.bg} />
                     </View>
@@ -619,16 +841,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               {current.store.name}
             </Text>
 
-            {/*
-              ⚠️ RANGLAR — SHU MAHSULOTNING BOSHQA VARIANTLARI.
-              Ilgari bu yerda BITTA nuqta turardi: joriy variantning rangi.
-              U tanlov emas edi — bosib bo'lmasdi va hech narsa
-              o'zgartirmasdi.
-
-              Aslida ranglar API'da bor, faqat alohida `Garment` yozuvlari
-              bo'lib keladi (har rang — o'z variantiy). Ularni mahsulot
-              bo'yicha guruhlash yetarli edi.
-            */}
             {colorOptions.length > 1 ? (
               <>
                 <Text style={styles.label}>Rang</Text>
@@ -639,9 +851,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                       accessibilityRole="button"
                       accessibilityLabel={`Rang: ${option.colorHex ?? option.title}`}
                       onPress={() => {
-                        setChosen(option.variantId);
-                        setSize(null);
-                        setNotice(null);
+                        putOn(tab, option.variantId);
                       }}
                       style={[
                         styles.color,
@@ -656,12 +866,34 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
             {sizes.length > 0 ? (
               <>
-                <Text style={styles.label}>
-                  O`lcham
-                  {recommended ? (
-                    <Text style={styles.recommend}> · sizga {recommended}</Text>
+                <View style={styles.sizeHead}>
+                  <Text style={styles.label}>
+                    O`lcham
+                    {fitSize ? <Text style={styles.recommend}> · sizga {fitSize}</Text> : null}
+                  </Text>
+                  {/*
+                    Filtr holati ko'rinib tursin: foydalanuvchi ro'yxat
+                    nega qisqa ekanini bilishi kerak
+                  */}
+                  {fitSize ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setOnlyMySize((value) => !value)}
+                      hitSlop={8}
+                      style={[styles.filterPill, onlyMySize && styles.filterPillActive]}
+                    >
+                      <Icon
+                        name="filter"
+                        size={12}
+                        color={onlyMySize ? colors.accent : colors.textDim}
+                      />
+                      <Text style={[styles.filterText, onlyMySize && { color: colors.accent }]}>
+                        Faqat mening o`lchamim
+                      </Text>
+                    </Pressable>
                   ) : null}
-                </Text>
+                </View>
+
                 <View style={styles.sizes}>
                   {sizes.map((item) => (
                     <Pressable
@@ -681,61 +913,124 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               <Text style={styles.soldOut}>Bu mahsulot omborda tugagan</Text>
             )}
 
-            {/*
-              Uslub — maketdagi Style qatori.
-
-              ⚠️ U TANLOVNI FILTRLAMAYDI, BALKI SAQLAYDI. Ro'yxat
-              `aiFlowStore` da va AI komplekt yasashda ishlatiladi
-              (`ai/index.tsx` oqimi). Bu yerda ko'rsatilishining sababi:
-              foydalanuvchi kiyim tanlayotgan payt uslub haqida
-              o'ylaydi — uni alohida ekranga yashirish oqimni uzardi.
-            */}
-            <Text style={styles.label}>Uslub</Text>
-            <View style={styles.styles}>
-              {STYLES.map((name) => (
-                <Pressable
-                  key={name}
-                  accessibilityRole="button"
-                  onPress={() => setStyle(name)}
-                  style={[styles.stylePill, style === name && styles.stylePillActive]}
-                >
-                  <Text style={[styles.styleText, style === name && { color: colors.text }]}>
-                    {name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
             {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
+            {/*
+              ── Komplekt ──
+
+              ⚠️ ILGARI BU YERDA «Uslub» QATORI TURARDI. U tanlovni
+              filtrlamasdi va faqat `aiFlowStore` ga yozardi — ya'ni
+              ekranda hech narsani o'zgartirmaydigan beshta tugma.
+              Uning o'rnida endi komplektning o'zi: nima kiyilgan,
+              qancha turadi va bir bosishda savatga.
+            */}
+            {outfitItems.length > 0 ? (
+              <View style={styles.outfitCard}>
+                <View style={styles.outfitHead}>
+                  <Text style={styles.outfitTitle}>Komplekt · {outfitItems.length} ta</Text>
+                  <Text style={styles.outfitTotal}>
+                    {money(String(outfitTotal), outfitCurrency)}
+                  </Text>
+                </View>
+
+                <View style={styles.outfitRow}>
+                  {resolved.map((layer) => {
+                    const item = seen[layer.variantId];
+                    if (!item) return null;
+
+                    return (
+                      <Pressable
+                        key={layer.category}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${item.title} — yechish`}
+                        onPress={() => remove(layer.category)}
+                        style={styles.outfitItem}
+                      >
+                        <Image source={{ uri: item.image }} style={styles.outfitThumb} />
+                        <View style={styles.outfitRemove}>
+                          <Icon name="close" size={9} color={colors.text} />
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
             <View style={styles.actions}>
-              {resultImage ? (
+              <Button
+                title={
+                  picked ? `Savatga · ${money(current.price, current.currency)}` : 'O`lcham tanlang'
+                }
+                disabled={!picked || cart.isPending}
+                loading={cart.isPending}
+                onPress={() =>
+                  picked && cart.mutate([{ variantId: current.variantId, chosenSize: picked }])
+                }
+              />
+
+              {/*
+                Butun komplektni savatga — bir bosishda.
+
+                ⚠️ FAQAT BIRDAN KO'P BO'LSA. Bitta kiyimda u yuqoridagi
+                tugmani takrorlaydi va foydalanuvchi qaysi biri nima
+                qilishini o'ylab qolardi.
+
+                ⚠️ HAR MAHSULOTGA O'ZINING TAVSIYA O'LCHAMI. Ustki va
+                pastki kiyimning o'lchami har xil hisoblanadi (ko'krak /
+                bel) — birini ikkinchisiga qo'llasak, shim noto'g'ri
+                o'lchamda savatga tushardi.
+              */}
+              {outfitItems.length > 1 ? (
                 <Button
-                  title={
-                    picked
-                      ? `Davom etish · ${money(current.price, current.currency)}`
-                      : 'O`lcham tanlang'
-                  }
-                  disabled={!picked || cart.isPending}
-                  loading={cart.isPending}
-                  onPress={() =>
-                    picked && cart.mutate({ variantId: current.variantId, chosenSize: picked })
-                  }
-                />
-              ) : (
-                <Button
-                  title="Kiyintirish →"
-                  loading={working}
+                  title={`Butun komplektni savatga · ${money(String(outfitTotal), outfitCurrency)}`}
+                  variant="ghost"
+                  disabled={cart.isPending}
                   onPress={() => {
-                    setNotice(null);
-                    start.mutate({ variantId: current.variantId, angle });
+                    const lines = outfitItems
+                      .map((item) => {
+                        const fit = measurements ? recommendSize(item.slot, measurements) : null;
+                        const chosenSize =
+                          fit && item.sizes.includes(fit) ? fit : (item.sizes[0] ?? null);
+                        return chosenSize ? { variantId: item.variantId, chosenSize } : null;
+                      })
+                      .filter((line): line is { variantId: string; chosenSize: string } =>
+                        Boolean(line),
+                      );
+
+                    if (lines.length === 0) {
+                      setNotice('Komplektdagi mahsulotlar omborda tugagan');
+                      return;
+                    }
+
+                    cart.mutate(lines);
                   }}
                 />
-              )}
+              ) : null}
             </View>
           </View>
         ) : null}
       </ScrollView>
+
+      <StorePicker
+        visible={storeOpen}
+        onClose={() => setStoreOpen(false)}
+        selectedId={storeId}
+        size={sizeFilter}
+        gender={gender}
+        onSelect={(store) => {
+          setStore(store.id, store.name);
+          setLimitReached(false);
+          setNotice(null);
+          /*
+           * ⚠️ BELGILAR TOZALANADI. Ular «shu asos ustida shu kiyimni
+           * allaqachon so'radik» degani; do'kon almashsa kiyimlar ham,
+           * asoslar ham boshqa bo'ladi va eski belgilar yangi so'rovlarni
+           * to'sib qo'yardi.
+           */
+          asked.current.clear();
+        }}
+      />
     </Screen>
   );
 }
@@ -790,34 +1085,27 @@ const styles = StyleSheet.create({
   headerButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1, alignItems: 'center' },
   headerTitle: { ...text.h3, color: colors.text },
-  headerHint: { ...text.tiny, color: colors.textDim },
+
+  storeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    maxWidth: 200,
+  },
+  storeChipText: { ...text.tiny, color: colors.textMuted, flexShrink: 1 },
 
   /*
-   * ⚠️ BALANDLIK NISBAT BILAN, `flex: 1` BILAN EMAS.
-   *
-   * `flex: 1` da sahna pastdagi ro'yxat bilan bo'sh joyni bo'lishardi va
-   * kontent ko'paygan sari kichrayib borardi — skrinshotda odam kichkina
-   * bo'lib, atrofida katta qora chekka qolgan edi.
-   *
-   * 3:4 — avatar suratining o'z nisbati, ya'ni rasm ramkani to'liq
-   * to'ldiradi va chekka qolmaydi.
+   * ⚠️ BALANDLIK ULUSH BILAN, NISBAT BILAN EMAS. `aspectRatio: 3/4` da
+   * sahna ekranning 56% ini egallab, pastdagi tanlov qatorlarini yeb
+   * qo'yardi. Maketda sahna ekranning uchdan biri, qolgani tanlov uchun.
    */
   stage: {
-    /*
-     * ⚠️ BALANDLIK NISBAT BILAN EMAS, ULUSH BILAN.
-     *
-     * Ilgari `aspectRatio: 3/4` edi — surat ramkani to'liq to'ldirsin
-     * degan mulohaza bilan. Qurilmada natija boshqacha chiqdi: 402pt
-     * kenglikda sahna 493pt balandlik olib, ekranning 56% ini egalladi.
-     * Sarlavha, tablar va pastki panel qolganini yeb, kiyim tasmasi,
-     * rang, o'lcham va uslub qatorlari uchun ~140pt qoldi — ular
-     * ko'rinmay qoldi va foydalanuvchi ularni topish uchun scroll
-     * qilishi kerak edi.
-     *
-     * Maketda sahna ekranning uchdan biri, qolgani tanlov uchun.
-     * 44% shu nisbatni beradi va kesim baribir to'liq sig'adi
-     * (`resizeMode="contain"`).
-     */
     height: '44%',
     margin: spacing.md,
     borderRadius: radius.lg,
@@ -827,14 +1115,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   avatar: { flex: 1 },
-  // Kutish paytida asl surat xiralashadi — natija bilan chalkashmasin
   dimmed: { opacity: 0.35 },
 
-  /*
-   * ⚠️ TIK EMAS, YOTIQ QATOR. Ilgari tugmalar ustma-ust turardi va
-   * uchinchisi ramkadan chiqib ketib kesilardi. Pastda yotiq qator esa
-   * sahna balandligiga bog'liq emas.
-   */
   /* Chapdagi tik qator — maketdagi Rotate / Zoom / Reset */
   sideControls: {
     position: 'absolute',
@@ -842,8 +1124,6 @@ const styles = StyleSheet.create({
     top: spacing.lg,
     gap: spacing.lg,
   },
-  /* O'ngdagi «Yechish» — maketdagi Remove Clothing */
-  removeSlot: { position: 'absolute', right: spacing.sm, top: '38%' },
   control: { alignItems: 'center', gap: 2 },
   controlIcon: {
     width: 40,
@@ -855,11 +1135,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* To'rtburchak ramka — dumaloq emas (maketdagi Remove Clothing) */
   controlBoxed: { borderRadius: radius.md, width: 46, height: 46 },
   controlDanger: { borderColor: colors.danger, backgroundColor: 'rgba(239, 68, 68, 0.12)' },
   controlBusy: { borderColor: colors.borderAccent },
   controlLabel: { ...text.tiny, color: colors.textMuted },
+
+  /*
+   * O'ngdagi qatlam ko'rsatkichi — nechta kiyim kiyilgani.
+   *
+   * ⚠️ RAQAM EMAS, NUQTA. Komplektda ko'pi bilan beshta qatlam bo'ladi
+   * va ularni sanashdan ko'ra ko'rish tez: to'lgan nuqta — tayyor
+   * qatlam, bo'shi — kelayotgani.
+   */
+  layerRail: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: '40%',
+    gap: spacing.xs,
+  },
+  layerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  layerDotReady: { backgroundColor: colors.accent, borderColor: colors.accent },
+  layerDotActive: { width: 8, height: 18 },
 
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -871,11 +1173,6 @@ const styles = StyleSheet.create({
   overlayText: { ...text.bodyMed, color: colors.text, textAlign: 'center' },
   overlayHint: { ...text.tiny, color: colors.textDim, textAlign: 'center' },
 
-  /*
-   * ⚠️ BESHTA TAB SIG'MAYDI — SCROLL KERAK. Uchtasida `flex: 1` bilan
-   * bo'linardi; beshtada yozuvlar qisqarib o'qilmay qolardi. Maketda ham
-   * tablar surilib turadi (oxirgisi yarim ko'rinadi).
-   */
   tabsWrap: { flexGrow: 0 },
   tabs: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm },
   tab: {
@@ -889,10 +1186,36 @@ const styles = StyleSheet.create({
   },
   tabActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
   tabText: { ...text.tiny, color: colors.textDim },
+  tabDressed: {
+    position: 'absolute',
+    top: 6,
+    right: 10,
+    width: 6,
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.success,
+  },
 
   bottom: { paddingBottom: spacing.xl },
   stripLoader: { marginVertical: spacing.lg },
-  emptyStrip: { ...text.small, color: colors.textDim, textAlign: 'center', padding: spacing.lg },
+
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.warning,
+    backgroundColor: 'rgba(245, 158, 11, 0.10)',
+  },
+  bannerText: { ...text.tiny, color: colors.textMuted, flex: 1 },
+
+  emptyBox: { padding: spacing.lg, gap: spacing.md },
+  emptyStrip: { ...text.small, color: colors.textDim, textAlign: 'center' },
+  emptyActions: { gap: spacing.sm },
 
   strip: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm },
   thumbWrap: {
@@ -903,11 +1226,13 @@ const styles = StyleSheet.create({
   },
   thumbSelected: { borderColor: colors.accent },
   thumb: { width: 72, height: 92, backgroundColor: colors.surface2 },
-  /*
-   * Kiyilgan natija — qorong'i fon. Kesim shaffof bo'lgani uchun ostidan
-   * shu rang ko'rinadi va kartochka sahnaning davomidek turadi.
-   */
   thumbWorn: { backgroundColor: colors.bg },
+  thumbBusy: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10, 10, 15, 0.55)',
+  },
   readyBadge: {
     position: 'absolute',
     right: 4,
@@ -927,6 +1252,21 @@ const styles = StyleSheet.create({
   label: { ...text.label, color: colors.textDim, marginTop: spacing.md },
   recommend: { ...text.tiny, color: colors.accent },
 
+  sizeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.md,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterPillActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
+  filterText: { ...text.tiny, color: colors.textDim },
+
   colors: { flexDirection: 'row', gap: spacing.sm },
   color: {
     width: 32,
@@ -936,17 +1276,6 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
   },
   colorActive: { borderColor: colors.accent, borderWidth: 3 },
-
-  styles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  stylePill: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  stylePillActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
-  styleText: { ...text.tiny, color: colors.textDim },
 
   sizes: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   size: {
@@ -961,7 +1290,41 @@ const styles = StyleSheet.create({
   sizeActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
   sizeText: { ...text.bodyMed, color: colors.textMuted },
 
+  outfitCard: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: spacing.sm,
+  },
+  outfitHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  outfitTitle: { ...text.label, color: colors.textMuted },
+  outfitTotal: { ...text.bodyMed, color: colors.accent },
+  outfitRow: { flexDirection: 'row', gap: spacing.sm },
+  outfitItem: { position: 'relative' },
+  outfitThumb: {
+    width: 44,
+    height: 56,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface2,
+  },
+  outfitRemove: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface3,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   soldOut: { ...text.small, color: colors.warning, marginTop: spacing.sm },
   notice: { ...text.small, color: colors.accent, marginTop: spacing.sm },
-  actions: { marginTop: spacing.md },
+  actions: { marginTop: spacing.md, gap: spacing.sm },
 });

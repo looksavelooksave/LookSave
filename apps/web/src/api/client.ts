@@ -81,7 +81,13 @@ function serviceKey(): string {
 const TIMEOUT_MS = 12_000;
 
 export interface ApiOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  /*
+   * ⚠️ `PUT` AI kiyintirish uchun qo'shildi (`/tryon/body-photo`).
+   * Ro'yxat yopiq: `request()` metodni tekshirmasdan uzatadi, ya'ni
+   * tip yagona himoya — xato yozilgan metod ish vaqtida 405 bo'lib
+   * qaytardi.
+   */
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   locale?: Locale;
   /** Faqat serverda: sessiyadan olingan access token */

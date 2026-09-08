@@ -431,6 +431,15 @@ export const logout = (refreshToken: string, options: ApiOptions = {}): Promise<
 export interface FullProfile extends AuthUser {
   measurements: Record<string, number | null>;
   morphTargets: Record<string, number>;
+  /**
+   * Yuz skaneridagi surat.
+   *
+   * ⚠️ AI OQIMINING KIRISH SHARTI: usiz kiyintirishda o'xshashlik
+   * yo'qoladi — model yuzni gavda suratidan taxmin qiladi.
+   */
+  faceTextureUrl: string | null;
+  /** To'liq bo'yli surat — AI kiyintirish shusiz umuman ishlamaydi */
+  bodyPhotoUrl: string | null;
 }
 
 export const getProfile = (options: ApiOptions = {}): Promise<FullProfile> =>
@@ -452,3 +461,222 @@ export const updateMeasurements = (
   options: ApiOptions = {},
 ): Promise<FullProfile> =>
   api<FullProfile>('/profile/measurements', { ...options, method: 'PATCH', body: input });
+
+// ── AI kiyintirish ───────────────────────────────────────────────────
+
+/**
+ * ⚠️ HAMMASI KIRISH TALAB QILADI (`/tryon/garments` dan tashqari).
+ *
+ * Ya'ni ular BRAUZERDAN chaqirilmaydi: token `httpOnly` cookie'da va JS
+ * uni ko'rmaydi (`api/client.ts` dagi izoh). Sahifa bu funksiyalarga
+ * `routes/try-on.*.tsx` dagi BFF resurs marshrutlari orqali boradi.
+ */
+
+export type RenderStatus = 'pending' | 'processing' | 'ready' | 'failed';
+
+export type AvatarAngle = 'front' | 'side' | 'back';
+
+export const ANGLE_LABEL: Record<AvatarAngle, string> = {
+  front: 'Old',
+  side: 'Yon',
+  back: 'Orqa',
+};
+
+export interface TryonRender {
+  id: string;
+  variantId: string;
+  angle: AvatarAngle;
+  status: RenderStatus;
+  imageUrl: string | null;
+  cutoutUrl: string | null;
+  /** Qaysi natija ustiga kiydirilgan. `null` — asl suratga */
+  baseRenderId: string | null;
+  error: string | null;
+}
+
+export interface UserAvatar {
+  status: 'none' | 'processing' | 'ready' | 'failed';
+  imageUrl: string | null;
+  cutoutUrl: string | null;
+  error: string | null;
+  angles: Partial<Record<AvatarAngle, string>>;
+  anglePending: AvatarAngle | null;
+}
+
+export interface Garment {
+  variantId: string;
+  productId: string;
+  title: string;
+  slot: string;
+  price: string;
+  currency: string;
+  image: string;
+  colorHex: string | null;
+  /** Faqat OMBORDA bor o'lchamlar (band qilinganlar chegirilgan) */
+  sizes: string[];
+  store: { id: string; name: string };
+}
+
+export interface TryonStore {
+  id: string;
+  name: string;
+  logo: string | null;
+  garmentCount: number;
+  distanceM: number | null;
+}
+
+export const getAvatar = (options: ApiOptions = {}): Promise<UserAvatar> =>
+  api<UserAvatar>('/tryon/avatar', options);
+
+export const requestAvatar = (options: ApiOptions = {}): Promise<UserAvatar> =>
+  api<UserAvatar>('/tryon/avatar', { ...options, method: 'POST' });
+
+export const requestAvatarAngle = (
+  angle: AvatarAngle,
+  options: ApiOptions = {},
+): Promise<UserAvatar> =>
+  api<UserAvatar>('/tryon/avatar/angle', { ...options, method: 'POST', body: { angle } });
+
+export interface GarmentFilters {
+  slot?: string | null;
+  category?: string | null;
+  gender?: string | null;
+  storeId?: string | null;
+  size?: string | null;
+  limit?: number;
+}
+
+export const getGarments = (
+  filters: GarmentFilters = {},
+  options: ApiOptions = {},
+): Promise<Garment[]> =>
+  api<Garment[]>(
+    `/tryon/garments${query({
+      slot: filters.slot ?? undefined,
+      category: filters.category ?? undefined,
+      gender: filters.gender ?? undefined,
+      storeId: filters.storeId ?? undefined,
+      size: filters.size ?? undefined,
+      limit: filters.limit ?? 30,
+    })}`,
+    options,
+  );
+
+export const getTryonStores = (
+  params: {
+    lat?: number | null;
+    lng?: number | null;
+    gender?: string | null;
+    size?: string | null;
+  },
+  options: ApiOptions = {},
+): Promise<TryonStore[]> =>
+  api<TryonStore[]>(
+    `/tryon/stores${query({
+      lat: params.lat ?? undefined,
+      lng: params.lng ?? undefined,
+      gender: params.gender ?? undefined,
+      size: params.size ?? undefined,
+    })}`,
+    options,
+  );
+
+export const requestRender = (
+  input: { variantId: string; angle?: AvatarAngle; baseRenderId?: string | null },
+  options: ApiOptions = {},
+): Promise<TryonRender> =>
+  api<TryonRender>('/tryon/render', {
+    ...options,
+    method: 'POST',
+    body: {
+      variantId: input.variantId,
+      angle: input.angle ?? 'front',
+      baseRenderId: input.baseRenderId ?? null,
+    },
+  });
+
+export interface RenderBatchResult {
+  renders: TryonRender[];
+  limitReached: boolean;
+}
+
+export const requestRenderBatch = (
+  input: { variantIds: string[]; angle?: AvatarAngle; baseRenderId?: string | null },
+  options: ApiOptions = {},
+): Promise<RenderBatchResult> =>
+  api<RenderBatchResult>('/tryon/render/batch', {
+    ...options,
+    method: 'POST',
+    body: {
+      variantIds: input.variantIds,
+      angle: input.angle ?? 'front',
+      baseRenderId: input.baseRenderId ?? null,
+    },
+  });
+
+/**
+ * Bir necha variantning holati.
+ *
+ * `scope: 'all'` — HAR asos ustidagi natija qaytadi va zanjir shundan
+ * tiklanadi (`resolveOutfit`). `base` esa faqat bitta asos ustidagini
+ * beradi — tasma uchun arzonroq.
+ */
+export const getRenders = (
+  input: {
+    variantIds: string[];
+    angle?: AvatarAngle;
+    baseRenderId?: string | null;
+    scope?: 'base' | 'all';
+  },
+  options: ApiOptions = {},
+): Promise<TryonRender[]> =>
+  input.variantIds.length === 0
+    ? Promise.resolve([])
+    : api<TryonRender[]>(
+        `/tryon/renders${query({
+          angle: input.angle ?? 'front',
+          scope: input.scope ?? 'base',
+          baseRenderId: input.baseRenderId ?? undefined,
+          variantIds: input.variantIds.join(','),
+        })}`,
+        options,
+      );
+
+/**
+ * Yuz/gavda surati uchun imzolangan havola.
+ *
+ * ⚠️ SURATNING O'ZI SERVERIMIZDAN O'TMAYDI — brauzer uni to'g'ridan-
+ * to'g'ri R2 ga `PUT` qiladi (09-integrations §4.2). BFF faqat imzo
+ * beradi, ya'ni katta fayl SSR kanalini band qilmaydi.
+ */
+export interface PresignResult {
+  uploadUrl: string;
+  publicUrl: string;
+  headers: Record<string, string>;
+}
+
+export const presignProfileUpload = (
+  input: { purpose: 'avatar' | 'face' | 'body'; contentType: string },
+  options: ApiOptions = {},
+): Promise<PresignResult> =>
+  api<PresignResult>('/profile/uploads/presign', { ...options, method: 'POST', body: input });
+
+export const setFacePhoto = (
+  url: string,
+  options: ApiOptions = {},
+): Promise<Record<string, unknown>> =>
+  api<Record<string, unknown>>('/profile', {
+    ...options,
+    method: 'PATCH',
+    body: { avatarUrl: url, faceTextureUrl: url },
+  });
+
+export const setBodyPhoto = (
+  url: string,
+  options: ApiOptions = {},
+): Promise<{ bodyPhotoUrl: string }> =>
+  api<{ bodyPhotoUrl: string }>('/tryon/body-photo', {
+    ...options,
+    method: 'PUT',
+    body: { url },
+  });

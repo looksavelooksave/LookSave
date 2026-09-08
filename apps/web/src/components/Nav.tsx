@@ -62,7 +62,13 @@ export function Nav({ locale, user, cartCount }: NavProps): JSX.Element {
   const links: Array<{ to: string; label: string; icon: IconName }> = [
     { to: `/${locale}/catalog`, label: 'Katalog', icon: 'grid' },
     { to: `/${locale}/stores`, label: "Do'konlar", icon: 'shop' },
-    // { to: `/${locale}/try-on`, label: 'Kiyintirish', icon: 'hanger' }, // hozircha o'chirilgan
+    /*
+     * ⚠️ QAYTA YOQILDI. Ilgari bu havola o'chirilgan edi, chunki sahifa
+     * 3D namoyishidan iborat edi — foydalanuvchi u yerdan o'ziga hech
+     * narsa kiyintira olmasdi. Endi u to'liq AI oqimi: yuz skaneri,
+     * o'lchamlar, do'kon va qatlamli kiyintirish.
+     */
+    { to: `/${locale}/try-on`, label: 'Kiyintirish', icon: 'hanger' },
   ];
 
   return (

@@ -86,3 +86,33 @@ describe('prompt cheklovlari', () => {
     expect(buildPrompt('one-pieces')).toMatch(/full-body/i);
   });
 });
+
+describe('qatlam ko`rsatmasi', () => {
+  /*
+   * ⚠️ BU JUMLALAR YO'QOLSA QATLAM JIM BUZILADI. Model «kiyintir» ni
+   * ALMASHTIRISH deb tushunadi: kurtka qo'yilganda ostidagi futbolkani
+   * o'chirib yuboradi va ekranda yana bitta kiyim qoladi. Kod tomondan
+   * hammasi to'g'ri ishlayotgandek ko'rinadi — zanjir bog'lanadi, surat
+   * keladi — faqat surat noto'g'ri.
+   */
+  const layered = buildPrompt('tops', { layer: true });
+
+  it('yangi kiyim USTIGA qo`yilishini aytadi', () => {
+    expect(layered).toMatch(/already dressed/i);
+    expect(layered).toMatch(/on top of/i);
+  });
+
+  it('ostidagi kiyim ko`rinib turishini talab qiladi', () => {
+    expect(layered).toMatch(/stay visible/i);
+  });
+
+  it('mavjud kiyimni olib tashlashni taqiqlaydi', () => {
+    expect(layered).toMatch(/do not remove/i);
+  });
+
+  it('qatlamsiz chaqiruvda bu jumlalar YO`Q — birinchi kiyim asl suratga tushadi', () => {
+    const plain = buildPrompt('tops');
+    expect(plain).not.toMatch(/already dressed/i);
+    expect(plain).not.toMatch(/on top of/i);
+  });
+});

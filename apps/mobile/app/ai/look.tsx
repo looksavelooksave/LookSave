@@ -24,7 +24,7 @@ import {
 import { Icon, type IconName } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
-import { recommendSize } from '../../src/sizing';
+import { recommendSize } from '@looksave/validation';
 import { useAuthStore } from '../../src/store/authStore';
 import { useAiFlowStore } from '../../src/store/aiFlowStore';
 import { money } from '../../src/theme/format';

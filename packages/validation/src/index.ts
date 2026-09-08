@@ -14,3 +14,5 @@ export * from './orders';
 export * from './admin';
 export * from './tryon';
 export * from './store-products';
+export * from './outfit';
+export * from './sizing';

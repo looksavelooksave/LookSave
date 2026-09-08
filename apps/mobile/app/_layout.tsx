@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AnimatedSplash } from '../src/components/AnimatedSplash';
 import { usePushRegistration } from '../src/hooks/usePush';
 import { useI18n } from '../src/i18n';
+import { useAiFlowStore } from '../src/store/aiFlowStore';
 import { useAuthStore } from '../src/store/authStore';
 import { colors } from '../src/theme/tokens';
 
@@ -39,6 +40,7 @@ const queryClient = new QueryClient({
 function AppShell(): JSX.Element {
   const status = useAuthStore((state) => state.status);
   const restore = useAuthStore((state) => state.restore);
+  const restoreStore = useAiFlowStore((state) => state.restoreStore);
   const t = useI18n((state) => state.t);
 
   usePushRegistration();
@@ -54,7 +56,16 @@ function AppShell(): JSX.Element {
 
   useEffect(() => {
     void restore();
-  }, [restore]);
+    /*
+     * Saqlangan do'konni tiklaymiz.
+     *
+     * ⚠️ KIRISHDAN MUSTAQIL. Do'kon akkauntga emas, QURILMAGA bog'langan
+     * va uni tiklash uchun token kerak emas. Kirish tiklanishini kutsak,
+     * tarmoq sekin bo'lganda kiyintirish ekrani do'konsiz ochilib,
+     * foydalanuvchini sehrgarga yuborib yuborardi.
+     */
+    void restoreStore();
+  }, [restore, restoreStore]);
 
   // Splash animatsiyasi tugagunicha qatlam ekranda turadi. `appReady` — sahnaga
   // "endi chiqishing mumkin" degan signal; sahna o'z animatsiyasini yarim yo'lda

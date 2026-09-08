@@ -1,7 +1,27 @@
-import type { Measurements } from './api/endpoints';
+/**
+ * O'lchov to'plami — `measurementsSchema` (`auth.ts`) qaytaradigan shakl.
+ *
+ * ⚠️ ILOVANING TIPIDAN IMPORT QILINMAYDI. Modul ikkala ilovaga ham
+ * kerak, paket esa ularga bog'lanmasligi kerak — aks holda bog'liqlik
+ * teskari yo'nalishga ketardi.
+ */
+export interface BodyMeasurements {
+  height?: number | null;
+  weight?: number | null;
+  chest?: number | null;
+  waist?: number | null;
+  hips?: number | null;
+  shoeSize?: number | null;
+}
 
 /**
  * O'lchamdan kiyim razmerini taxmin qilish.
+ *
+ * ⚠️ NEGA UMUMIY PAKETDA. Uni uch tomon ishlatadi: mobil ilova
+ * (tavsiya), saytning BFF `loader` i (ro'yxatni FILTRLAYDI) va shu
+ * filtr natijasini ko'rsatadigan sahifa. Jadval ular orasida ajralib
+ * ketsa, foydalanuvchiga «sizga M» deb yozilib, ro'yxatga L lar
+ * kelardi.
  *
  * NEGA KERAK: foydalanuvchi o'z bo'yi/ko'kragini kiritgan, lekin kiyim
  * ro'yxatida "S, M, L" turadi — ikkisini bog'lamasak o'lcham kiritishning
@@ -53,7 +73,7 @@ function pick(table: Array<{ upTo: number; size: SizeLabel }>, value: number): S
  * `null` — kerakli o'lcham kiritilmagan, ekran buni "o'lchamni kiriting"
  * deb ko'rsatishi kerak.
  */
-export function recommendSize(slot: string, measurements: Measurements): string | null {
+export function recommendSize(slot: string, measurements: BodyMeasurements): string | null {
   switch (slot) {
     case 'top':
     case 'outer':

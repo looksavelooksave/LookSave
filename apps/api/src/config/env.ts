@@ -132,8 +132,18 @@ const envSchema = z.object({
    * kesh esa faqat TAKRORIY so'rovni to'sadi: foydalanuvchi har safar yangi
    * kiyimni so'rasa har biri alohida to'lanadi. Chegarasiz bitta hisob bir
    * kechada katalogni aylanib chiqib hisobni bo'shatishi mumkin.
+   *
+   * ⚠️ SUKUT 30 DAN 150 GA KO'TARILDI. Sabab: ilova endi tasmadagi HAMMA
+   * kiyimni oldindan kiyintiradi (foydalanuvchi svayp qilganda kutmasin),
+   * ya'ni bitta do'konni ochishning o'zi 30 tagacha surat degani. Eski
+   * chegara bitta do'konga ham yetmasdi va oqim birinchi ekranda
+   * to'xtardi.
+   *
+   * 150 — taxminan besh do'kon yoki bitta do'konning bir necha turkumi.
+   * Bu SARF QARORI: pasaytirish tajribani buzadi, ko'tarish hisobni
+   * oshiradi. Muhitdan (`TRYON_DAILY_LIMIT`) o'zgartiriladi.
    */
-  TRYON_DAILY_LIMIT: z.coerce.number().int().min(1).max(500).default(30),
+  TRYON_DAILY_LIMIT: z.coerce.number().int().min(1).max(500).default(150),
 });
 
 const withChecks = envSchema.superRefine((value, ctx) => {

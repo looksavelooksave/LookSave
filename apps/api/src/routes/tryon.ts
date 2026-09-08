@@ -1,14 +1,17 @@
 import {
   bodyPhotoSchema,
   createLookSchema,
+  garmentQuerySchema,
   suggestLookSchema,
   favoriteQuerySchema,
   idParamSchema,
+  renderBatchSchema,
   renderRequestSchema,
   renderStatusQuerySchema,
   slotSchema,
   tryonEventSchema,
   tryonSlotQuerySchema,
+  tryonStoresQuerySchema,
 } from '@looksave/validation';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -23,7 +26,14 @@ import { isOwnCdnUrl } from '../integrations/r2';
 import { logger } from '../logger';
 import { setBodyPhoto } from '../profile/profile';
 import { getAvatar, requestAngle, requestAvatar } from '../tryon/avatar';
-import { listGarments, listRenders, pollRender, requestRender } from '../tryon/render';
+import {
+  listGarments,
+  listRenders,
+  listTryonStores,
+  pollRender,
+  requestRender,
+  requestRenderBatch,
+} from '../tryon/render';
 import { suggestLooks } from '../tryon/suggest';
 import {
   addFavorite,
@@ -165,41 +175,43 @@ tryonRouter.get('/tryon/avatar', requireAuth, async (_req, res) => {
  *
  * Kirish talab qilinmaydi: foydalanuvchi ro'yxatni ko'rib, keyin kirishga
  * qaror qilishi mumkin. Kiyintirishning o'zi esa akkauntga bog'liq.
+ *
+ * ⚠️ FILTRLAR ENDI `garmentQuerySchema` DA (`@looksave/validation`).
+ * Ilgari ular shu yerda, marshrut ichida yozilgan edi va ilova bilan
+ * server bir-biridan ajralib ketishi mumkin edi.
  */
 tryonRouter.get(
   '/tryon/garments',
-  route(
-    {
-      query: z.object({
-        /*
-         * ⚠️ FAQAT KIYIM SLOTLARI. Model oyoq kiyim, soat va sumka uchun
-         * o'qitilmagan — ularni ro'yxatga qo'shsak, foydalanuvchi bosadi,
-         * pul sarflanadi va natija yaroqsiz chiqadi.
-         */
-        slot: z.enum(['top', 'outer', 'bottom']).optional(),
-        /*
-         * Kategoriya — slotdan ANIQROQ filtr. Futbolka, xudi va ko'ylak
-         * uchalasi `top` slotida, lekin foydalanuvchi uchun uch xil
-         * narsa. Ilovadagi tablar shu bo'yicha ishlaydi.
-         */
-        category: z.string().trim().min(1).max(64).optional(),
-        gender: z.enum(['male', 'female', 'unisex']).optional(),
-        limit: z.coerce.number().int().min(1).max(50).default(30),
+  route({ query: garmentQuerySchema }, async (input, _req, res) => {
+    const query = input.query;
+    sendData(
+      res,
+      await listGarments({
+        slots: query.slot ? [query.slot] : ['top', 'outer', 'bottom'],
+        gender: query.gender ?? null,
+        category: query.category ?? null,
+        storeId: query.storeId ?? null,
+        size: query.size ?? null,
+        limit: query.limit,
       }),
-    },
-    async (input, _req, res) => {
-      const slots = input.query.slot ? [input.query.slot] : ['top', 'outer', 'bottom'];
-      sendData(
-        res,
-        await listGarments(
-          slots,
-          input.query.gender ?? null,
-          input.query.limit,
-          input.query.category ?? null,
-        ),
-      );
-    },
-  ),
+    );
+  }),
+);
+
+/**
+ * GET /v1/tryon/stores — AI kiyintirishga mos do'konlar.
+ *
+ * ⚠️ `/stores/nearby` DAN BOSHQA RO'YXAT. U do'konlarni 3D modellari
+ * bo'yicha sanaydi; bu yerda esa AI kiyintira oladigan kiyimlar
+ * sanaladi — ikkalasi butunlay boshqa to'plam. Ekranning pastidagi
+ * «boshqa do'kon» tanlagichi aynan shuni ko'rsatadi.
+ */
+tryonRouter.get(
+  '/tryon/stores',
+  route({ query: tryonStoresQuerySchema }, async (input, _req, res) => {
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    sendData(res, await listTryonStores(input.query));
+  }),
 );
 
 /**
@@ -212,7 +224,44 @@ tryonRouter.post(
   '/tryon/render',
   requireAuth,
   route({ body: renderRequestSchema }, async (input, _req, res) => {
-    sendData(res, await requestRender(getAuth(res).sub, input.body.variantId, input.body.angle));
+    sendData(
+      res,
+      await requestRender(
+        getAuth(res).sub,
+        input.body.variantId,
+        input.body.angle,
+        input.body.baseRenderId ?? null,
+      ),
+    );
+  }),
+);
+
+/**
+ * POST /v1/tryon/render/batch — bir yo'la ko'p kiyimni navbatga qo'yish.
+ *
+ * ⚠️ `/render` NI TAKRORLAMAYDI, UNI YIG'ADI. Ilova tasmadagi hamma
+ * kiyimni oldindan kiyintiradi; har biri uchun alohida `POST` yuborilsa
+ * 30 ta parallel so'rov ketardi va chegaraga urilganlari xato bilan
+ * qaytardi. Bu yerda chegara XATO EMAS: qolganlari navbatga tushmaydi
+ * va `limitReached` bilan aytiladi.
+ *
+ * ⚠️ POST BO'LGANI UCHUN `GET /render/:id` bilan to'qnashmaydi. Agar
+ * kelajakda `POST /render/:id` qo'shilsa — bu marshrut undan OLDIN
+ * turishi shart, aks holda `:id` «batch» ni ham o'ziga oladi.
+ */
+tryonRouter.post(
+  '/tryon/render/batch',
+  requireAuth,
+  route({ body: renderBatchSchema }, async (input, _req, res) => {
+    sendData(
+      res,
+      await requestRenderBatch(
+        getAuth(res).sub,
+        input.body.variantIds,
+        input.body.angle,
+        input.body.baseRenderId ?? null,
+      ),
+    );
   }),
 );
 
@@ -234,7 +283,16 @@ tryonRouter.get(
   '/tryon/renders',
   requireAuth,
   route({ query: renderStatusQuerySchema }, async (input, _req, res) => {
-    sendData(res, await listRenders(getAuth(res).sub, input.query.variantIds, input.query.angle));
+    sendData(
+      res,
+      await listRenders(
+        getAuth(res).sub,
+        input.query.variantIds,
+        input.query.angle,
+        input.query.baseRenderId ?? null,
+        input.query.scope,
+      ),
+    );
   }),
 );
 

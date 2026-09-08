@@ -421,6 +421,13 @@ export interface TryonRender {
   imageUrl: string | null;
   /** Fondan ajratilgan variant — qorong'i sahnaga qo'yish uchun */
   cutoutUrl: string | null;
+  /**
+   * Qaysi natija ustiga kiydirilgan. `null` — asl suratga (birinchi qatlam).
+   *
+   * ⚠️ ILOVA UCHUN BU ZANJIR HALQASI: kurtkani futbolka ustiga qo'yish
+   * uchun futbolka natijasining `id` si shu maydonga yuboriladi.
+   */
+  baseRenderId: string | null;
   error: string | null;
 }
 
@@ -524,22 +531,94 @@ export interface Garment {
  * variantga bog'lanadi (rang muhim). `/tryon/slot/:slot` ham yaramaydi —
  * u 3D modeli borlarini qaytaradi, AI'ga esa oddiy surat kerak.
  */
-export const getGarments = (
-  slot?: string,
-  gender?: string,
+export interface GarmentFilters {
+  slot?: string | null;
+  gender?: string | null;
   /** Kategoriya — slotdan aniqroq. Kiyintirish tablari shu bo'yicha */
-  category?: string,
-): Promise<Garment[]> => {
-  const params = new URLSearchParams({ limit: '30' });
-  if (slot) params.set('slot', slot);
-  if (gender) params.set('gender', gender);
-  if (category) params.set('category', category);
+  category?: string | null;
+  /** Tanlangan do'kon — kiyimlar va buyurtma shu do'kondan */
+  storeId?: string | null;
+  /** Faqat OMBORDA shu o'lchami borlari */
+  size?: string | null;
+  limit?: number;
+}
+
+export const getGarments = (filters: GarmentFilters = {}): Promise<Garment[]> => {
+  const params = new URLSearchParams({ limit: String(filters.limit ?? 30) });
+  if (filters.slot) params.set('slot', filters.slot);
+  if (filters.gender) params.set('gender', filters.gender);
+  if (filters.category) params.set('category', filters.category);
+  if (filters.storeId) params.set('storeId', filters.storeId);
+  if (filters.size) params.set('size', filters.size);
   return api<Garment[]>(`/tryon/garments?${params.toString()}`);
 };
 
-/** Bitta kiyimni kiyintirishni so'raydi. Kesh bo'lsa darhol `ready` qaytadi. */
-export const requestRender = (variantId: string, angle: AvatarAngle = 'front') =>
-  api<TryonRender>('/tryon/render', { method: 'POST', body: { variantId, angle } });
+/**
+ * AI kiyintirishga mos do'konlar — ekranning pastidagi tanlagich.
+ *
+ * ⚠️ `getNearbyStores` DAN BOSHQA RO'YXAT: u do'konni 3D modellari
+ * bo'yicha sanaydi, bu yerda esa AI kiyintira oladigan kiyimlar. Ikkalasi
+ * butunlay boshqa to'plam.
+ */
+export interface TryonStore {
+  id: string;
+  name: string;
+  logo: string | null;
+  garmentCount: number;
+  /** Koordinata bo'lmasa `null` — ilova masofani ko'rsatmaydi */
+  distanceM: number | null;
+}
+
+export const getTryonStores = (params: {
+  lat?: number | null;
+  lng?: number | null;
+  gender?: string | null;
+  size?: string | null;
+}): Promise<TryonStore[]> => {
+  const query = new URLSearchParams();
+  if (typeof params.lat === 'number') query.set('lat', String(params.lat));
+  if (typeof params.lng === 'number') query.set('lng', String(params.lng));
+  if (params.gender) query.set('gender', params.gender);
+  if (params.size) query.set('size', params.size);
+  return api<TryonStore[]>(`/tryon/stores?${query.toString()}`);
+};
+
+/**
+ * Bitta kiyimni kiyintirishni so'raydi. Kesh bo'lsa darhol `ready` qaytadi.
+ *
+ * `baseRenderId` — qatlam: berilsa kiyim o'sha tayyor natijaning ustiga
+ * kiydiriladi (futbolka ustiga kurtka), berilmasa asl suratga.
+ */
+export const requestRender = (
+  variantId: string,
+  angle: AvatarAngle = 'front',
+  baseRenderId: string | null = null,
+) =>
+  api<TryonRender>('/tryon/render', { method: 'POST', body: { variantId, angle, baseRenderId } });
+
+/**
+ * Bir yo'la ko'p kiyimni navbatga qo'yadi — tasmani oldindan tayyorlash.
+ *
+ * ⚠️ CHEGARA XATO EMAS. Kunlik limitga yetilganda qolgan kiyimlar
+ * navbatga tushmaydi va `limitReached` rost bo'ladi. Ilova buni banner
+ * bilan ko'rsatadi, xato oynasi bilan emas.
+ */
+export interface RenderBatchResult {
+  renders: TryonRender[];
+  limitReached: boolean;
+}
+
+export const requestRenderBatch = (
+  variantIds: string[],
+  angle: AvatarAngle = 'front',
+  baseRenderId: string | null = null,
+): Promise<RenderBatchResult> =>
+  variantIds.length === 0
+    ? Promise.resolve({ renders: [], limitReached: false })
+    : api<RenderBatchResult>('/tryon/render/batch', {
+        method: 'POST',
+        body: { variantIds, angle, baseRenderId },
+      });
 
 /** Holatni so'raydi — ilova buni tayyor bo'lguncha takrorlaydi. */
 export const getRender = (id: string): Promise<TryonRender> =>
@@ -554,10 +633,28 @@ export const getRender = (id: string): Promise<TryonRender> =>
 export const getRenders = (
   variantIds: string[],
   angle: AvatarAngle = 'front',
-): Promise<TryonRender[]> =>
-  variantIds.length === 0
-    ? Promise.resolve([])
-    : api<TryonRender[]>(`/tryon/renders?angle=${angle}&variantIds=${variantIds.join(',')}`);
+  /**
+   * ⚠️ ASOS FILTRGA KIRADI. Bitta kurtkaning bir necha natijasi bo'ladi:
+   * yalang'och gavdaga, futbolka ustiga, ko'ylak ustiga. Filtrsiz server
+   * ulardan tasodifiy bittasini qaytarardi.
+   */
+  baseRenderId: string | null = null,
+  /**
+   * `all` — HAR asos ustidagi natija qaytadi.
+   *
+   * ⚠️ QATLAM ZANJIRINI TIKLASH UCHUN SHART. Komplekt yig'ilayotganda
+   * har qatlamning asosi qaysi ekani hali noma'lum — u pastdagi
+   * natijaning `id` siga bog'liq, o'sha esa aynan shu so'rovdan keladi.
+   * `base` bilan so'ralsa zanjirni hech qachon boshlab bo'lmasdi.
+   */
+  scope: 'base' | 'all' = 'base',
+): Promise<TryonRender[]> => {
+  if (variantIds.length === 0) return Promise.resolve([]);
+
+  const query = new URLSearchParams({ angle, scope, variantIds: variantIds.join(',') });
+  if (baseRenderId) query.set('baseRenderId', baseRenderId);
+  return api<TryonRender[]>(`/tryon/renders?${query.toString()}`);
+};
 
 /**
  * ⚠️ RO'YXAT ENDI `@looksave/validation` DA. Ilgari u shu yerda edi va

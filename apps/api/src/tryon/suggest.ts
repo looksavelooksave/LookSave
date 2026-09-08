@@ -186,6 +186,10 @@ export function composeLooks(garments: LookItem[], input: SuggestInput): Suggest
  * komplekt bir xil chiqardi.
  */
 export async function suggestLooks(input: SuggestInput): Promise<SuggestedLook[]> {
-  const garments = await listGarments([...LOOK_SLOTS], input.gender, 60);
+  const garments = await listGarments({
+    slots: [...LOOK_SLOTS],
+    gender: input.gender,
+    limit: 60,
+  });
   return composeLooks(garments, input);
 }

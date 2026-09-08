@@ -103,6 +103,59 @@ const LIMITS: Record<MeasureKey, { min: number; max: number; label: string; hint
   shoeSize: { min: 30, max: 50, label: "Oyoq o'lchami (EU)", hint: '30–50' },
 };
 
+/**
+ * Qadam allaqachon bajarilganmi.
+ *
+ * ⚠️ SEHRGAR ENDI TAKRORLAMAYDI. Ilgari u har safar `face` dan
+ * boshlanardi va oltita qadamdan o'tishni talab qilardi — hatto hamma
+ * ma'lumot serverda turgan bo'lsa ham. Foydalanuvchi uchun bu «ilova
+ * meni eslamaydi» degani edi va AI bo'limiga har kirishda yuz skaneri
+ * qaytadan chiqardi.
+ *
+ * ⚠️ TEKSHIRUV MANBASI — SERVER, sehrgarning ichki holati emas.
+ * `values` da foydalanuvchi shu seansda yozganlari bor; bu funksiya esa
+ * «kirishda nimadan boshlanadi» degan savolga javob beradi va u faqat
+ * saqlangan ma'lumotga tayanishi kerak.
+ */
+function isStepDone(
+  step: StepKey,
+  profile: { gender?: string | null; faceTextureUrl: string | null; measurements: Measurements },
+  storeId: string | null,
+): boolean {
+  switch (step) {
+    case 'face':
+      return Boolean(profile.faceTextureUrl);
+
+    case 'gender':
+      return profile.gender === 'male' || profile.gender === 'female';
+
+    /*
+     * ⚠️ KO'KRAK VA BEL HAM SHART. Ilgari faqat bo'y va vazn tekshirilardi.
+     * Lekin kiyim o'lchami aynan ko'krak (ustki) va bel (pastki)
+     * aylanasidan hisoblanadi (`@looksave/validation` · `sizing.ts`) — ularsiz «sizga mos
+     * o'lchamdagi kiyimlar» filtri umuman ishlamaydi va ro'yxat oddiy
+     * katalogga aylanadi.
+     */
+    case 'body':
+      return (
+        typeof profile.measurements.height === 'number' &&
+        typeof profile.measurements.weight === 'number' &&
+        typeof profile.measurements.chest === 'number' &&
+        typeof profile.measurements.waist === 'number'
+      );
+
+    case 'shoe':
+      return typeof profile.measurements.shoeSize === 'number';
+
+    case 'store':
+      return Boolean(storeId);
+
+    // Yakuniy qadam «bajarilgan» bo'lmaydi — u har doim ko'rsatiladi
+    case 'done':
+      return false;
+  }
+}
+
 /** Bo'sh matn — kiritilmagan, noto'g'ri son — xato. Ikkisi boshqa holat. */
 function parseField(raw: string, key: MeasureKey): number | null | 'invalid' {
   const trimmed = raw.trim();
@@ -187,12 +240,35 @@ export default function AvatarFlow(): JSX.Element {
   const storeId = useAiFlowStore((state) => state.storeId);
 
   const [step, setStep] = useState<StepKey>('face');
+  /*
+   * Boshlang'ich qadam bir marta aniqlanadi.
+   *
+   * ⚠️ REF SHART. Profil so'rovi qayta yangilanadi (masalan o'lchamlar
+   * saqlangach) va usiz effekt foydalanuvchini o'zi turgan qadamdan
+   * oldinga sakratib yuborardi — ya'ni yozayotgan joyi ostidan
+   * ekran o'zgarardi.
+   */
+  const startResolved = useRef(false);
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const profile = useQuery({ queryKey: ['profile', 'full'], queryFn: getFullProfile });
+
+  /*
+   * ⚠️ BAJARILGAN QADAMLAR O'TKAZIB YUBORILADI. Foydalanuvchi
+   * o'lchamlarini bir marta kiritgan bo'lsa, ikkinchi safar sehrgar
+   * to'g'ridan-to'g'ri qolgan qadamga tushadi — ko'pincha bu «do'kon»
+   * yoki «tayyor» bo'ladi.
+   */
+  useEffect(() => {
+    if (startResolved.current || !profile.data) return;
+    startResolved.current = true;
+
+    const first = STEPS.find((item) => !isStepDone(item.key, profile.data, storeId));
+    setStep(first?.key ?? 'done');
+  }, [profile.data, storeId]);
 
   // Serverdagi qiymatlar bilan to'ldiramiz — oqim ikkinchi marta ochilsa
   // hamma narsani qaytadan kiritish shart emas
@@ -254,10 +330,22 @@ export default function AvatarFlow(): JSX.Element {
     setStep(STEPS[index - 1]?.key ?? 'face');
   };
 
+  /*
+   * ⚠️ KEYINGI QADAM — BAJARILMAGAN BIRINCHISI, shunchaki «+1» emas.
+   * Foydalanuvchi yuzni skaner qilganda jinsi va o'lchamlari allaqachon
+   * saqlangan bo'lishi mumkin; u payt uni o'sha oynalardan qaytadan
+   * o'tkazish ma'nosiz.
+   */
   const goNext = (): void => {
     const index = STEPS.findIndex((item) => item.key === step);
     setError(null);
-    setStep(STEPS[Math.min(index + 1, STEPS.length - 1)]?.key ?? 'done');
+
+    const rest = STEPS.slice(index + 1);
+    const next = profile.data
+      ? rest.find((item) => !isStepDone(item.key, profile.data, storeId))
+      : rest[0];
+
+    setStep(next?.key ?? 'done');
   };
 
   /** Kiritilgan o'lchamlarni tekshirib serverga yozadi */
@@ -277,8 +365,19 @@ export default function AvatarFlow(): JSX.Element {
 
     // Bo'y va vazn — avatar shakli shulardan hisoblanadi, ularsiz kiyim
     // o'lchami ma'nosiz bo'lib qoladi
+    /*
+     * ⚠️ KO'KRAK VA BEL QO'SHILDI. Kiyim o'lchami aynan shulardan
+     * hisoblanadi (`@looksave/validation` · `sizing.ts`); ularsiz kiyintirish ekranidagi
+     * «menga mos o'lchamdagi kiyimlar» filtri o'chib qoladi va
+     * foydalanuvchi o'ziga to'g'ri kelmaydigan kiyimni kiyintiradi.
+     */
     const required = keys.filter(
-      (key) => key === 'height' || key === 'weight' || key === 'shoeSize',
+      (key) =>
+        key === 'height' ||
+        key === 'weight' ||
+        key === 'chest' ||
+        key === 'waist' ||
+        key === 'shoeSize',
     );
     const blocking = required.filter((key) => parseField(values[key] ?? '', key) === null);
 
@@ -360,7 +459,7 @@ export default function AvatarFlow(): JSX.Element {
         {step === 'body' ? (
           <MeasureStep
             title="Tana o'lchamlari"
-            hint="Bo'y va vazn shart — avatar shakli va kiyim o'lchami shulardan hisoblanadi."
+            hint="Bo'y, vazn, ko'krak va bel shart — kiyim o'lchami shulardan hisoblanadi."
             keys={['height', 'weight', 'chest', 'waist', 'hips']}
             values={values}
             busy={busy}

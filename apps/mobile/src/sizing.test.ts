@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { missingMeasurementFor, recommendSize } from './sizing';
+import { missingMeasurementFor, recommendSize } from '@looksave/validation';
+
+/**
+ * ⚠️ SINOV SHU YERDA, MODUL ESA `@looksave/validation` DA — sayt ham
+ * shu jadvalni ishlatadi (BFF ro'yxatni o'lcham bo'yicha filtrlaydi).
+ * Paketda sinov yugurtirgichi yo'q, shuning uchun sinov ilovada qoldi:
+ * `npm run test` uni baribir ishga tushiradi.
+ */
 
 describe('recommendSize', () => {
   it('ko`krak aylanasidan ustki kiyim razmerini beradi', () => {

@@ -13,6 +13,22 @@ import { type RouteConfig, index, route } from '@react-router/dev/routes';
 export default [
   index('routes/entry.tsx'),
 
+  /*
+   * ── BFF resurs marshrutlari (AI kiyintirish) ──
+   *
+   * ⚠️ QOBIQDAN TASHQARIDA — ATAYIN. `layouts/shell.tsx` ichiga
+   * qo'yilsa har so'rovda shapka va futer uchun ma'lumot ham
+   * yuklanardi; bu marshrutlar esa sahifa ochiq turganda har ikki
+   * soniyada so'raladi.
+   *
+   * Ularda `default export` yo'q, ya'ni React Router ularni resurs
+   * marshruti deb qaraydi va `loader`/`action` javobini o'zgarishsiz
+   * qaytaradi.
+   */
+  route(':locale/try-on/state', 'routes/try-on.state.tsx'),
+  route(':locale/try-on/act', 'routes/try-on.act.tsx'),
+  route(':locale/try-on/stores', 'routes/try-on.stores.tsx'),
+
   route(':locale', 'layouts/shell.tsx', [
     index('routes/home.tsx'),
 
