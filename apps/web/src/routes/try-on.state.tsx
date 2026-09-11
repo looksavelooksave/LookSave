@@ -182,7 +182,21 @@ export async function loader({ params, request }: Route.LoaderArgs) {
    * ko'rsatishni bilmaymiz.
    */
   const needs = {
-    photo: !(avatar.status === 'ready' || Boolean(profile.bodyPhotoUrl)),
+    /*
+     * ⚠️ AVATAR TAYYORLIGI SHART EMAS — YUZ SURATI YETADI.
+     *
+     * Ilgari shart `avatar.status === 'ready'` edi va bu AYLANMA
+     * bog'liqlik hosil qilardi: avatar yasash uchun bo'y va vazn kerak,
+     * ular esa KEYINGI («sizes») bosqichda kiritiladi. Yangi
+     * foydalanuvchi surat bosqichida abadiy qolib ketardi — skanerlaydi,
+     * avatar 422 bilan yiqiladi, `needs.photo` hamon rost bo'lib
+     * qolaveradi va sehrgar oldinga o'tmaydi.
+     */
+    photo: !(
+      avatar.status === 'ready' ||
+      Boolean(profile.bodyPhotoUrl) ||
+      Boolean(profile.faceTextureUrl)
+    ),
     sizes: !(
       typeof measurements['height'] === 'number' && typeof measurements['weight'] === 'number'
     ),

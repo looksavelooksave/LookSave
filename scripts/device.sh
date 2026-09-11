@@ -76,8 +76,19 @@ fi
 step "2/4  API manzili"
 
 # ⚠️ TELEFONDA `localhost` ISHLAMAYDI — u telefonning o'zini bildiradi.
-# Kerak: Mac'ning LAN IP'si. Wi-Fi almashsa bu qiymat eskiradi va ilova
-# backendni "topolmaydi" (eng ko'p vaqt yeydigan chalg'ituvchi xato).
+#
+# ⚠️ LEKIN IP NI QO'LDA TUZATISH SHART EMAS. `apps/mobile/src/api/client.ts`
+# dagi `devHostFromMetro()` ishlab chiqishda xostni METRO XOSTIDAN oladi va
+# `.env` dagisini almashtiradi. Ya'ni Wi-Fi almashsa ham ilova backendni
+# topadi va QAYTA BUILD KERAK EMAS.
+#
+# Bu skript ilgari "eskirgan — qayta build qiling" deb ogohlantirardi.
+# Ogohlantirish YOLG'ON edi: bir necha marta bekorga qayta build qilindi.
+# Endi faqat MA'LUMOT uchun ko'rsatiladi.
+#
+# `.env` dagi qiymat baribir kerak: undan PORT va SXEMA olinadi (xost
+# almashtiriladi, qolgani emas), va ishlab chiqarish build'ida Metro
+# bo'lmagani uchun u to'liq ishlatiladi.
 LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
 CURRENT="$(env_get EXPO_PUBLIC_API_URL "$ROOT/apps/mobile/.env" || true)"
 
@@ -86,13 +97,12 @@ if [ -z "$LAN_IP" ]; then
 elif [ "$CURRENT" = "http://$LAN_IP:3000" ]; then
   ok "apps/mobile/.env to'g'ri: $CURRENT"
 else
-  warn "apps/mobile/.env eskirgan"
+  ok "xost ishlab chiqishda Metro'dan olinadi — $LAN_IP"
   # ⚠️ ${VAR:-...} ichida apostrof QO'YMANG — bash uni qo'shtirnoq boshlanishi
   # deb o'qiydi va "unexpected EOF" beradi. Shuning uchun "(belgilanmagan)".
-  dim "  hozir:  ${CURRENT:-(belgilanmagan)}"
-  dim "  kerak:  http://$LAN_IP:3000"
-  dim "  tuzatish:  sed -i '' 's|^EXPO_PUBLIC_API_URL=.*|EXPO_PUBLIC_API_URL=http://$LAN_IP:3000|' apps/mobile/.env"
-  dim "  ⚠️ o'zgartirgandan keyin QAYTA BUILD kerak — qiymat build paytida yoziladi"
+  dim "  .env dagi xost eskirgan: ${CURRENT:-(belgilanmagan)}"
+  dim "  ishlab chiqishda muhim emas — faqat port (3000) va sxema olinadi"
+  dim "  ishlab chiqarish build'idan oldin haqiqiy domenga almashtiring"
 fi
 
 port_open 3000 && ok "API 3000-portda" || { warn "API ishlamayapti"; dim "  ./scripts/dev-up.sh"; }

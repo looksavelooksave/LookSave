@@ -153,8 +153,26 @@ export async function updateProfile(userId: string, input: UpdateProfileInput): 
     );
     const previous = rows[0]?.face_texture_url ?? null;
 
+    /*
+     * ⚠️ UPSERT, ODDIY `UPDATE` EMAS.
+     *
+     * `profiles` satri ro'yxatdan o'tishda YARATILMAYDI — u birinchi
+     * saqlashda paydo bo'ladi. Ilgari bu yerda `UPDATE ... WHERE user_id`
+     * turardi: satr bo'lmasa u NOL satrga ta'sir qilardi, xato bermasdi
+     * va API 200 qaytarardi. Natijada yuz surati R2 ga yuklanib, bazaga
+     * esa YOZILMASDI — keyin `POST /v1/tryon/avatar` «Avval yuzingizni
+     * skaner qiling» deb 422 berardi va sabab ko'rinmasdi.
+     *
+     * O'lchamlar (`saveMeasurements`) va gavda surati allaqachon shu
+     * naqshni ishlatadi; faqat yuz teksturasi chetda qolgan edi.
+     */
     await pool.query(
-      `UPDATE profiles SET face_texture_url = $2, face_scan_status = $3 WHERE user_id = $1`,
+      `INSERT INTO profiles (user_id, face_texture_url, face_scan_status)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id)
+       DO UPDATE SET face_texture_url = EXCLUDED.face_texture_url,
+                     face_scan_status = EXCLUDED.face_scan_status,
+                     updated_at = now()`,
       [userId, input.faceTextureUrl, input.faceTextureUrl === null ? 'none' : 'ready'],
     );
 

@@ -3,6 +3,7 @@ import {
   adminProductsQuerySchema,
   adminStoresQuerySchema,
   adminUsersQuerySchema,
+  adminPresignSchema,
   assetQueueQuerySchema,
   assetUpdateSchema,
   brandCreateSchema,
@@ -32,6 +33,7 @@ import {
   updateAsset,
 } from '../admin/admin';
 import { createBrand, deleteBrand, findBrands, toBrandDto, updateBrand } from '../admin/brands';
+import { presignUpload } from '../integrations/r2';
 import { decodeCursor, paginate } from '../catalog/cursor';
 import { requireAuth, requireRole } from '../http/auth-middleware';
 import { sendData, sendList, sendNoContent } from '../http/respond';
@@ -195,6 +197,26 @@ adminRouter.post(
 //
 // Ommaviy `GET /v1/brands` faqat ro'yxatni beradi; bu yerdagilar esa
 // yaratish/tahrirlash uchun va faqat admin roliga ochiq.
+
+/**
+ * POST /v1/admin/uploads/presign
+ *
+ * Brend logotipi to'g'ridan-to'g'ri R2 ga yuklanadi — fayl server orqali
+ * o'tmaydi (09-integrations §4.2), do'kon va profil marshrutlari bilan bir xil.
+ *
+ * ⚠️ ILGARI ADMIN PANELDA FAQAT URL MAYDONI BOR EDI va logotiplar begona
+ * saytlarga (`pngwing.com`) havola qilinardi. Sayt faylni o'chirsa logo
+ * yo'qolardi. Endi fayl o'z bucketimizda turadi.
+ *
+ * Yo'l `adminRouter.use('/admin', requireAuth, requireRole('admin'))`
+ * ostida, ya'ni himoya avtomatik.
+ */
+adminRouter.post(
+  '/admin/uploads/presign',
+  route({ body: adminPresignSchema }, async (input, _req, res) => {
+    sendData(res, await presignUpload(input.body));
+  }),
+);
 
 /** GET /v1/admin/brands */
 adminRouter.get('/admin/brands', async (_req, res) => {

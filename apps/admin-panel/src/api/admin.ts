@@ -226,6 +226,52 @@ export interface BrandInput {
   sortOrder: number;
 }
 
+/** R2 ruxsatnomasi — server faylni o'zi qabul qilmaydi, faqat imzo beradi. */
+interface Presign {
+  uploadUrl: string;
+  publicUrl: string;
+  headers: Record<string, string>;
+}
+
+/** Logotip uchun ruxsat etilgan turlar — serverdagi sxema bilan bir xil. */
+const LOGO_TYPES = ['image/webp', 'image/png', 'image/jpeg'];
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Brend logotipini R2 ga yuklaydi va ommaviy havolasini qaytaradi.
+ *
+ * Fayl API server orqali O'TMAYDI: server faqat imzolangan havola beradi,
+ * brauzer esa to'g'ridan-to'g'ri R2 ga `PUT` qiladi (09-integrations §4.2).
+ *
+ * ⚠️ `PUT` uchun `api()` yordamchisi ISHLATILMAYDI — u har so'rovga
+ * `Authorization` sarlavhasini qo'shadi va manzil oldiga `/v1` qo'yadi.
+ * Imzolangan R2 havolasida ikkalasi ham xato: sarlavha imzoni buzadi.
+ */
+export async function uploadBrandLogo(file: File): Promise<string> {
+  if (!LOGO_TYPES.includes(file.type)) {
+    throw new Error('Faqat PNG, WEBP yoki JPEG');
+  }
+  if (file.size > LOGO_MAX_BYTES) {
+    throw new Error('Fayl 2 MB dan katta');
+  }
+
+  const presign = await api<Presign>('/admin/uploads/presign', {
+    method: 'POST',
+    body: { fileName: file.name, contentType: file.type, purpose: 'brand' },
+  });
+
+  const put = await fetch(presign.uploadUrl, {
+    method: 'PUT',
+    headers: presign.headers,
+    body: file,
+  });
+  if (!put.ok) {
+    throw new Error(`R2 yuklashni rad etdi (${put.status})`);
+  }
+
+  return presign.publicUrl;
+}
+
 export const getBrands = (): Promise<Brand[]> => api<Brand[]>('/admin/brands');
 
 export const createBrand = (input: BrandInput): Promise<Brand> =>

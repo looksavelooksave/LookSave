@@ -17,11 +17,23 @@ describe('avatar tavsifi', () => {
     expect(prompt).toContain('man');
   });
 
-  it('ayol uchun boshqa asosiy kiyim beradi', () => {
+  /*
+   * ⚠️ ILGARI BU TEST TESKARISINI TALAB QILARDI: ayolga `leggings`,
+   * erkakka `shorts`. Ular olib tashlandi, chunki OpenAI so'rovni
+   * `safety_violations=[sexual]` bilan rad etardi — so'rovda tirik
+   * odamning yuz surati bor va tanaga urg'u beruvchi so'zlar rad etish
+   * ehtimolini oshiradi.
+   */
+  it('ikkala jinsga ham bir xil, tanani yopadigan kiyim beradi', () => {
     const female = buildAvatarPrompt('female', { height: 165, weight: 58 });
     const male = buildAvatarPrompt('male', { height: 165, weight: 58 });
-    expect(female).toContain('leggings');
-    expect(male).toContain('shorts');
+
+    for (const prompt of [female, male]) {
+      expect(prompt).toContain('trousers');
+      expect(prompt).not.toContain('fitted');
+      expect(prompt).not.toContain('leggings');
+      expect(prompt).not.toContain('shorts');
+    }
   });
 
   it('jins ko`rsatilmasa neytral so`z ishlatiladi', () => {

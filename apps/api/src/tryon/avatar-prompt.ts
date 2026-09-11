@@ -96,11 +96,23 @@ function shapeFrom(measurements: AvatarMeasurements): string | null {
   return null;
 }
 
-/** Asosiy kiyim — jinsga qarab, lekin har doim tor va bir rangli. */
+/**
+ * Asosiy kiyim — bir rangli va TANANI YOPADIGAN.
+ *
+ * ⚠️ «fitted», «leggings» va «shorts» ATAYIN OLIB TASHLANDI.
+ *
+ * OpenAI so'rovni `safety_violations=[sexual]` bilan rad etgan edi.
+ * Tavsifning o'zi zararsiz, lekin so'rov ichida tirik odamning yuz
+ * surati bor va undan fotorealistik gavda so'raladi — bu klassifikator
+ * uchun sezgir birikma. Tanaga urg'u beradigan so'zlar shu ehtimolni
+ * oshiradi, uzun va bo'sh kiyim esa kamaytiradi.
+ *
+ * Kiyim baribir bir rangli va sodda bo'lib qoladi, ya'ni ustiga
+ * kiyintirilgan mahsulot aniq ko'rinadi — maqsad buzilmaydi.
+ */
 function baseLayer(gender: AvatarGender): string {
-  return gender === 'female'
-    ? 'a plain fitted light grey t-shirt and plain fitted light grey leggings'
-    : 'a plain fitted light grey t-shirt and plain fitted light grey shorts';
+  void gender;
+  return 'a plain light grey t-shirt and plain light grey trousers';
 }
 
 function personWord(gender: AvatarGender): string {
@@ -154,7 +166,7 @@ export function buildAvatarPrompt(
   // 4-jumla: fon va yorug'lik — sodda fon chegarani aniq qiladi
   parts.push(
     'Plain light grey seamless studio background, soft even lighting, no shadows on the ' +
-      'background, sharp focus, photorealistic, natural skin texture.',
+      'background, sharp focus, photorealistic.',
   );
 
   return parts.join(' ');

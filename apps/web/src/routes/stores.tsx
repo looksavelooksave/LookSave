@@ -6,7 +6,6 @@ import { Button, Card, Empty, ErrorView, Icon, ImageFrame } from '@looksave/ui-w
 import { isNetworkError } from '@/api/client';
 import { DEFAULT_CENTER, getNearbyStores, type StoreCard } from '@/api/endpoints';
 import { Reveal } from '@/components/Reveal';
-import { StoresArt } from '@/components/StoresArt';
 import { isLocale, type Locale } from '@/i18n/locale';
 import { distance } from '@/lib/format';
 import { mapsApiKey } from '@/lib/maps';
@@ -340,45 +339,6 @@ export default function Stores({ loaderData }: Route.ComponentProps): JSX.Elemen
           list
         )}
       </div>
-    </div>
-  );
-}
-
-/**
- * Do'kon surati yo'q bo'lsa — brendlangan bo'shliq.
- *
- * ⚠️ BO'SH RAMKA YARAMAYDI. `ImageFrame` rasmsiz holatda chegarali quti
- * chizadi; to'rda yonma-yon turgan uchta shunday quti sahifani
- * «yuklanmagan» qilib ko'rsatadi. Do'kon suratini biz nazorat qilmaymiz
- * (u do'konniki), lekin bo'shliqni ATAYIN qilib ko'rsata olamiz.
- */
-function StoreCover({ store }: { store: StoreCard }): JSX.Element {
-  /*
-   * ⚠️ AVVAL MUQOVA, KEYIN LOGO. Karta 16:9 — logo esa kvadrat
-   * (do'kon panelidagi maslahat ham «kvadrat rasm yaxshi ko'rinadi»
-   * deydi). Uni bu slotga qo'ysak `object-cover` yon tomonlarini
-   * qirqib tashlaydi va do'kon belgisi yarim ko'rinadi. Muqova esa
-   * aynan shu nisbat uchun yuklanadi.
-   */
-  const cover = store.coverUrl ?? store.logoUrl;
-
-  if (cover) {
-    return (
-      <ImageFrame src={cover} alt={store.name} ratio="16/9" rounded="none" zoomOnHover calmWhite />
-    );
-  }
-
-  return (
-    <div className="relative aspect-video overflow-hidden bg-surface2">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_120%,hsl(var(--primary)/0.28),transparent_62%)]"
-      />
-      <Icon
-        name="shop"
-        size={44}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-brand/45"
-      />
     </div>
   );
 }

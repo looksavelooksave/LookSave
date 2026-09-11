@@ -38,6 +38,12 @@ const CONSENT: Array<{ title: string; hint: string }> = [
   },
 ];
 
+/**
+ * API qabul qiladigan turlar (`presignSchema`). Ro'yxatdan tashqarisi
+ * `image/jpeg` ga keltiriladi — kadr baribir shu turda olinadi.
+ */
+const SUPPORTED = ['image/webp', 'image/jpeg', 'image/png'];
+
 const TIPS = ['Tekis yorug‘lik', 'To‘g‘ridan-to‘g‘ri qarang', 'Yuzni ramka ichiga joylang'];
 
 export function PhotoStep({ controller }: { controller: TryonController }): JSX.Element {
@@ -65,6 +71,31 @@ export function PhotoStep({ controller }: { controller: TryonController }): JSX.
 
   useEffect(() => stopCamera, [stopCamera]);
 
+  /*
+   * ⚠️ OQIM SHU YERDA ULANADI, `startCamera` DA EMAS.
+   *
+   * `<video>` faqat `cameraOn === true` bo'lganda chiziladi. `startCamera`
+   * ichida `setCameraOn(true)` dan keyingi SATRDA `video.current` hamon
+   * `null` bo'ladi — React qayta chizishga ulgurmagan. U yerdagi
+   * `if (video.current)` esa buni jimgina yutardi: ruxsat berilgan,
+   * kamera indikatori yongan, tugma «Skanerlash» ga o'zgargan, lekin
+   * `srcObject` hech qachon o'rnatilmagani uchun kadr QORA qolardi.
+   *
+   * Effekt qayta chizishdan KEYIN ishlaydi, ya'ni element mavjud.
+   */
+  useEffect(() => {
+    const element = video.current;
+    if (!cameraOn || !element || !stream.current) return;
+
+    element.srcObject = stream.current;
+
+    // `play()` uzilishi mumkin (masalan komponent darrov yopilsa) —
+    // ushlanmagan rad etish konsolni ifloslantirmasin
+    element.play().catch(() => {
+      setError('Kamera tasvirini ko`rsatib bo`lmadi');
+    });
+  }, [cameraOn]);
+
   const startCamera = async (): Promise<void> => {
     setError(null);
 
@@ -84,13 +115,9 @@ export function PhotoStep({ controller }: { controller: TryonController }): JSX.
         video: { facingMode: 'user', width: { ideal: 1024 }, height: { ideal: 1024 } },
       });
 
+      // Oqim quyidagi `useEffect` da ulanadi — bu yerda `<video>` hali yo'q
       stream.current = media;
       setCameraOn(true);
-
-      if (video.current) {
-        video.current.srcObject = media;
-        await video.current.play();
-      }
     } catch {
       setError('Kameraga ruxsat berilmadi — surat yuklashdan foydalanishingiz mumkin');
     }
@@ -103,7 +130,18 @@ export function PhotoStep({ controller }: { controller: TryonController }): JSX.
    * serverda), yuklash esa to'g'ridan-to'g'ri R2 ga.
    */
   const upload = async (blob: Blob, purpose: 'face' | 'body'): Promise<string> => {
-    const signed = await act({ op: 'presign', purpose, contentType: blob.type || 'image/jpeg' });
+    /*
+     * ⚠️ `fileName` API'DA MAJBURIY (`presignSchema`). Ilgari u
+     * yuborilmasdi va har skanerlash 422 bilan tugardi — ekranda esa
+     * faqat «Ma`lumotlar to`liq emas» chiqardi, sababi ko'rinmasdi.
+     *
+     * Qiymatning o'zi R2 kalitiga TUSHMAYDI (kalit — UUID); u faqat
+     * kengaytmani aniqlashga kerak, shuning uchun turdan yasaymiz.
+     */
+    const type = SUPPORTED.includes(blob.type) ? blob.type : 'image/jpeg';
+    const fileName = `${purpose}.${type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'}`;
+
+    const signed = await act({ op: 'presign', purpose, contentType: type, fileName });
     const data = signed.data as
       { uploadUrl: string; publicUrl: string; headers: Record<string, string> } | undefined;
 
@@ -162,11 +200,20 @@ export function PhotoStep({ controller }: { controller: TryonController }): JSX.
       if (saved.error) throw new Error(saved.error);
 
       /*
-       * ⚠️ AVATAR SHU YERDA BOSHLANADI, skanerda emas. Generatsiya
-       * kredit sarflaydi va u faqat surat HAQIQATAN saqlangandan keyin
-       * boshlanishi kerak.
+       * ⚠️ AVATAR FAQAT O'LCHAMLAR BO'LGANDA SO'RALADI.
+       *
+       * Generatsiya kredit sarflaydi va server bo'y bilan vaznni talab
+       * qiladi. Ilgari u shartsiz chaqirilardi: yangi foydalanuvchida
+       * o'lchamlar hali yo'q edi, so'rov 422 bilan qaytardi va javob
+       * TEKSHIRILMAGANI uchun xato jimgina yo'qolardi.
+       *
+       * O'lchamlar yo'q bo'lsa hech narsa qilinmaydi — sehrgar «sizes»
+       * bosqichiga o'tadi va avatarni o'sha yer boshlaydi.
        */
-      await act({ op: 'avatar' });
+      if (state && !state.needs.sizes) {
+        const started = await act({ op: 'avatar' });
+        if (started.error) throw new Error(started.error);
+      }
 
       stopCamera();
       await refresh();
@@ -306,7 +353,7 @@ export function PhotoStep({ controller }: { controller: TryonController }): JSX.
         <input
           ref={fileInput}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];

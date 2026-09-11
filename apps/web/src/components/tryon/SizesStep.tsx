@@ -129,6 +129,25 @@ export function SizesStep({ controller }: { controller: TryonController }): JSX.
         return;
       }
 
+      /*
+       * ⚠️ AVATAR SHU YERDA BOSHLANADI — surat bosqichida emas.
+       *
+       * Server avatar uchun yuz suratini HAM, bo'y bilan vaznni HAM
+       * talab qiladi. Sehrgar tartibida surat oldin keladi, ya'ni o'sha
+       * paytda o'lchamlar hali yo'q va so'rov 422 berardi. Endi ikkala
+       * shart bajarilgan yagona nuqta shu yer.
+       *
+       * Yuz surati yo'q bo'lsa tegilmaydi: foydalanuvchi o'lchamlarni
+       * profilidan oldinroq kiritgan bo'lishi mumkin.
+       */
+      if (state?.profile?.faceTextureUrl) {
+        const started = await act({ op: 'avatar' });
+        if (started.error) {
+          setError(started.error);
+          return;
+        }
+      }
+
       await refresh();
     } finally {
       setWorking(false);

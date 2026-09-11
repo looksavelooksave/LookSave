@@ -9,7 +9,7 @@ import { cn } from './cn';
  * (`apps/mobile/app/(tabs)/index.tsx`, docs/15-sayt-dizayn.md §2):
  *
  *   rasm 3:4, burchak 16
- *   «3D» belgisi   — chapda tepada, `primarySoft` fon + `borderAccent` chegara
+ *   «AI» belgisi   — chapda tepada, `primarySoft` fon + `borderAccent` chegara
  *   yurakcha       — o'ngda tepada, `rgba(10,10,15,0.55)` doira
  *   nom            — `text-small`, bir qator
  *   narx           — qalin, eski narx yonida chizilgan
@@ -24,7 +24,7 @@ export interface ProductCardProps {
   oldPrice?: string | null;
   image?: string | null;
   storeName?: string | null;
-  /** API dagi nom — 3D yoki AI bilan kiyib ko'rish mumkinmi */
+  /** API dagi nom — AI bilan kiyib ko'rish mumkinmi */
   canTryOn?: boolean;
   isLimited?: boolean;
   /** `<a>` yoki `<Link>` — karta shu bilan o'raladi */
@@ -74,11 +74,17 @@ export function ProductCard({
           </div>,
         )}
 
-        {/* ── Tepada belgilar: 3D va Limited ── */}
+        {/* ── Tepada belgilar: AI va Limited ── */}
         <div className="pointer-events-none absolute start-2 top-2 z-10 flex gap-1.5">
           {canTryOn ? (
             <span className="rounded-lg border border-primary/60 bg-panel/85 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-brand shadow-sm backdrop-blur-md">
-              3D
+              {/*
+                ⚠️ ILGARI «3D» YOZILARDI. 3D quvuri loyihadan olib
+                tashlangan — kiyintirish endi faqat AI orqali. Mobil
+                ilovadagi karta ham «AI» ko'rsatadi, ya'ni ikkalasi
+                bir xil tilda gapiradi.
+              */}
+              AI
             </span>
           ) : null}
 

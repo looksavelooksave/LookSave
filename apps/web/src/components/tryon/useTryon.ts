@@ -178,6 +178,17 @@ export function useTryon(locale: string) {
    */
   const stripBase = useMemo(() => baseForCategory(resolved, tab), [resolved, tab]);
 
+  /*
+   * ⚠️ AVATARSIZ KIYINTIRISH BOSHLANMAYDI.
+   *
+   * Server model surati sifatida avatarni (yoki gavda suratini) talab
+   * qiladi; ularsiz har so'rov «Avval avatar yasang» bilan qaytadi.
+   * Ilgari bu tekshiruv YO'Q edi: sahifa `state.ready` ni ko'rib
+   * kiyintirishni boshlayverardi, so'rovlar ketma-ket yiqilardi va
+   * spinner TO'XTAMASDI — ekranda cheksiz «AI kiyintirmoqda…» turardi.
+   */
+  const hasBase = state?.avatar?.status === 'ready' || Boolean(state?.profile?.bodyPhotoUrl);
+
   const items = useMemo(() => state?.garments ?? [], [state?.garments]);
 
   /** Natija kutilayotgan bo'lsa holat qayta so'raladi */
@@ -204,47 +215,44 @@ export function useTryon(locale: string) {
         body: JSON.stringify(body),
       });
 
-      return (await response.json()) as { data?: unknown; error?: string; code?: string };
+      const payload = (await response.json()) as {
+        data?: unknown;
+        error?: string;
+        code?: string;
+        fields?: string[];
+      };
+
+      /*
+       * BFF validatsiyasi yiqilsa qaysi maydon aybdorligini xabarga
+       * qo'shamiz — aks holda ekranda quruq «So`rov noto`g`ri» qoladi
+       * va sababni topib bo'lmaydi.
+       */
+      if (payload.fields?.length) {
+        return { ...payload, error: `${payload.error ?? 'Xato'} — ${payload.fields.join('; ')}` };
+      }
+
+      return payload;
     },
     [locale],
   );
 
   /*
-   * ── Tasmani oldindan tayyorlash ──
+   * ── Tasma OLDINDAN TAYYORLANMAYDI ──
    *
-   * ⚠️ FAQAT OLD KO'RINISHDA. Aylantirilgan ko'rinish uchun ham butun
-   * tasma yasalsa sarf uch barobar oshardi; aylantirgan foydalanuvchi
-   * esa odatda bitta kiyimni ko'rmoqchi bo'ladi va uni komplekt zanjiri
-   * o'zi yasaydi.
+   * ⚠️ ILGARI BU YERDA `op: 'batch'` TURARDI: tasmadagi HAMMA kiyim
+   * bir yo'la kiyintirilardi. Ikki jiddiy kamchiligi bor edi.
+   *
+   * 1. PUL. Har kiyim alohida `gpt-image-1` chaqiruvi. Foydalanuvchi
+   *    turkumni ochishi bilanoq o'nlab so'rov ketardi — ko'rmagan
+   *    kiyimlari uchun ham to'lanardi.
+   *
+   * 2. KUTISH. Hammasi navbatga tushgani uchun BIRINCHI natija ham
+   *    oxirigacha kutardi: ekranda uzoq vaqt spinner turardi.
+   *
+   * Mijoz qarori (2026-09-10): avval TANLANGAN kiyim chiqsin, qolganlari
+   * kutib tursin. Quyidagi effekt aynan shuni qiladi — faqat joriy
+   * tanlovni kiyintiradi, boshqa kartochka bosilganda esa navbatdagisini.
    */
-  useEffect(() => {
-    if (!state?.ready || angle !== 'front' || limitReached) return;
-    if (!stripBase.ready || items.length === 0) return;
-
-    const missing = items
-      .map((item) => item.variantId)
-      .filter((variantId) => !renderIndex.has(renderKey(variantId, stripBase.baseRenderId)));
-
-    if (missing.length === 0) return;
-
-    const key = `batch:${angle}:${stripBase.baseRenderId ?? 'root'}:${missing.join(',')}`;
-    if (asked.current.has(key)) return;
-    asked.current.add(key);
-
-    void act({
-      op: 'batch',
-      variantIds: missing,
-      angle,
-      baseRenderId: stripBase.baseRenderId,
-    }).then((result) => {
-      if (result.code === 'RATE_LIMITED') setLimitReached(true);
-      else if ((result.data as { limitReached?: boolean } | undefined)?.limitReached) {
-        setLimitReached(true);
-      }
-      void refresh();
-    });
-  }, [state?.ready, angle, limitReached, stripBase, items, renderIndex, act, refresh]);
-
   /*
    * ── Komplekt zanjirini tiklash ──
    *
@@ -256,7 +264,7 @@ export function useTryon(locale: string) {
    * va u shu yerda qaytadan so'raladi.
    */
   useEffect(() => {
-    if (!state?.ready || limitReached) return;
+    if (!state?.ready || !hasBase || limitReached) return;
 
     const next = nextPending(resolved);
     if (!next) return;
@@ -274,7 +282,7 @@ export function useTryon(locale: string) {
       if (result.code === 'RATE_LIMITED') setLimitReached(true);
       void refresh();
     });
-  }, [state?.ready, limitReached, resolved, angle, act, refresh]);
+  }, [state?.ready, hasBase, limitReached, resolved, angle, act, refresh]);
 
   const wear = useCallback((category: string, variantId: string) => {
     setDismissed((current) => current.filter((item) => item !== category));

@@ -104,6 +104,8 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
   } = controller;
 
   const [storeOpen, setStoreOpen] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [size, setSize] = useState<string | null>(null);
   const [cartBusy, setCartBusy] = useState(false);
 
@@ -233,7 +235,50 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
                 alt="Kiyintirilgan ko‘rinish"
                 className="absolute inset-0 size-full object-contain"
               />
-            ) : null}
+            ) : (
+              /*
+                ⚠️ AVATARSIZ HOLAT ENDI KO'RINADI.
+                
+                Sehrgar yuz surati bo'lsa ichkariga qo'yib yuboradi, lekin
+                kiyintirish uchun TAYYOR avatar kerak. Ilgari bu yerda hech
+                narsa chizilmasdi: sahna bo'sh turardi va har kiyintirish
+                serverda «Avval avatar yasang» bilan jimgina yiqilardi —
+                foydalanuvchi na sababni, na tugmani ko'rardi.
+              */
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                {state.avatar?.status === 'processing' ? (
+                  <p className="text-small text-muted-foreground">
+                    Avatar tayyorlanmoqda — bu bir daqiqacha vaqt oladi…
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-small text-muted-foreground">
+                      Kiyintirish uchun avatar kerak
+                    </p>
+                    {(avatarError ?? state.avatar?.error) ? (
+                      <p className="max-w-xs text-tiny text-danger">
+                        {avatarError ?? state.avatar?.error}
+                      </p>
+                    ) : null}
+                    <Button
+                      disabled={avatarBusy}
+                      onClick={() => {
+                        setAvatarBusy(true);
+                        setAvatarError(null);
+                        void act({ op: 'avatar' })
+                          .then((result) => {
+                            if (result.error) setAvatarError(result.error);
+                            return refresh();
+                          })
+                          .finally(() => setAvatarBusy(false));
+                      }}
+                    >
+                      {avatarBusy ? 'Boshlanmoqda…' : 'Avatar yasash'}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Qatlam ko'rsatkichi — nechta kiyim kiyilgani */}
             {resolved.length > 0 ? (
@@ -253,7 +298,13 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
               </div>
             ) : null}
 
-            {rendering ? (
+            {/*
+              ⚠️ `stageImage` SHART: avatarsiz kiyintirish umuman
+              boshlanmaydi, lekin eski holat qolib ketishi mumkin. Bu
+              tekshiruvsiz spinner avatar so'ralayotgan blokning USTIGA
+              chizilardi va tugmani bosib bo'lmasdi.
+            */}
+            {rendering && stageImage ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 text-center">
                 <span className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 <p className="text-bodyMed">AI kiyintirmoqda…</p>
@@ -358,11 +409,25 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
           {/* Kiyim tasmasi */}
           {items.length === 0 ? (
             <Card className="flex flex-col gap-3 p-6 text-center">
-              <p className="text-small text-muted-foreground">
-                {onlyMySize && fitSize
-                  ? `${store?.name ?? 'Bu do‘kon'}da ${fitSize} o‘lchamdagi kiyim yo‘q`
-                  : 'Bu turkumda hozircha kiyim yo‘q'}
-              </p>
+              {/*
+                ⚠️ XATO BO'SHLIKDAN AJRATILADI.
+                
+                `try-on.state.tsx` dagi `catch` kiyimlarsiz holat qaytaradi va
+                `error` maydonini to'ldiradi. Sahifa esa uni HECH QAYERDA
+                ko'rsatmasdi — API yiqilsa ham ekranda «Bu turkumda kiyim
+                yo'q» chiqardi. Ikkalasi bir xil ko'ringani uchun sabab
+                topilmasdi: baza to'la, endpoint to'g'ri javob beradi, sahifa
+                esa bo'sh turadi.
+              */}
+              {state.error ? (
+                <p className="text-small text-danger">{state.error}</p>
+              ) : (
+                <p className="text-small text-muted-foreground">
+                  {onlyMySize && fitSize
+                    ? `${store?.name ?? 'Bu do‘kon'}da ${fitSize} o‘lchamdagi kiyim yo‘q`
+                    : 'Bu turkumda hozircha kiyim yo‘q'}
+                </p>
+              )}
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
                 {onlyMySize && fitSize ? (
                   <Button variant="ghost" onClick={() => setOnlyMySize(false)}>
@@ -381,17 +446,19 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
                 const selected = item.variantId === current?.variantId;
 
                 /*
-                 * ⚠️ KARTOCHKADA ODAMNING O'ZI — MAKETDAGI ASOSIY FIKR.
-                 * Har kartochka kiyimning yassi suratini emas, MODELNI
-                 * o'sha kiyimda ko'rsatadi. Tasma oldindan
-                 * tayyorlangani uchun bu deyarli hamma kartochkada bor.
+                 * ⚠️ KARTOCHKADA KIYIMNING O'ZI, MODEL EMAS.
+                 *
+                 * Ilgari tayyor natija (kiyintirilgan odam) ko'rsatilardi —
+                 * maketdagi fikr shunday edi. Amalda esa tasma bir xil
+                 * odamning takroriy suratlariga to'lib ketardi va kiyimni
+                 * ajratib bo'lmasdi: hamma kartochkada bir xil gavda,
+                 * farqi faqat mayda kiyim.
+                 *
+                 * Mijoz qarori (2026-09-10): kartochkada kiyim turadi.
+                 * Tayyorligini yashil belgi bildiradi, natijaning o'zi esa
+                 * katta sahnada ko'rinadi.
                  */
-                const preview = ready
-                  ? ((render as { cutoutUrl?: string | null; imageUrl?: string | null })
-                      .cutoutUrl ??
-                    (render as { imageUrl?: string | null }).imageUrl ??
-                    item.image)
-                  : item.image;
+                const preview = item.image;
 
                 return (
                   <button

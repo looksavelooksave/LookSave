@@ -186,7 +186,14 @@ looksave/
 
 Provayder suratni qancha saqlashini biz nazorat qilmaymiz — shuning uchun bu haqda **va'da berilmaydi**, faqat fakt aytiladi.
 
-**Brend logolari.** Nike, Gucci, Zara — shartnomasiz ishlatilmaydi. Deckda ham "target brands" deb belgilash kerak.
+**Brend logolari.** Ilgari qoida shunday edi: Nike, Gucci, Zara — shartnomasiz
+ishlatilmaydi, va `GET /v1/brands` logotipni faqat `is_partner` brendga berardi.
+
+**2026-09-09 da ega qarori bilan bu darvoza olib tashlandi.** Endi admin panelda
+logotip qo'yilgan har qanday brend uni ilovada ko'rsatadi — API to'smaydi.
+Tovar belgisidan foydalanish javobgarligi logotipni qo'yayotgan odamga tegishli;
+shartnomasiz brend logotipini qo'yish huquqiy xavf tug'diradi. Deckda ular hamon
+"target brands" deb belgilanishi kerak.
 
 ---
 

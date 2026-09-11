@@ -6,6 +6,7 @@ import {
   deleteBrand,
   getBrands,
   updateBrand,
+  uploadBrandLogo,
   type Brand,
   type BrandInput,
 } from '../api/admin';
@@ -43,9 +44,28 @@ function BrandForm({
   onCancel?: () => void;
 }): JSX.Element {
   const [form, setForm] = useState<BrandInput>(initial);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const set = <K extends keyof BrandInput>(key: K, value: BrandInput[K]): void =>
     setForm((current) => ({ ...current, [key]: value }));
+
+  /*
+   * Yuklash formani YUBORMAYDI — u faqat `logoUrl` maydonini to'ldiradi.
+   * Brend baribir «Saqlash» bosilganda yoziladi, ya'ni noto'g'ri fayl
+   * tanlansa foydalanuvchi uni almashtira oladi.
+   */
+  const upload = async (file: File): Promise<void> => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      set('logoUrl', await uploadBrandLogo(file));
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Yuklab bo`lmadi');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <form
@@ -84,15 +104,38 @@ function BrandForm({
         />
       </label>
 
-      <label className="grid gap-1 sm:col-span-2">
-        <span className="label">Logotip havolasi</span>
-        <Input
-          value={form.logoUrl ?? ''}
-          onChange={(event) => set('logoUrl', event.target.value)}
-          placeholder="https://…/nike.webp"
-          type="url"
-        />
-      </label>
+      <div className="grid gap-1 sm:col-span-2">
+        <span className="label">Logotip</span>
+        <div className="flex items-center gap-3">
+          {form.logoUrl ? (
+            <img src={form.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded object-contain" />
+          ) : null}
+          <Input
+            className="flex-1"
+            value={form.logoUrl ?? ''}
+            onChange={(event) => set('logoUrl', event.target.value)}
+            placeholder="https://…/nike.webp"
+            type="url"
+          />
+          <Button type="button" variant="outline" disabled={uploading} asChild>
+            <label className="cursor-pointer">
+              {uploading ? 'Yuklanmoqda…' : 'Fayl tanlash'}
+              <input
+                type="file"
+                className="hidden"
+                accept="image/png,image/webp,image/jpeg"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  // Bir xil faylni qayta tanlash ham `change` bersin
+                  event.target.value = '';
+                  if (file) void upload(file);
+                }}
+              />
+            </label>
+          </Button>
+        </div>
+        {uploadError ? <span className="text-sm text-destructive">{uploadError}</span> : null}
+      </div>
 
       <label className="grid gap-1 sm:col-span-2">
         <span className="label">Tavsif</span>

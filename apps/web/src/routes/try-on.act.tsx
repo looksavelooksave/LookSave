@@ -62,7 +62,15 @@ const bodySchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('presign'),
     purpose: z.enum(['avatar', 'face', 'body']),
-    contentType: z.string().min(3).max(100),
+    /*
+     * ⚠️ API SXEMASI BILAN BIR XIL RO'YXAT (`presignSchema`). Ilgari
+     * bu yerda `z.string()` turardi va mos kelmagan tur API'ga yetib
+     * borib, u yerda 422 bo'lardi — foydalanuvchi esa faqat
+     * «Ma`lumotlar to`liq emas» ni ko'rardi.
+     */
+    contentType: z.enum(['image/webp', 'image/jpeg', 'image/png']),
+    /* API'da MAJBURIY — kengaytmani aniqlash uchun ishlatiladi */
+    fileName: z.string().trim().min(1).max(200),
   }),
 
   z.object({ op: z.literal('face'), url: z.string().url().max(500) }),
@@ -91,7 +99,19 @@ export async function action({ params, request }: Route.ActionArgs) {
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: 'So`rov noto`g`ri' }, { status: 400, headers });
+    /*
+     * ⚠️ QAYSI MAYDON YIQILGANI AYTILADI. Ilgari javob faqat quruq
+     * «So`rov noto`g`ri» edi va sabab hech qayerda ko'rinmasdi —
+     * yetishmayotgan bitta maydonni topish uchun butun zanjirni
+     * qo'lda tekshirishga to'g'ri kelardi.
+     *
+     * Bu ichki BFF marshruti: `bodySchema` mijozning O'Z kodidan
+     * keladigan shaklni tekshiradi, foydalanuvchi kiritmasini emas.
+     * Ya'ni bu yerda maydon nomlarini ochish sir oshkor qilmaydi —
+     * u faqat o'z xatomizni ko'rsatadi.
+     */
+    const fields = parsed.error.issues.map((i) => `${i.path.join('.') || '(ildiz)'}: ${i.message}`);
+    return Response.json({ error: 'So`rov noto`g`ri', fields }, { status: 400, headers });
   }
 
   const input = parsed.data;
@@ -139,7 +159,11 @@ export async function action({ params, request }: Route.ActionArgs) {
         return Response.json(
           {
             data: await presignProfileUpload(
-              { purpose: input.purpose, contentType: input.contentType },
+              {
+                purpose: input.purpose,
+                contentType: input.contentType,
+                fileName: input.fileName,
+              },
               options,
             ),
           },

@@ -656,7 +656,7 @@ export interface PresignResult {
 }
 
 export const presignProfileUpload = (
-  input: { purpose: 'avatar' | 'face' | 'body'; contentType: string },
+  input: { purpose: 'avatar' | 'face' | 'body'; contentType: string; fileName: string },
   options: ApiOptions = {},
 ): Promise<PresignResult> =>
   api<PresignResult>('/profile/uploads/presign', { ...options, method: 'POST', body: input });

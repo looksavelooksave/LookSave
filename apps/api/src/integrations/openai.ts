@@ -81,7 +81,17 @@ export function buildPrompt(
   const lines = [
     'Photorealistic virtual try-on.',
     `Dress the person from the first image in the garment from the second image, ${PLACEMENT[kind]}.`,
+    /*
+     * ⚠️ YUZ ENG OG'RIQLI JOY. Bitta «unchanged» yetmadi — model yuzni
+     * qayta chizib, «chiroyliroq» qilib qo'yardi va foydalanuvchi o'zini
+     * tanimasdi. Buyruq uch qatlamga bo'lingan: NIMA qilma (qayta chizma,
+     * go'zallashtirma), QAYERGACHA (bo'yindan yuqorisi butunlay), va
+     * O'LCHOV (birinchi rasmdagi bilan bir xil piksel).
+     */
     "Keep the person's face, hair, skin tone and body proportions completely unchanged.",
+    'The head and face must stay EXACTLY as in the first image — same features, same expression, same age, same skin.',
+    'Do NOT redraw, beautify, smooth, slim, retouch or re-generate the face in any way.',
+    'Everything above the neckline is copied from the first image untouched; only the clothing below changes.',
   ];
 
   /*

@@ -38,6 +38,20 @@ function r2(): S3Client {
       accessKeyId: env().R2_ACCESS_KEY_ID,
       secretAccessKey: env().R2_SECRET_ACCESS_KEY,
     },
+    /*
+     * ⚠️ IMZOLANGAN YUKLASHNI SHU SOZLAMA TUZATADI.
+     *
+     * SDK v3.729 dan boshlab `PutObject` ga sukut bo'yicha CRC32 chek
+     * summasi qo'shiladi. Imzolashda TANA BO'LMAGANI uchun u bo'sh
+     * satrdan hisoblanadi va manzilga `x-amz-checksum-crc32=AAAAAA==`
+     * bo'lib yoziladi. Brauzer keyin haqiqiy faylni yuboradi — chek
+     * summasi mos kelmaydi va R2 `PUT` ni rad etadi.
+     *
+     * `WHEN_REQUIRED` — chek summasi faqat operatsiya talab qilganda
+     * qo'shiladi. Bu yerdagi to'g'ridan-to'g'ri yuklashlar (masalan brend
+     * logotipi) tanani o'zi bilan yuboradi, ya'ni ular zarar ko'rmaydi.
+     */
+    requestChecksumCalculation: 'WHEN_REQUIRED',
   });
 
   return client;
@@ -51,6 +65,13 @@ function r2(): S3Client {
 const CACHE_CONTROL: Record<PresignInput['purpose'], string> = {
   product: 'public, max-age=31536000, immutable',
   store: 'public, max-age=86400',
+  /*
+   * Brend logotipi — kamdan-kam almashadi, lekin almashganda hamma
+   * joyda ko'rinishi kerak. `immutable` BERILMAYDI: kalit UUID bo'lgani
+   * uchun yangi logo yangi kalit oladi, eskisining bir kunlik keshi esa
+   * zarar qilmaydi.
+   */
+  brand: 'public, max-age=86400',
   face: 'private, max-age=3600',
   // Profil surati almashtirilganda yangi UUID beriladi — eskisi keshda qolsa ham zarari yo'q
   avatar: 'public, max-age=31536000, immutable',

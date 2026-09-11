@@ -104,8 +104,17 @@ v1Router.get('/brands', async (_req, res) => {
       id: row.id,
       name: row.name,
       slug: row.slug,
-      // ⚠️ Logo faqat shartnoma bo'lsa ko'rsatiladi (00-README §8)
-      logoUrl: row.is_partner ? row.logo_url : null,
+      /*
+       * ⚠️ ILGARI BU YERDA `row.is_partner ? row.logo_url : null` TURARDI —
+       * logo faqat shartnomali brendga ko'rsatilardi (00-README §8).
+       *
+       * Darvoza 2026-09-09 da EGA QARORI bilan olib tashlandi: logo
+       * qo'yilgan har qanday brend uni ko'rsatadi. Tovar belgisi javobgarligi
+       * shu bilan admin panelda logo qo'yayotgan odamga o'tdi — API endi
+       * hech narsani to'smaydi. `is_partner` o'zi saqlanadi, u saralash va
+       * boshqa joylarda ishlatiladi.
+       */
+      logoUrl: row.logo_url,
       isPartner: row.is_partner,
     })),
   );

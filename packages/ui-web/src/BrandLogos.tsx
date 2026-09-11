@@ -13,7 +13,13 @@
  *
  * ⚠️ BU ZAXIRA, ASOSIY YO'L EMAS. Do'kon panelidan haqiqiy `logoUrl`
  * kelsa, chaqiruvchi o'shani chizadi; bu ro'yxat faqat baza bo'sh
- * bo'lganda ishlaydi (hozir yettala brendda ham `logoUrl: null`).
+ * bo'lganda ishlaydi.
+ *
+ * 2026-09-09 dan boshlab oltala brendda (`local` dan tashqari) bazada
+ * `logoUrl` BOR — shu SVG'lardan yasalgan PNG'lar R2 ga yuklandi, chunki
+ * mobil ilovada bu komponentning muqobili yo'q va u faqat `<Image>`
+ * bilan URL chiza oladi. Ya'ni saytda bu ro'yxat endi amalda ishlamaydi;
+ * u baza tozalansa yoki yangi brend qo'shilsa kerak bo'ladi.
  *
  * ⚠️ `fill="currentColor"` — rang ota-elementdan meros bo'lib keladi,
  * shuning uchun bitta glif tinch holatda ham, sichqoncha ostida ham

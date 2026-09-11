@@ -107,7 +107,7 @@ export const presignSchema = z.object({
    * `avatar` (oddiy profil rasmi) esa ochiq, chunki uni foydalanuvchi
    * o'zi ko'rsatish uchun qo'yadi.
    */
-  purpose: z.enum(['product', 'store', 'face', 'avatar', 'body']),
+  purpose: z.enum(['product', 'store', 'brand', 'face', 'avatar', 'body']),
 });
 
 export type CreateProductInput = z.output<typeof createProductSchema>;
@@ -132,5 +132,17 @@ export const profilePresignSchema = presignSchema.extend({
   purpose: z.enum(['avatar', 'face', 'body']),
 });
 
+/**
+ * Admin panel uchun — FAQAT brend logotipi.
+ *
+ * ⚠️ `profilePresignSchema` bilan bir xil sabab: ro'yxatni CHEGARALASH,
+ * `purpose` ni majburan almashtirish EMAS. Admin `face` yoki `body`
+ * yuklay olmasligi kerak — ular shaxsiy va `private` bucketga tushadi.
+ */
+export const adminPresignSchema = presignSchema.extend({
+  purpose: z.literal('brand'),
+});
+
 export type PresignInput = z.output<typeof presignSchema>;
+export type AdminPresignInput = z.output<typeof adminPresignSchema>;
 export type ProfilePresignInput = z.output<typeof profilePresignSchema>;
