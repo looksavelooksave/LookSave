@@ -12,7 +12,22 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/validation/package.json ./packages/validation/
 
-RUN npm ci --workspace=apps/api --include-workspace-root
+# ⚠️ `--ignore-scripts` SHART.
+#
+# Ildiz `package.json` da `postinstall: node scripts/postinstall.mjs` bor,
+# bu yerga esa faqat manifestlar nusxalanadi — `scripts/` papkasi obrazda
+# YO'Q. Usiz build shu qatorda yiqilardi:
+#
+#     Error: Cannot find module '/repo/scripts/postinstall.mjs'
+#
+# Papkani nusxalash yechim EMAS: o'sha skript `patch-package` orqali
+# `expo-localization` ni yamaydi — u MOBIL bog'liqlik va bu obrazda
+# umuman o'rnatilmaydi.
+#
+# Skriptlarni o'tkazib yuborish xavfsiz: bu bosqich faqat `tsc` ni
+# yurgizadi, yakuniy obraz esa `node_modules` ni `deps` bosqichidan oladi
+# (pastdagi `COPY --from=deps`). `deps` da `--ignore-scripts` allaqachon bor.
+RUN npm ci --workspace=apps/api --include-workspace-root --ignore-scripts
 
 COPY tsconfig.base.json ./
 COPY packages ./packages
