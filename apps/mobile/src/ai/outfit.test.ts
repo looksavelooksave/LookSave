@@ -245,3 +245,36 @@ describe('nextPending', () => {
     expect(nextPending(resolved)).toBeNull();
   });
 });
+
+describe('indexRenders — takroriy kalit', () => {
+  /*
+   * ⚠️ NEGA TAKROR BO'LADI. Bitta `(variantId, baseRenderId)` juftligi
+   * uchun bazada bir necha qator qolishi mumkin: foydalanuvchi yangi
+   * surat yuklaganda yoki AI modeli almashganda eski natija o'chmaydi,
+   * yangisi yoniga qo'shiladi. `scope: 'all'` esa HAMMASINI qaytaradi.
+   *
+   * ⚠️ BU XATO JIM EDI. Server yangisini BIRINCHI beradi
+   * (`ORDER BY created_at DESC`), `map.set` esa shartsiz chaqirilardi —
+   * ya'ni OXIRGISI, eng ESKISI yutardi. Model almashtirilgandan keyin
+   * ham komplektda eski surat ko'rinardi va hamma narsa to'g'ri
+   * ishlayotgandek tuyulardi: yangi natija bazada bor edi, shunchaki
+   * ekranga chiqmasdi.
+   */
+  it('birinchisini oladi — server yangisini birinchi beradi', () => {
+    const renders = indexRenders([render('yangi', 't1', null), render('eski', 't1', null)]);
+
+    expect(renders.get('t1|root')?.id).toBe('yangi');
+  });
+
+  it('turli asoslar aralashmaydi', () => {
+    const renders = indexRenders([
+      render('yangi-root', 'j1', null),
+      render('eski-root', 'j1', null),
+      render('yangi-ustiga', 'j1', 'r1'),
+      render('eski-ustiga', 'j1', 'r1'),
+    ]);
+
+    expect(renders.get('j1|root')?.id).toBe('yangi-root');
+    expect(renders.get('j1|r1')?.id).toBe('yangi-ustiga');
+  });
+});

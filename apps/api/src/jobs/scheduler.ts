@@ -5,7 +5,7 @@ import { notifyStatusChange } from '../integrations/notify';
 import { sendMessage } from '../integrations/telegram';
 import { logger } from '../logger';
 import { sweepStaleAvatars } from '../tryon/avatar';
-import { sweepStaleRenders } from '../tryon/render';
+import { cleanupSupersededRenders, sweepStaleRenders } from '../tryon/render';
 
 /**
  * Avtomatik jarayonlar (01-arxitektura §"Avtomatik jarayonlar", 02-database §10.7-10.9).
@@ -294,6 +294,15 @@ async function tick(): Promise<void> {
     await run('store-stats', updateStoreStats);
     await run('cleanup', cleanupExpired);
     await run('anonymize', anonymizeAccounts);
+    /*
+     * Eskirgan kiyintirish natijalari — kuniga bir marta yetarli.
+     *
+     * ⚠️ TEZ-TEZ ISHLATISHNING MA'NOSI YO'Q. Qatorlar faqat generatsiya
+     * retsepti o'zgarganda eskiradi (AI modeli almashganda), ya'ni bu
+     * yillar davomida bir necha marta bo'ladigan hodisa. Ish esa har
+     * yurishda R2 ga yuzlab chaqiruv qiladi.
+     */
+    await run('render-cleanup', cleanupSupersededRenders);
   }
 
   // Oyning 1-sanasi, 05:00 UTC

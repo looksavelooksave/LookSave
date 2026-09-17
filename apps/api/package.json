@@ -12,7 +12,10 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "check:private-bucket": "tsx --env-file=.env scripts/check-private-bucket.ts",
-    "seed:catalog": "tsx --env-file=.env scripts/seed-catalog.ts"
+    "seed:catalog": "tsx --env-file=.env scripts/seed-catalog.ts",
+    "bench:pairs": "tsx --env-file=.env scripts/make-bench-pairs.ts",
+    "bench:pairs:local": "tsx --env-file=.env scripts/make-bench-pairs-local.ts",
+    "r2:cors": "tsx --env-file=.env scripts/r2-cors.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1109.0",

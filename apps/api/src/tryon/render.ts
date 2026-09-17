@@ -1,11 +1,16 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { AI_TRYON_SLOTS } from '@looksave/validation';
+import { AI_TRYON_SLOTS, garmentImageForAngle } from '@looksave/validation';
 
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
-import { garmentKindForSlot, generateTryon, isOpenAiEnabled } from '../integrations/openai';
-import { presignRead, uploadObject } from '../integrations/r2';
+import {
+  garmentKindForSlot,
+  generateTryon,
+  generationFingerprint,
+  isOpenAiEnabled,
+} from '../integrations/openai';
+import { deleteByUrl, presignRead, uploadObject } from '../integrations/r2';
 import { makeCutout } from '../store/cutout';
 import { logger } from '../logger';
 import { env } from '../config/env';
@@ -78,9 +83,21 @@ function toDto(row: RenderRow): RenderDto {
  * yangi surat yuklaganda eski natija qaytaverardi — ya'ni u boshqa odamning
  * gavdasini o'ziniki deb ko'rardi. Surat almashsa hash o'zgaradi va natija
  * qaytadan yasaladi.
+ *
+ * ⚠️ RETSEPT HAM KIRADI (`generationFingerprint`). Manzillar model
+ * almashganda o'zgarmaydi: `gpt-image-1` dan `2.5` ga o'tilganda kalit
+ * o'sha bo'lib qolardi va gallereyada eski, yuzi buzuq natijalar
+ * qaytaverardi — yangi model umuman chaqirilmasdi.
+ *
+ * ⚠️ ESKI QATORLAR O'CHMAYDI, SHUNCHAKI MOS KELMAY QOLADI. `INSERT`
+ * yangi xesh bilan yangi qator qo'shadi; `listRenders` esa
+ * `ORDER BY created_at DESC` bilan eng yangisini oladi, ya'ni ilova
+ * darhol yangisini ko'radi. Eskilari bazada va R2 da qoladi —
+ * ularni tozalash alohida ish.
  */
 function sourceHash(bodyPhotoUrl: string, garmentImageUrl: string): string {
-  return createHash('sha256').update(`${bodyPhotoUrl}|${garmentImageUrl}`).digest('hex');
+  const recipe = generationFingerprint(env().OPENAI_IMAGE_MODEL);
+  return createHash('sha256').update(`${recipe}|${bodyPhotoUrl}|${garmentImageUrl}`).digest('hex');
 }
 
 interface Sources {
@@ -90,10 +107,15 @@ interface Sources {
   /**
    * Yuz surati — GPT ga qo'shimcha manba sifatida beriladi.
    *
-   * ⚠️ NEGA KERAK. `gpt-image-1` yuzni nusxa ko'chirmaydi, butun kadrni
-   * qaytadan chizadi va yuzni «o'xshatib» qo'yadi. Faqat gavda surati
-   * berilsa u o'sha suratdagi TAXMINIY yuzni yana bir bor taxmin qiladi.
-   * Haqiqiy yuz suratini ko'rsatsak, taxmin manbadan boshlanadi.
+   * ⚠️ NEGA KERAK. Model kadrni qaytadan chizadi — `gpt-image-2.5` da
+   * yuz ancha aniq saqlanadi, lekin nusxa ko'chirish emas, baribir
+   * qayta chizish. Faqat gavda surati berilsa, u o'sha suratdagi
+   * TAXMINIY yuzni yana bir bor taxmin qiladi: saytda gavda surati
+   * ko'pincha o'zi yasalgan avatar bo'ladi. Haqiqiy yuz suratini
+   * ko'rsatsak, zanjirda bitta haqiqiy manba paydo bo'ladi.
+   *
+   * Havola `integrations/openai.ts` da `cropFace` bilan boshga qirqib
+   * kattalashtiriladi — to'liq kadrda yuz mayda detal bo'lib qolardi.
    */
   faceReferenceUrl: string | null;
 }
@@ -158,7 +180,7 @@ async function loadSources(
    * tayyorlangan (tik poza, tor asosiy kiyim, sodda fon), uydagi tasodifiy
    * surat esa bularni kafolatlamaydi.
    *
-   * Lekin o'lchov boshqa narsani ko'rsatdi. `gpt-image-1` yuzni NUSXA
+   * Lekin o'lchov boshqa narsani ko'rsatdi. Model yuzni NUSXA
    * KO'CHIRMAYDI — butun kadrni qaytadan chizadi. Yasalgan avatarning
    * o'zi allaqachon shunday qayta chizilgan, ya'ni undagi yuz taxminiy.
    * Uning ustiga kiyintirish qo'ysak, taxminning taxmini chiqadi va yuz
@@ -194,11 +216,31 @@ async function loadSources(
    * Variant surati ustun: rang variantlari har xil ko'rinadi va mahsulotning
    * umumiy surati boshqa rangda bo'lishi mumkin.
    */
-  const variantImages = Array.isArray(row.variant_images) ? row.variant_images : [];
-  const productImages = Array.isArray(row.product_images) ? row.product_images : [];
-  const garment = [...variantImages, ...productImages].find(
-    (value): value is string => typeof value === 'string' && value.length > 0,
-  );
+  const onlyUrls = (value: unknown): string[] =>
+    (Array.isArray(value) ? value : []).filter(
+      (item): item is string => typeof item === 'string' && item.length > 0,
+    );
+
+  const variantImages = onlyUrls(row.variant_images);
+  const productImages = onlyUrls(row.product_images);
+
+  /*
+   * ⚠️ BURCHAKKA MOS SURAT TANLANADI.
+   *
+   * Ilgari shunchaki BIRINCHI surat olinardi — ya'ni odam yon tomonga
+   * burilganda ham modelga kiyimning OLD surati berilardi va u yon
+   * ko'rinishni o'zidan o'ylab topardi: kesim, yeng chizig'i va mato
+   * burmasi haqiqiy mahsulotga o'xshamasdi.
+   *
+   * Sotuvchi endi uchta suratni belgilangan tartibda yuklaydi
+   * (`seller/product-new.tsx` — Old / Orqa / Yon), `GARMENT_ANGLE_ORDER`
+   * esa o'sha tartibni belgilaydi.
+   *
+   * ⚠️ KESH BUZILMAYDI: `sourceHash` ichida kiyim surati bor, ya'ni har
+   * burchak o'z xeshiga ega bo'ladi va natijalar aralashib ketmaydi.
+   */
+  const garment =
+    garmentImageForAngle(variantImages, angle) ?? garmentImageForAngle(productImages, angle);
 
   if (!garment) {
     throw new ApiError('VALIDATION_ERROR', 'Bu mahsulotning surati yo`q — kiyintirib bo`lmaydi');
@@ -249,6 +291,8 @@ export interface GarmentFilters {
   slots: string[];
   gender?: string | null;
   category?: string | null;
+  /** Uslub slugi (`GARMENT_STYLES`) — `products.tags` bilan kesishma */
+  style?: string | null;
   /**
    * Do'kon.
    *
@@ -270,7 +314,7 @@ export interface GarmentFilters {
 }
 
 export async function listGarments(filters: GarmentFilters) {
-  const { slots, gender = null, category = null, storeId = null, size = null, limit } = filters;
+  const { slots, gender = null, category = null, storeId = null, size = null, style = null, limit } = filters;
 
   const { rows } = await pool.query<{
     variant_id: string;
@@ -282,6 +326,8 @@ export async function listGarments(filters: GarmentFilters) {
     image: string;
     color_hex: string | null;
     sizes: string[] | null;
+    sold_out_sizes: string[] | null;
+    colors: Array<{ variantId: string; colorHex: string | null; colorName: unknown }> | null;
     store_id: string;
     store_name: string;
   }>(
@@ -307,6 +353,41 @@ export async function listGarments(filters: GarmentFilters) {
             (SELECT array_agg(vs.size ORDER BY vs.size)
                FROM variant_stock vs
               WHERE vs.variant_id = v.id AND vs.stock > vs.reserved) AS sizes,
+            /*
+             * ⚠️ TUGAGAN O'LCHAMLAR ALOHIDA QAYTADI.
+             *
+             * Ilgari faqat mavjudlari kelardi, tugagani shunchaki
+             * YO'QOLARDI. Foydalanuvchi uchun ikki holat bir xil
+             * ko'rinardi: «bu do'kon M ishlab chiqarmaydi» va «M bor edi,
+             * sotilib ketdi». Ikkinchisi muhim — odam kutishi yoki boshqa
+             * do'konga o'tishi mumkin.
+             */
+            (SELECT array_agg(vs.size ORDER BY vs.size)
+               FROM variant_stock vs
+              WHERE vs.variant_id = v.id AND vs.stock <= vs.reserved) AS sold_out_sizes,
+            -- RANGLAR ICHMA-ICH QAYTADI.
+            --
+            -- DISTINCT ON (p.id) har mahsulotdan BITTA qator beradi:
+            -- tasmada bir xil kartalar takrorlanmasligi uchun. Lekin
+            -- ilovadagi rang tanlagich "shu mahsulotning boshqa
+            -- variantlari" ni ro'yxatdan qidirardi va ular u yerda hech
+            -- qachon bo'lmasdi -- tanlagich umuman ko'rinmasdi.
+            --
+            -- Yechim: kartani takrorlamasdan, variantlarni shu qatorning
+            -- ichiga solish. Faqat surati va ombori borlari olinadi --
+            -- tanlab bo'lmaydigan rangni ko'rsatish aldash bo'lardi.
+            (SELECT json_agg(json_build_object(
+                      'variantId', cv.id,
+                      'colorHex', cv.color_hex,
+                      'colorName', cv.color_name
+                    ) ORDER BY cv.sort_order, cv.id)
+               FROM product_variants cv
+              WHERE cv.product_id = p.id
+                AND cv.is_active
+                AND COALESCE(NULLIF(cv.images->>0, ''), NULLIF(p.images->>0, '')) IS NOT NULL
+                AND EXISTS (SELECT 1 FROM variant_stock cvs
+                             WHERE cvs.variant_id = cv.id AND cvs.stock > cvs.reserved)
+            ) AS colors,
             s.id AS store_id, s.name AS store_name
        FROM products p
        JOIN product_variants v ON v.product_id = p.id AND v.is_active
@@ -328,9 +409,12 @@ export async function listGarments(filters: GarmentFilters) {
         AND ($6::text IS NULL OR EXISTS (
               SELECT 1 FROM variant_stock vs2
                WHERE vs2.variant_id = v.id AND vs2.size = $6 AND vs2.stock > vs2.reserved))
+        -- Uslub: KESISHMA, tenglik emas. Tags erkin massiv va do'kon
+        -- unga o'z belgilarini ham qo'shishi mumkin.
+        AND ($7::text IS NULL OR p.tags @> ARRAY[$7]::text[])
       ORDER BY p.id, (v.images->>0) IS NOT NULL DESC, v.id
       LIMIT $3`,
-    [slots, gender, limit, category, storeId, size],
+    [slots, gender, limit, category, storeId, size, style],
   );
 
   return rows.map((row) => ({
@@ -343,6 +427,13 @@ export async function listGarments(filters: GarmentFilters) {
     image: row.image,
     colorHex: row.color_hex,
     sizes: row.sizes ?? [],
+    /*
+     * Tugaganlari alohida: ilova ularni ko'rsatadi, lekin tanlab
+     * bo'lmaydigan qilib — «bor edi, sotilib ketdi» degani.
+     */
+    soldOutSizes: row.sold_out_sizes ?? [],
+    /** Shu mahsulotning tanlash mumkin bo'lgan rang variantlari */
+    colors: row.colors ?? [],
     store: { id: row.store_id, name: row.store_name },
   }));
 }
@@ -362,6 +453,32 @@ export async function requestRender(
 
   const sources = await loadSources(userId, variantId, angle, baseRenderId);
   const hash = sourceHash(sources.bodyPhotoUrl, sources.garmentImageUrl);
+
+  /*
+   * ⚠️ YIQILGAN URINISH KESHLANMAYDI — VA BU JIDDIY XATO EDI.
+   *
+   * Quyidagi `ON CONFLICT DO NOTHING` qator BORLIGINI ko'radi, holatiga
+   * qaramaydi. Ya'ni bir marta yiqilgan natija abadiy qaytarilardi:
+   * foydalanuvchi «qayta urinish» ni qancha bossa ham o'sha `failed`
+   * qatorni olardi va ekranda «Kiyintirib bo'lmadi» qotib qolardi.
+   * Vaqtincha tarmoq uzilishi shu tarzda DOIMIY nosozlikka aylanardi.
+   *
+   * Yiqilgan urinish saqlashga arzimaydi: natija yo'q, ya'ni kesh
+   * qiladigan narsa ham yo'q. O'chiramiz va oqim oddiy yo'ldan ketadi —
+   * kunlik chegara ham odatdagidek qo'llanadi.
+   *
+   * ⚠️ `base_render_id` DA CASCADE BOR, shuning uchun shartga bolasi
+   * yo'qligi ham qo'shilgan. Amalda yiqilgan qator asos bo'la olmaydi
+   * (`loadLayerBase` faqat `ready` ni qaytaradi), lekin CASCADE jimgina
+   * butun zanjirni o'chiradi — bunday joyda ehtiyot shart arzon.
+   */
+  await pool.query(
+    `DELETE FROM tryon_renders
+      WHERE user_id = $1 AND variant_id = $2 AND angle = $3 AND source_hash = $4
+        AND status = 'failed'
+        AND NOT EXISTS (SELECT 1 FROM tryon_renders c WHERE c.base_render_id = tryon_renders.id)`,
+    [userId, variantId, angle, hash],
+  );
 
   /*
    * ⚠️ POYGADAN HIMOYA. Ikki so'rov bir vaqtda kelsa ikkalasi ham "kesh yo'q"
@@ -719,8 +836,8 @@ export async function listRenders(
  * `processing` da qolardi — foydalanuvchi aylanayotgan indikatorga qarab
  * o'tirardi.
  *
- * 10 daqiqa — `gpt-image-1` ning eng sekin holatidan (30–60 s) ancha
- * ko'p, ya'ni tirik ish xato bilan yopilmaydi.
+ * 10 daqiqa — modelning eng sekin holatidan (30–60 s) ancha ko'p,
+ * ya'ni tirik ish xato bilan yopilmaydi.
  *
  * ⚠️ `pending` HAM YOPILADI — NAVBAT XOTIRADA. Navbatda turgan ish
  * ham server qayta ishga tushganda yo'qoladi va qator abadiy `pending`
@@ -737,6 +854,110 @@ export async function sweepStaleRenders(): Promise<number> {
   );
 
   return rowCount ?? 0;
+}
+
+/**
+ * Eskirgan natijalarni tozalaydi — baza qatorini ham, R2 dagi suratni ham.
+ *
+ * ⚠️ NEGA KERAK. `sourceHash` ichida generatsiya retsepti bor
+ * (`integrations/openai.ts` — `generationFingerprint`), ya'ni AI modeli
+ * yoki chiqish sozlamasi almashganda eski qator YANGI kalit bilan mos
+ * kelmay qoladi. U hech qachon qaytarilmaydi, lekin bazada va R2 da
+ * turaveradi — har model almashtirish yangi qatlam axlat qoldiradi.
+ *
+ * ⚠️ «ESKIRGAN» NIMA. Ayni shu odam, shu kiyim, shu burchak va shu asos
+ * uchun XESHI BOSHQA, YANGIROQ qator bo'lsa — eskisi o'lik. Xeshni
+ * qaytadan hisoblab bo'lmaydi (surat manzillari qatorda saqlanmaydi),
+ * lekin buni bilish ham shart emas: yangisi bor ekan, hamma yo'l
+ * o'shanga boradi.
+ *
+ * ⚠️ UCHTA HIMOYA BOR VA UCHALASI HAM HAQIQIY ZARARNI TO'SADI:
+ *
+ *   1. QATLAM (eng o'tkiri). `base_render_id` da `ON DELETE CASCADE`
+ *      turibdi. Ustiga qatlam qurilgan natijani o'chirsak, butun
+ *      komplekt zanjiri JIMGINA o'chib ketardi — foydalanuvchi yig'gan
+ *      kiyimlar yo'qolardi va sabab hech qayerda ko'rinmasdi.
+ *      Shuning uchun bolasi bor qator tegilmaydi. Zanjir pastdan
+ *      yuqoriga, bir necha yurishda tozalanadi.
+ *
+ *   2. YOSH. Ilova natijani `id` bo'yicha ham so'raydi (`pollRender`,
+ *      `loadLayerBase`) va ochiq turgan seansda eski `id` qo'lda
+ *      bo'lishi mumkin. Bir hafta — har qanday seansdan uzun.
+ *
+ *   3. SAQLANGAN KOMPLEKT. `looks.thumbnail_url` shu suratga ishora
+ *      qilishi mumkin. Bugun ilova uni to'ldirmaydi, lekin API qabul
+ *      qiladi — o'chirsak saqlangan komplekt eskizsiz qolardi.
+ *
+ * ⚠️ `pending` VA `processing` TEGILMAYDI. Ular uchun pul allaqachon
+ * ketgan va natija hali yo'lda.
+ *
+ * ⚠️ AVVAL QATOR, KEYIN SURAT. Teskarisi qilinsa, R2 o'chib qator
+ * qolgan oraliqda ilova buzilgan rasmga ishora qilardi (`scope: 'all'`
+ * eski qatorlarni ham qaytaradi). Bu tartibda eng yomon holat —
+ * egasiz qolgan obyekt, ya'ni biroz joy; `deleteByUrl` esa xatoni
+ * o'zi yutadi va logga yozadi.
+ */
+
+/** Bir hafta — har qanday ochiq seansdan uzun. */
+const CLEANUP_MIN_AGE_DAYS = 7;
+
+/**
+ * Bir yurishda nechta qator.
+ *
+ * ⚠️ HAR QATOR IKKITAGACHA TARMOQ CHAQIRUVI (surat + kesim). Ish kuniga
+ * bir marta ishlaydi, shuning uchun katta orqada qolish bir necha kunda
+ * tozalanadi — bu ataylab: cron yurishini soatlab ushlab turgandan ko'ra
+ * sekin tozalagan yaxshi.
+ */
+const CLEANUP_BATCH = 200;
+
+export async function cleanupSupersededRenders(): Promise<number> {
+  const { rows } = await pool.query<{ result_url: string | null; cutout_url: string | null }>(
+    `WITH superseded AS (
+       SELECT r.id
+         FROM tryon_renders r
+        WHERE r.status IN ('ready', 'failed')
+          AND r.created_at < now() - make_interval(days => $1::int)
+          -- Yangiroq va BOSHQA xeshli natija bor: eskisiga yo'l qolmagan
+          AND EXISTS (
+                SELECT 1 FROM tryon_renders n
+                 WHERE n.user_id = r.user_id
+                   AND n.variant_id = r.variant_id
+                   AND n.angle = r.angle
+                   AND n.base_render_id IS NOT DISTINCT FROM r.base_render_id
+                   AND n.source_hash <> r.source_hash
+                   AND n.created_at > r.created_at)
+          -- ⚠️ CASCADE: ustida qatlam turgan bo'lsa TEGILMAYDI
+          AND NOT EXISTS (
+                SELECT 1 FROM tryon_renders c WHERE c.base_render_id = r.id)
+          -- Saqlangan komplekt eskizi shu suratga ishora qilmasin
+          AND NOT EXISTS (
+                SELECT 1 FROM looks l
+                 WHERE l.thumbnail_url IS NOT NULL
+                   AND l.thumbnail_url IN (r.result_url, r.cutout_url))
+        ORDER BY r.created_at
+        LIMIT $2
+     )
+     DELETE FROM tryon_renders
+      WHERE id IN (SELECT id FROM superseded)
+     RETURNING result_url, cutout_url`,
+    [CLEANUP_MIN_AGE_DAYS, CLEANUP_BATCH],
+  );
+
+  if (rows.length === 0) return 0;
+
+  /*
+   * ⚠️ BO'LAKLAB — hammasi birdan emas. 200 qator = 400 gacha chaqiruv;
+   * parallel yuborilsa R2 ni bo'g'ib qo'yardi.
+   */
+  const urls = rows.flatMap((row) => [row.result_url, row.cutout_url]).filter(Boolean);
+
+  for (let i = 0; i < urls.length; i += 10) {
+    await Promise.all(urls.slice(i, i + 10).map((url) => deleteByUrl(url)));
+  }
+
+  logger.info({ rows: rows.length, objects: urls.length }, 'tryon: eskirgan natijalar tozalandi');
+  return rows.length;
 }
 
 /**

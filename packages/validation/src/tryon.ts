@@ -1,3 +1,4 @@
+import { GARMENT_STYLES } from './store-products';
 import { z } from 'zod';
 
 import { cursorSchema, uuidSchema } from './common';
@@ -30,7 +31,7 @@ export type Slot = z.output<typeof slotSchema>;
  * mumkin» belgisi va serverning haqiqiy qarori bir-biridan ajralib
  * ketishi mumkin edi. Endi manba bitta va ikkala tomon shundan o'qiydi.
  */
-export const AI_TRYON_SLOTS: readonly Slot[] = ['top', 'outer', 'bottom'];
+export const AI_TRYON_SLOTS: readonly Slot[] = ['top', 'outer', 'bottom', 'feet'];
 
 export function supportsAiTryon(slot: string): boolean {
   return (AI_TRYON_SLOTS as readonly string[]).includes(slot);
@@ -185,7 +186,20 @@ export const garmentQuerySchema = z.object({
    * o'qitilmagan — ularni ro'yxatga qo'shsak, foydalanuvchi bosadi,
    * pul sarflanadi va natija yaroqsiz chiqadi.
    */
-  slot: z.enum(['top', 'outer', 'bottom']).optional(),
+  /*
+   * ⚠️ RO'YXAT `AI_TRYON_SLOTS` BILAN BIR XIL BO'LISHI SHART.
+   *
+   * Ilgari bu yerda uchta slot qotirib yozilgan edi. `feet` qo'shilganda
+   * ro'yxatlar ayri tushib qoldi: server uni qabul qilardi, sxema esa
+   * «Invalid enum value» bilan rad etardi — oyoq kiyim tabi umuman
+   * ochilmasdi.
+   */
+  slot: z.enum(['top', 'outer', 'bottom', 'feet']).optional(),
+  /*
+   * Uslub filtri — `products.tags` bilan kesishma bo'yicha.
+   * Ro'yxat `GARMENT_STYLES` dan, ya'ni sotuvchi tanlagani bilan aynan bir xil.
+   */
+  style: z.enum(GARMENT_STYLES).optional(),
   /*
    * Kategoriya — slotdan ANIQROQ filtr. Futbolka, xudi va ko'ylak
    * uchalasi `top` slotida, lekin foydalanuvchi uchun uch xil narsa.

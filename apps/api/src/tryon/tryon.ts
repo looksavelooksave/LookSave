@@ -386,6 +386,69 @@ export async function listLooks(userId: string, locale: Locale, limit: number) {
   }));
 }
 
+/**
+ * Komplektni ulashishni yoqadi yoki o'chiradi.
+ *
+ * ⚠️ BU SHAXSIY SURAT TARQATADI. Komplekt eskizi — foydalanuvchining
+ * AVATARI, ya'ni uning yuzi. Shuning uchun:
+ *   • faqat EGASI yoqa oladi (`user_id` sharti);
+ *   • har doim QAYTARIB OLINADI (`is_public = false`);
+ *   • hech qachon avtomatik yoqilmaydi — bu ataylab qilingan amal.
+ *
+ * ⚠️ HAVOLA SIR EMAS. `is_public` yoqilgan komplektni havolani bilgan
+ * har kim ochadi — bu «do'stga yuborish» uchun yetarli va shu tarzda
+ * hech kimni ro'yxatdan o'tishga majburlamaydi. Ochiq ro'yxatlarga esa
+ * TUSHMAYDI: kashfiyot faqat `created_by` bo'yicha ishlaydi.
+ */
+export async function setLookShared(
+  userId: string,
+  lookId: string,
+  shared: boolean,
+): Promise<{ id: string; isPublic: boolean }> {
+  const { rows } = await pool.query<{ id: string; is_public: boolean }>(
+    `UPDATE looks SET is_public = $3
+      WHERE id = $1 AND user_id = $2
+      RETURNING id, is_public`,
+    [lookId, userId, shared],
+  );
+
+  const row = rows[0];
+  if (!row) throw ApiError.notFound('Komplekt topilmadi');
+
+  return { id: row.id, isPublic: row.is_public };
+}
+
+/**
+ * Ulashilgan komplektni OCHIQ o'qish — token talab qilinmaydi.
+ *
+ * ⚠️ `is_public` SHARTI SO'ROVNING O'ZIDA. Uni kodda tekshirsak, kimdir
+ * shartni tushirib qoldirgan paytda har qanday komplekt ochiq bo'lib
+ * qolardi. SQL darajasida esa xato qilish qiyinroq.
+ */
+export async function getSharedLook(lookId: string) {
+  const { rows } = await pool.query<{
+    id: string;
+    name: string | null;
+    thumbnail_url: string | null;
+    occasion: string | null;
+  }>(
+    `SELECT id, name, thumbnail_url, occasion
+       FROM looks
+      WHERE id = $1 AND is_public`,
+    [lookId],
+  );
+
+  const row = rows[0];
+  if (!row) throw ApiError.notFound('Komplekt topilmadi yoki ulashilmagan');
+
+  return {
+    id: row.id,
+    name: row.name,
+    thumbnailUrl: row.thumbnail_url,
+    occasion: row.occasion,
+  };
+}
+
 export async function deleteLook(userId: string, lookId: string): Promise<void> {
   const { rowCount } = await pool.query(`DELETE FROM looks WHERE id = $1 AND user_id = $2`, [
     lookId,

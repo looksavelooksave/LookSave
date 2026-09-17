@@ -426,8 +426,13 @@ export async function presignUpload(opts: {
 [
   {
     "AllowedOrigins": [
+      "https://looksave.app",
+      "https://www.looksave.app",
       "https://store.looksave.app",
-      "https://admin.looksave.app"
+      "https://admin.looksave.app",
+      "http://localhost:5175",
+      "http://localhost:5173",
+      "http://localhost:5174"
     ],
     "AllowedMethods": ["PUT", "GET"],
     "AllowedHeaders": ["Content-Type"],
@@ -436,7 +441,23 @@ export async function presignUpload(opts: {
 ]
 ```
 
-Mobil ilova CORS'ga bo'ysunmaydi — faqat web panellar uchun.
+Mobil ilova CORS'ga bo'ysunmaydi — faqat web mijozlar uchun.
+
+⚠️ **SAYTNING O'ZI HAM SHU RO'YXATDA BO'LISHI SHART.** Ilgari bu yerda
+faqat ikki panel turardi va AI kiyintirishdagi yuz surati yuklanmasdi:
+brauzer R2 ga to'g'ridan-to'g'ri `PUT` qiladi (`presign` faqat imzo
+beradi, surat BFF dan o'tmaydi — 4.2), preflight esa
+`Access-Control-Allow-Origin` topolmay so'rovni to'sadi. Xato faqat
+brauzer konsolida ko'rinadi, server log'ida hech narsa qolmaydi.
+
+⚠️ **DEV PORTI QAT'IY BO'LISHI KERAK.** Vite boshqa jarayon portni
+egallagan bo'lsa keyingi bo'sh portga o'tadi (`61738` kabi) va u
+ro'yxatda yo'q — yuklash yana to'siladi. Shuning uchun `5175` ni bo'sh
+tuting; ro'yxatdagi qolgan ikki port panellar uchun.
+
+⚠️ **HAR IKKALA BUCKETGA QO'YILADI.** `R2_BUCKET_PRIVATE` sozlangach
+yuz suratlari o'sha yerga boradi (4.1) — siyosat unga ko'chirilmasa
+xato aynan shu ko'rinishda qaytadi.
 
 ### 4.4 Kesh sarlavhalari
 

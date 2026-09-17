@@ -5,6 +5,7 @@ import { env } from './config/env';
 import { closeDb } from './db/pool';
 import { closeRedis } from './db/redis';
 import { hasPrivateBucket } from './integrations/r2';
+import { isTelegramEnabled } from './integrations/telegram';
 import { startScheduler, stopScheduler } from './jobs/scheduler';
 import { logger } from './logger';
 
@@ -27,6 +28,22 @@ const server: Server = app.listen(port, () => {
     logger.warn(
       'R2_BUCKET_PRIVATE sozlanmagan — yuz va gavda suratlari OMMAVIY bucketda saqlanadi ' +
         '(havolani bilgan har kim ocha oladi). Sozlash: docs/12-tz.md D-43',
+    );
+  }
+
+  /*
+   * ⚠️ NAVBAT XABARI JIM QOLMASIN.
+   *
+   * Operator guruhi ko'rsatilgan, lekin bot tokeni yo'q bo'lsa
+   * `sendMessage` JIMGINA o'tkazib yuboradi (`integrations/telegram.ts`
+   * — dev muhitida shu ataylab qilingan). Natijada yangi ish navbatga
+   * tushadi, hech kimga xabar bormaydi va sabab hech qayerda
+   * ko'rinmaydi — mijoz esa «5 daqiqada tayyor» degan va'dani kutadi.
+   */
+  if (env().DEVELOPER_AI_TELEGRAM_CHAT_ID && !isTelegramEnabled()) {
+    logger.warn(
+      'DEVELOPER_AI_TELEGRAM_CHAT_ID ko`rsatilgan, lekin TELEGRAM_BOT_TOKEN bo`sh — ' +
+        'operatorlarga yangi ish haqida xabar YUBORILMAYDI. Navbat panelda ko`rinaveradi.',
     );
   }
 

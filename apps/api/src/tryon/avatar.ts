@@ -2,7 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
-import { generateAvatar, isOpenAiEnabled } from '../integrations/openai';
+import { env } from '../config/env';
+import { enqueueTask, isManual, openTaskFor, type OpenTaskInfo } from '../developer-ai/tasks';
+import { generateAvatar, generationFingerprint, isOpenAiEnabled } from '../integrations/openai';
 import { presignRead, uploadObject } from '../integrations/r2';
 import { makeCutout } from '../store/cutout';
 import { logger } from '../logger';
@@ -38,6 +40,15 @@ export interface AvatarDto {
   angles: Record<string, string>;
   /** Hozir yasalayotgan burchak (bo'lsa) — ilova kutish holatini ko'rsatadi. */
   anglePending: string | null;
+  /**
+   * Operator navbatidagi ish (bo'lsa).
+   *
+   * ⚠️ ILOVA KUTISH EKRANINI SHUNGA QARAB TANLAYDI. AI o'zi yasasa
+   * ~40 soniya, operator bajarsa ~5 daqiqa — bitta ekran ikkalasiga
+   * to'g'ri kelmaydi: 40 soniyalik bosqichlar navbatda yolg'on bo'lib
+   * qoladi va «deyarli tayyor» da qotib turadi.
+   */
+  queue: OpenTaskInfo | null;
 }
 
 interface AvatarRow {
@@ -101,16 +112,34 @@ function toDto(
     error: row.avatar_error,
     angles,
     anglePending: row.angle_pending,
+    queue: null,
   };
 }
 
 /** Baza qatorisiz javob — burchaklar hali noma'lum bo'lgan holatlar uchun. */
-function bare(status: AvatarStatus, imageUrl: string | null, error: string | null): AvatarDto {
-  return { status, imageUrl, cutoutUrl: null, error, angles: {}, anglePending: null };
+function bare(
+  status: AvatarStatus,
+  imageUrl: string | null,
+  error: string | null,
+  queue: OpenTaskInfo | null = null,
+): AvatarDto {
+  return { status, imageUrl, cutoutUrl: null, error, angles: {}, anglePending: null, queue };
 }
 
+/**
+ * Kesh kaliti — yuz surati, gavda tavsifi va generatsiya retsepti.
+ *
+ * ⚠️ RETSEPT SHART. Yuz surati va tavsif model almashganda o'zgarmaydi:
+ * `gpt-image-1` dan `2.5` ga o'tilganda xesh o'sha bo'lib qolardi va
+ * `requestAvatar` «manba o'zgarmagan» deb hisoblab, eski avatarni
+ * qaytaraverardi — yuzi yaxshilanmagan holida.
+ *
+ * ⚠️ BU BIR MARTALIK QAYTA TO'LOV. Retsept o'zgarganda har bir
+ * foydalanuvchining avatari keyingi so'rovda qaytadan yasaladi.
+ */
 function sourceHash(faceUrl: string, prompt: string): string {
-  return createHash('sha256').update(`${faceUrl}|${prompt}`).digest('hex');
+  const recipe = generationFingerprint(env().OPENAI_IMAGE_MODEL);
+  return createHash('sha256').update(`${recipe}|${faceUrl}|${prompt}`).digest('hex');
 }
 
 /** Hozirgi holat — ilova shu manzilni takrorlab natijani kutadi. */
@@ -121,7 +150,15 @@ export async function getAvatar(userId: string): Promise<AvatarDto> {
    * natijani fon ishi o'zi bazaga yozadi, shuning uchun bu yerda faqat
    * qator o'qiladi — tashqi chaqiruv ham, kutish ham yo'q.
    */
-  return toDto(await load(userId));
+  const dto = toDto(await load(userId));
+
+  /*
+   * ⚠️ FAQAT `processing` DA SO'RALADI. Tayyor avatarda navbat yozuvi
+   * baribir yopilgan bo'ladi — har so'rovda ortiqcha so'rov yubormaymiz
+   * (bu manzil ilova tomonidan har 3-10 soniyada takrorlanadi).
+   */
+  if (dto.status !== 'processing') return dto;
+  return { ...dto, queue: await openTaskFor('avatar', userId) };
 }
 
 /**
@@ -130,7 +167,12 @@ export async function getAvatar(userId: string): Promise<AvatarDto> {
  * Tayyor avatar bor va manba o'zgarmagan bo'lsa — qayta yasalmaydi.
  */
 export async function requestAvatar(userId: string): Promise<AvatarDto> {
-  if (!isOpenAiEnabled()) {
+  /*
+   * ⚠️ OPERATOR REJIMIDA OPENAI SHART EMAS. Ish navbatga tushadi va uni
+   * odam bajaradi — kalit bo'lmasa ham so'rov qabul qilinishi kerak.
+   */
+  const manual = isManual('avatar');
+  if (!manual && !isOpenAiEnabled()) {
     throw new ApiError('SERVICE_UNAVAILABLE', 'AI hozircha sozlanmagan');
   }
 
@@ -177,6 +219,27 @@ export async function requestAvatar(userId: string): Promise<AvatarDto> {
    * ulgursa ham bu yozuv uni bosib ketmaydi.
    */
   await save(userId, { status: 'processing', jobId: null, hash, error: null });
+
+  if (manual) {
+    /*
+     * Operator navbati. Payload'ga KANONIK manzil yoziladi, imzolangani
+     * emas — panel uni o'qiyotgan paytda yangi imzo oladi. Ish bir necha
+     * daqiqa (kechasi — soatlab) kutishi mumkin, imzo esa bir soatda
+     * eskiradi.
+     */
+    const task = await enqueueTask('avatar', userId, userId, {
+      faceUrl: row.face_texture_url,
+      prompt,
+      gender: row.gender,
+      measurements: row.measurements ?? {},
+    });
+    logger.info({ userId, taskId: task.id }, 'avatar operator navbatiga qo`yildi');
+    return bare('processing', null, null, {
+      queuedAt: task.createdAt,
+      claimed: task.status === 'claimed',
+    });
+  }
+
   void runAvatar(userId, facePhotoUrl, prompt);
 
   logger.info({ userId }, 'avatar yasash boshlandi');
@@ -186,7 +249,7 @@ export async function requestAvatar(userId: string): Promise<AvatarDto> {
 /**
  * Avatar yasash — fonda bajariladi.
  *
- * ⚠️ NEGA FONDA. `gpt-image-1` javobda darhol rasm beradi, lekin 30–60
+ * ⚠️ NEGA FONDA. Model javobda darhol rasm beradi, lekin 30–60
  * soniya oladi. HTTP so'rov ichida kutish taymautga olib keladi, shuning
  * uchun ish fonda ketadi va ilova holatni so'rab turadi.
  *
@@ -340,7 +403,14 @@ async function runAngle(
   angle: AvatarAngle,
 ): Promise<void> {
   try {
-    const buffer = await generateAvatar(facePhotoUrl, prompt);
+    /*
+     * ⚠️ BURCHAK UZATILISHI SHART. Ilgari u FAQAT `prompt` ichida
+     * turardi, `generateAvatar` esa o'z matnida «facing the camera»
+     * deb qotirib qo'ygan edi — ikkalasi ziddiyatga kirib, model har
+     * doim OLD ko'rinish qaytarardi. Foydalanuvchi uch burchak uchun
+     * uch marta to'lab, bir xil suratni olardi.
+     */
+    const buffer = await generateAvatar(facePhotoUrl, prompt, angle);
 
     const url = await uploadObject({
       key: `avatar/${randomUUID()}.jpg`,
@@ -381,8 +451,8 @@ export async function sweepStaleAvatars(): Promise<number> {
    * `processing` da abadiy qolardi — foydalanuvchi aylanayotgan
    * indikatorga qarab o'tirardi.
    *
-   * 10 daqiqa — `gpt-image-1` ning eng sekin holatidan (30–60 s) ancha
-   * ko'p, ya'ni tirik ish xato bilan yopilmaydi.
+   * 10 daqiqa — modelning eng sekin holatidan (30–60 s) ancha ko'p,
+   * ya'ni tirik ish xato bilan yopilmaydi.
    */
   const { rowCount } = await pool.query(
     `UPDATE profiles
@@ -390,7 +460,19 @@ export async function sweepStaleAvatars(): Promise<number> {
             avatar_error = $1,
             avatar_updated_at = now()
       WHERE avatar_status = 'processing'
-        AND avatar_updated_at < now() - interval '10 minutes'`,
+        AND avatar_updated_at < now() - interval '10 minutes'
+        /*
+         * ⚠️ OPERATOR NAVBATIDAGILAR TEGILMAYDI. Ular egasiz emas —
+         * shunchaki odamni kutyapti, kechasi esa soatlab. Bu shartsiz
+         * har bir tungi so'rov 10 daqiqadan keyin «uzilib qoldi» bo'lib,
+         * operator uni ko'rmasdan o'lardi.
+         */
+        AND NOT EXISTS (
+          SELECT 1 FROM developer_ai_tasks t
+           WHERE t.kind = 'avatar'
+             AND t.ref_id = profiles.user_id
+             AND t.status IN ('pending', 'claimed')
+        )`,
     ['Avatar yasash uzilib qoldi — qaytadan urinib ko`ring'],
   );
 

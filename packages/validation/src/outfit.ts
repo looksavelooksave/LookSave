@@ -159,10 +159,29 @@ export function renderKey(variantId: string, baseRenderId: string | null): strin
   return `${variantId}|${baseRenderId ?? 'root'}`;
 }
 
-/** Serverdan kelgan natijalarni qidiruvga qulay ko'rinishga o'tkazadi. */
+/**
+ * Serverdan kelgan natijalarni qidiruvga qulay ko'rinishga o'tkazadi.
+ *
+ * ⚠️ BIR KALITGA BIR NECHTA NATIJA TUSHISHI MUMKIN — VA BIRINCHISI YUTADI.
+ *
+ * `scope: 'all'` bitta `(variantId, baseRenderId)` juftligi uchun bir
+ * necha qator qaytarishi mumkin: manba o'zgarganda (yangi surat) yoki
+ * generatsiya retsepti o'zgarganda (AI modeli almashganda) eski qator
+ * bazada qoladi va yangisi yoniga qo'shiladi.
+ *
+ * ⚠️ TARTIB SHARTNOMASI: chaqiruvchi YANGISINI BIRINCHI beradi
+ * (`listRenders` — `ORDER BY created_at DESC`). Ilgari bu yerda
+ * `map.set` shartsiz chaqirilardi, ya'ni OXIRGISI yutardi — va oxirgisi
+ * aynan ENG ESKISI edi. Natijada model almashtirilgandan keyin ham
+ * komplektda eski, yuzi buzuq surat ko'rinardi: hamma narsa to'g'ri
+ * ishlayotgandek tuyulardi, chunki yangisi bazada bor edi.
+ */
 export function indexRenders<R extends LayerRender>(renders: readonly R[]): Map<string, R> {
   const map = new Map<string, R>();
-  for (const render of renders) map.set(renderKey(render.variantId, render.baseRenderId), render);
+  for (const render of renders) {
+    const key = renderKey(render.variantId, render.baseRenderId);
+    if (!map.has(key)) map.set(key, render);
+  }
   return map;
 }
 

@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
-import { deleteLook, getLooks, type Look } from '../src/api/endpoints';
+import {
+  deleteLook,
+  getLooks,
+  shareLook,
+  sharedLookUrl,
+  type Look,
+} from '../src/api/endpoints';
 import { Empty, ErrorView, Screen } from '../src/components/ui';
 import { SignInRequired } from '../src/components/SignInRequired';
 import { SkeletonList } from '../src/components/Skeleton';
@@ -49,6 +55,38 @@ export default function Looks(): JSX.Element {
     },
   });
 
+  /*
+   * ⚠️ AVVAL TASDIQ, KEYIN ULASHISH.
+   *
+   * Komplekt eskizi — foydalanuvchining AVATARI, ya'ni uning yuzi.
+   * Havolani bilgan har kim ochadi, shuning uchun bu amal hech qachon
+   * jimgina bajarilmaydi. Qaytarib olish `unshareLook` orqali.
+   */
+  const onShare = (look: Look): void => {
+    Alert.alert(
+      'Komplektni ulashish',
+      'Havolani ochgan har kim bu komplektni va sizning avataringizni ko`radi. Ulashamizmi?',
+      [
+        { text: 'Bekor qilish', style: 'cancel' },
+        {
+          text: 'Ulashish',
+          onPress: () => {
+            void (async () => {
+              try {
+                await shareLook(look.id);
+                await Share.share({
+                  message: `${look.name ?? 'Mening komplektim'} — ${sharedLookUrl(look.id)}`,
+                });
+              } catch {
+                Alert.alert('Ulashilmadi', 'Havolani tayyorlab bo`lmadi. Keyinroq urinib ko`ring.');
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
   // Kirmagan foydalanuvchiga xato emas, sabab ko'rsatiladi
   if (!signedIn) {
     return (
@@ -93,6 +131,14 @@ export default function Looks(): JSX.Element {
                   <Text style={styles.total}>{money(total.amount, total.currency)}</Text>
                 </View>
 
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Komplektni ulashish"
+                  hitSlop={12}
+                  onPress={() => onShare(item)}
+                >
+                  <Text style={styles.share}>Ulashish</Text>
+                </Pressable>
                 <Pressable
                   accessibilityLabel="Komplektni o'chirish"
                   hitSlop={12}
@@ -139,6 +185,7 @@ const styles = StyleSheet.create({
   name: { ...text.bodyMed, color: colors.text },
   meta: { ...text.small, color: colors.textDim },
   total: { ...text.bodyMed, color: colors.text, marginTop: 2 },
+  share: { ...text.small, color: colors.accent },
   remove: { ...text.h3, color: colors.textDim, paddingHorizontal: spacing.sm },
   items: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm, gap: 4 },
   item: { flexDirection: 'row', gap: spacing.sm },

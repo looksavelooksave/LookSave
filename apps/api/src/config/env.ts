@@ -81,6 +81,20 @@ const envSchema = z.object({
   TELEGRAM_BOT_USERNAME: z.string().default('LookSaveBot'),
   STORE_PANEL_URL: z.string().url().default('https://store.looksave.app'),
 
+  // ── developer_ai paneli (operator navbati) ──
+  /**
+   * Qaysi AI ishlari operatorga ketadi: `avatar`, `render` yoki ikkalasi
+   * (vergul bilan). Bo'sh — hammasi avvalgidek to'g'ridan-to'g'ri AI ga.
+   *
+   * ⚠️ SUKUT BO'SH. Bu o'zgaruvchi qo'yilmaguncha hech narsa o'zgarmaydi —
+   * panel tayyor bo'lmasdan so'rovlar navbatga tushib, hech kim
+   * ko'rmaydigan joyda qolib ketmasin.
+   */
+  DEVELOPER_AI_KINDS: z.string().default(''),
+  /** Yangi ish haqida xabar boradigan Telegram chat (operatorlar guruhi). */
+  DEVELOPER_AI_TELEGRAM_CHAT_ID: z.string().default(''),
+  DEVELOPER_AI_PANEL_URL: z.string().url().default('https://ai.looksave.app'),
+
   // Expo Push. Bo'sh bo'lsa push o'chirilgan deb hisoblanadi.
   EXPO_ACCESS_TOKEN: z.string().default(''),
 
@@ -118,14 +132,25 @@ const envSchema = z.object({
    * Kalit bo'sh bo'lsa imkoniyat o'chirilgan deb hisoblanadi va ilova
    * buni ochiq aytadi — kalitsiz so'rov yuborib 401 kutib turish emas.
    *
-   * ⚠️ `gpt-image-1` UMUMIY rasm generatori, kiyim try-on uchun maxsus
-   * o'qitilmagan: u kiyimni nusxa ko'chirmaydi, «shunga o'xshash» kiyim
-   * chizadi. Brend logosi va naqsh o'zgarishi mumkin — bu bilib turilgan
-   * cheklov (`integrations/openai.ts`).
+   * ⚠️ MODEL BU YERDAN ALMASHADI. Sukut — `gpt-image-2.5-sunburst`:
+   * OpenAI'ning tahrir aniqligiga yo'naltirilgan modeli. U kirish
+   * rasmlarini HAR DOIM yuqori aniqlikda qayta ishlaydi, ya'ni yuz va
+   * logo `gpt-image-1` dagidan sezilarli aniq saqlanadi — va chiqish
+   * tokeni ham arzonroq ($30 va $40 / 1M).
+   *
+   * ⚠️ HAR MODEL O'Z PARAMETRINI OLADI. `input_fidelity` faqat
+   * `gpt-image-1` va `1.5` da bor; 2.5 ga yuborilsa so'rov 400 bilan
+   * qaytadi. Shuning uchun nomni bu yerda almashtirish YETARLI —
+   * farqni `buildImageOptions` (`integrations/openai.ts`) yutadi.
+   *
+   * ⚠️ BILIB TURILGAN CHEKLOV QOLADI: bu baribir UMUMIY rasm modeli,
+   * kiyim try-on uchun maxsus o'qitilmagan. Kiyimni nusxa ko'chirmaydi,
+   * «shunga o'xshash» qilib chizadi — logo va naqsh o'zgarish ehtimoli
+   * kamaydi, lekin nol emas (`integrations/openai.ts`).
    */
   OPENAI_API_KEY: z.string().default(''),
   OPENAI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
-  OPENAI_IMAGE_MODEL: z.string().default('gpt-image-1'),
+  OPENAI_IMAGE_MODEL: z.string().default('gpt-image-2.5-sunburst'),
 
   /*
    * ⚠️ KUNLIK CHEGARA — PUL HIMOYASI. Har bir yasalgan surat pul turadi,

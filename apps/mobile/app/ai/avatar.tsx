@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Notifications from 'expo-notifications';
 import { SaveFormat, manipulateAsync } from 'expo-image-manipulator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -31,6 +32,7 @@ import {
 } from '../../src/api/endpoints';
 import { ApiError } from '../../src/api/client';
 import { AvatarBuilding } from '../../src/components/ai/AvatarBuilding';
+import { AvatarQueued } from '../../src/components/ai/AvatarQueued';
 import { Icon, type IconName } from '../../src/components/Icon';
 import { distanceMeters } from '../../src/map/distance';
 import { averageBrightness, MIN_BRIGHTNESS } from '../../src/photo/brightness';
@@ -609,7 +611,7 @@ const FACE_GUIDES: Array<{ icon: IconName; label: string }> = [
 /** Pastdagi maslahatlar kartasi */
 const FACE_TIPS: Array<{ icon: IconName; label: string }> = [
   { icon: 'limited', label: "Yaxshi yorug'lik" },
-  { icon: 'profile', label: 'Yuz ramkada' },
+  { icon: 'profile', label: 'Yuz va yelka' },
   { icon: 'camera', label: "To'g'ri qarang" },
   { icon: 'close', label: "Ko'zoynaksiz" },
 ];
@@ -841,7 +843,7 @@ function FaceStep({
         </View>
 
         <View style={styles.facePill}>
-          <Text style={styles.facePillText}>To‘g‘ridan-to‘g‘ri kameraga qarang</Text>
+          <Text style={styles.facePillText}>Yuz va yelkangiz ramkaga sig‘sin</Text>
         </View>
       </View>
 
@@ -1062,6 +1064,36 @@ function StoreStep({
  * ⚠️ TAYYOR AVATAR QAYTA YASALMAYDI: server manba hashini solishtiradi.
  * Shuning uchun bu ekranga qayta kirish xavfsiz.
  */
+/**
+ * Xabarnoma ruxsati bormi.
+ *
+ * ⚠️ KUTISH EKRANI MATNI SHUNGA BOG'LIQ. Ruxsat yo'q bo'lsa «tayyor
+ * bo'lganda xabar yuboramiz» deb yozib bo'lmaydi — xabar kelmaydi va
+ * odam ilovani yopib, natijani kutib o'tiraveradi.
+ *
+ * SO'RALMAYDI, faqat o'qiladi: kutish ekrani ruxsat so'rash uchun
+ * noto'g'ri joy.
+ */
+function usePushEnabled(): boolean {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void Notifications.getPermissionsAsync()
+      .then((permission) => {
+        if (active) setEnabled(permission.status === 'granted');
+      })
+      .catch(() => {
+        // O'qib bo'lmasa — yo'q deb hisoblaymiz, matn ehtiyotkor bo'ladi
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return enabled;
+}
+
 function DoneStep({
   onStart,
   onRescan,
@@ -1076,6 +1108,7 @@ function DoneStep({
 
   const profile = useQuery({ queryKey: ['profile'], queryFn: getFullProfile });
   const queryClient = useQueryClient();
+  const pushEnabled = usePushEnabled();
 
   const startAvatar = useMutation({
     mutationFn: requestAvatar,
@@ -1102,7 +1135,14 @@ function DoneStep({
      */
     refetchInterval: (query) => {
       const data = query.state.data as UserAvatar | undefined;
-      return data?.status === 'ready' || data?.status === 'failed' ? false : 3000;
+      if (data?.status === 'ready' || data?.status === 'failed') return false;
+
+      /*
+       * ⚠️ NAVBATDA SEKINROQ SO'RALADI. Operator yo'lida kutish daqiqalar
+       * bilan o'lchanadi — 3 soniyalik takror besh daqiqada yuzta keraksiz
+       * so'rov va batareya sarfi demak.
+       */
+      return data?.queue ? 10_000 : 3000;
     },
   });
 
@@ -1195,7 +1235,19 @@ function DoneStep({
   }
 
   if (status === 'processing' || status === 'none') {
-    return <AvatarBuilding faceUrl={profile.data?.faceTextureUrl ?? null} />;
+    /*
+     * ⚠️ IKKI XIL KUTISH. `queue` bo'lsa ishni ODAM bajaradi (operator
+     * navbati) — u yerda vaqt daqiqalar bilan o'lchanadi va ekran aniq
+     * sanoq ko'rsatadi. Aks holda AI o'zi yasaydi: bosqichli ekran.
+     */
+    const queue = avatar.data?.queue ?? startAvatar.data?.queue ?? null;
+    const faceUrl = profile.data?.faceTextureUrl ?? null;
+
+    return queue ? (
+      <AvatarQueued queue={queue} faceUrl={faceUrl} pushEnabled={pushEnabled} />
+    ) : (
+      <AvatarBuilding faceUrl={faceUrl} />
+    );
   }
 
   if (status === 'failed') {
@@ -1499,19 +1551,29 @@ const styles = StyleSheet.create({
   guideText: { ...text.tiny, color: colors.textDim, textAlign: 'center', fontSize: 9 },
 
   ovalWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  /*
+   * ⚠️ RAMKA YUZ EMAS, YUZ + YELKA UCHUN.
+   *
+   * Ilgari 180x240 tor oval edi va foydalanuvchi yuzi bilan to'ldirib
+   * turardi — kameraga faqat bosh tushardi. Kadr KESILMAYDI, ya'ni
+   * muammo suratda emas, YO'RIQNOMADA edi.
+   *
+   * Avatar shu suratdan yasaladi: yelka va bo'yin ko'rinmasa model
+   * gavdani o'zidan o'ylab topadi va odam o'zini tanimaydi.
+   */
   oval: {
-    width: 180,
-    height: 240,
-    borderRadius: 120,
+    width: 240,
+    height: 270,
+    borderRadius: 130,
     // `overflow: hidden` — kamera oval shaklga kesiladi
     overflow: 'hidden',
     backgroundColor: colors.bg,
   },
   ovalRing: {
     position: 'absolute',
-    width: 190,
-    height: 250,
-    borderRadius: 125,
+    width: 250,
+    height: 280,
+    borderRadius: 135,
     borderWidth: 2,
     borderColor: colors.accent,
     opacity: 0.8,
@@ -1519,9 +1581,9 @@ const styles = StyleSheet.create({
   // Ichki punktir halqa — rasmdagi ikki qatlamli ramka
   ovalRingInner: {
     position: 'absolute',
-    width: 168,
-    height: 228,
-    borderRadius: 114,
+    width: 228,
+    height: 258,
+    borderRadius: 124,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.accent,

@@ -13,6 +13,7 @@ export * from './catalog';
 export * from './orders';
 export * from './admin';
 export * from './tryon';
+export * from './developer-ai';
 export * from './store-products';
 export * from './outfit';
 export * from './sizing';

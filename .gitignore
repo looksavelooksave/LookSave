@@ -94,3 +94,13 @@ apps/mobile/assets/models/
 # MediaPipe modeli — `@vladmandic/human` ga o'tilgandan keyin ishlatilmaydi,
 # lekin 3.6 MB. Kerak bo'lsa qaytadan yuklab olinadi, gitda saqlanmaydi.
 assets-3d/generator/models/
+
+# CatVTON sifat testi — ichida haqiqiy gavda suratlari havolasi bor
+pairs.json
+bench-out/
+bench-data/
+
+# Lokal dev jarayonlarining PID fayllari (scripts/dev-up.sh)
+.dev-*.pid
+# Kuryer ilovasi vaqtincha chetga olingan (Metro uni package.json siz ko'rib yiqilardi)
+.courier-parked/

@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GARMENT_STYLES, type GarmentStyle } from '@looksave/validation';
 
 import {
   createStoreProduct,
@@ -57,6 +58,22 @@ function flatten(list: Category[]): Category[] {
   return list.flatMap((item) => [item, ...flatten(item.children ?? [])]);
 }
 
+/**
+ * Rasm uyachalari — tartib `GARMENT_ANGLE_ORDER` bilan AYNAN bir xil
+ * bo'lishi shart (`packages/validation/src/store-products.ts`).
+ * Kiyintirish burchakni shu indeks bo'yicha topadi.
+ */
+const IMAGE_SLOTS = ['Old', 'Orqa', 'Yon'] as const;
+
+/** Slug bazada, ko'rinadigan nom shu yerda — tarjima bazaga tushmaydi */
+const STYLE_LABEL: Record<GarmentStyle, string> = {
+  casual: 'Kundalik',
+  sport: 'Sport',
+  streetwear: 'Streetwear',
+  classic: 'Klassik',
+  minimal: 'Minimal',
+};
+
 export default function NewProduct(): JSX.Element {
   /*
    * ⚠️ Ildiz Stack bu bo'limda sarlavha chizmaydi (`headerShown: false`),
@@ -72,6 +89,7 @@ export default function NewProduct(): JSX.Element {
   const [description, setDescription] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'unisex'>('unisex');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [style, setStyle] = useState<GarmentStyle | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [sizes, setSizes] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
@@ -89,7 +107,24 @@ export default function NewProduct(): JSX.Element {
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Saqlanmadi'),
   });
 
-  const pickImage = async (): Promise<void> => {
+  /** Suratni AYNAN o'z o'rniga qo'yadi (bo'sh oraliq qoldirmaydi). */
+  const putAt = (slot: number, url: string): void =>
+    setImages((current) => {
+      const next = [...current];
+      next[slot] = url;
+      // Oraliqda bo'sh o'rin qolmasin: sxema `z.string().url()` kutadi
+      return next.filter((item): item is string => Boolean(item));
+    });
+
+  /*
+   * ⚠️ UYACHA INDEKSI UZATILADI — massiv oxiriga qo'shilmaydi.
+   *
+   * `images` tartibi MA'NOGA EGA: [0] old, [1] orqa, [2] yon
+   * (`packages/validation` — `GARMENT_ANGLE_ORDER`). Kiyintirish burchak
+   * bo'yicha shu tartibdan o'qiydi, shuning uchun surat qaysi uyachaga
+   * tanlangan bo'lsa, o'sha o'ringa tushishi kerak.
+   */
+  const pickImage = async (slot: number): Promise<void> => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Ruxsat kerak', 'Rasm tanlash uchun galereyaga ruxsat bering.');
@@ -123,7 +158,7 @@ export default function NewProduct(): JSX.Element {
 
         if (prepared.warning) {
           Alert.alert('Surat mos kelmasligi mumkin', prepared.warning, [
-            { text: 'Baribir qo`shish', onPress: () => setImages((c) => [...c, url]) },
+            { text: 'Baribir qo`shish', onPress: () => putAt(slot, url) },
             { text: 'Bekor qilish', style: 'cancel' },
           ]);
           return;
@@ -143,7 +178,7 @@ export default function NewProduct(): JSX.Element {
         // Ishlov bermasa asl surat qoladi — yuklash bekor qilinmaydi
       }
 
-      setImages((current) => [...current, finalUrl]);
+      putAt(slot, finalUrl);
     } catch {
       Alert.alert('Yuklanmadi', 'Rasmni yuklab bo`lmadi. Internetni tekshiring.');
     } finally {
@@ -179,6 +214,14 @@ export default function NewProduct(): JSX.Element {
       ...(description.trim() ? { description: description.trim() } : {}),
       categoryId,
       gender,
+      /*
+       * ⚠️ USLUB `tags` GA TUSHADI, alohida ustunga emas.
+       *
+       * Massiv allaqachon bor va erkin — do'kon o'z belgilarini ham
+       * qo'shishi mumkin. Kiyintirishdagi uslub filtri kesishma bilan
+       * ishlaydi, shuning uchun qo'shimcha belgilar unga xalaqit bermaydi.
+       */
+      tags: style ? [style] : [],
       basePrice: Number(price).toFixed(2),
       images,
       status,
@@ -216,31 +259,57 @@ export default function NewProduct(): JSX.Element {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {/* Rasmlar */}
           <Text style={styles.label}>Rasmlar</Text>
-          <Text style={styles.hint}>Tekshiruvga yuborish uchun kamida 3 ta kerak</Text>
-          <View style={styles.images}>
-            {images.map((url, index) => (
-              <View key={url} style={styles.imageWrap}>
-                <Image source={{ uri: url }} style={styles.image} resizeMode="cover" />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Rasmni olib tashlash"
-                  onPress={() => setImages((current) => current.filter((_, i) => i !== index))}
-                  style={styles.imageRemove}
-                >
-                  <Icon name="close" size={12} color={colors.text} />
-                </Pressable>
-              </View>
-            ))}
+          <Text style={styles.hint}>
+            Uchala tomon ham kerak — odam burilganda kiyintirish shu suratlardan oladi
+          </Text>
+          {/*
+            ⚠️ UCHTA BELGILANGAN UYACHA, umumiy gallereya EMAS.
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Rasm qo`shish"
-              onPress={() => void pickImage()}
-              disabled={uploading}
-              style={styles.imageAdd}
-            >
-              <Icon name="camera" size={22} color={uploading ? colors.textDim : colors.accent} />
-            </Pressable>
+            Ilgari oddiy massiv edi: sotuvchi uchta rasm qo'yardi, lekin
+            qaysi biri qaysi tomon ekani noma'lum qolardi. Natijada odam
+            yon tomonga burilganda modelga baribir OLD surat berilardi va
+            u yon ko'rinishni o'zidan o'ylab topardi.
+
+            Tartib `GARMENT_ANGLE_ORDER` bilan bir xil: old, orqa, yon.
+          */}
+          <View style={styles.images}>
+            {IMAGE_SLOTS.map((slot, index) => {
+              const url = images[index];
+              return (
+                <View key={slot} style={styles.imageWrap}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${slot} surati`}
+                    onPress={() => void pickImage(index)}
+                    disabled={uploading}
+                    style={styles.imageAdd}
+                  >
+                    {url ? (
+                      <Image source={{ uri: url }} style={styles.image} resizeMode="cover" />
+                    ) : (
+                      <Icon
+                        name="camera"
+                        size={22}
+                        color={uploading ? colors.textDim : colors.accent}
+                      />
+                    )}
+                  </Pressable>
+
+                  {url ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${slot} suratini olib tashlash`}
+                      onPress={() => setImages((current) => current.filter((_, i) => i !== index))}
+                      style={styles.imageRemove}
+                    >
+                      <Icon name="close" size={12} color={colors.text} />
+                    </Pressable>
+                  ) : null}
+
+                  <Text style={styles.slotLabel}>{slot}</Text>
+                </View>
+              );
+            })}
           </View>
 
           <Field label="Nomi" value={title} onChangeText={setTitle} placeholder="Oq futbolka" />
@@ -281,6 +350,25 @@ export default function NewProduct(): JSX.Element {
               >
                 <Text style={[styles.chipText, gender === item.key && { color: colors.text }]}>
                   {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Uslub */}
+          <Text style={styles.label}>Uslub</Text>
+          <Text style={styles.hint}>Xaridor kiyintirish ekranida shu bo`yicha filtrlaydi</Text>
+          <View style={styles.chips}>
+            {GARMENT_STYLES.map((item) => (
+              <Pressable
+                key={item}
+                accessibilityRole="button"
+                // Qayta bosilsa bekor bo'ladi — uslub majburiy emas
+                onPress={() => setStyle((current) => (current === item ? null : item))}
+                style={[styles.chip, style === item && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, style === item && { color: colors.text }]}>
+                  {STYLE_LABEL[item]}
                 </Text>
               </Pressable>
             ))}
@@ -367,7 +455,8 @@ const styles = StyleSheet.create({
   hint: { ...text.tiny, color: colors.textDim, marginBottom: spacing.xs },
 
   images: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-  imageWrap: { position: 'relative' },
+  imageWrap: { position: 'relative', alignItems: 'center', gap: spacing.xs },
+  slotLabel: { ...text.tiny, color: colors.textMuted },
   image: { width: 84, height: 84, borderRadius: radius.md, backgroundColor: colors.surface2 },
   imageRemove: {
     position: 'absolute',

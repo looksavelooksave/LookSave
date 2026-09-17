@@ -102,7 +102,17 @@ export function usePushRegistration(): void {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
       const orderId = data?.['orderId'];
-      if (typeof orderId === 'string') router.push(`/order/${orderId}`);
+      if (typeof orderId === 'string') {
+        router.push(`/order/${orderId}`);
+        return;
+      }
+
+      /*
+       * Avatar tayyor bo'lgani haqidagi xabar — operator navbati
+       * (`developer_ai`) yo'li. Bosilganda kiyintirishga olib boramiz:
+       * odam aynan shuning uchun kutgan edi.
+       */
+      if (data?.['type'] === 'avatar_ready') router.push('/ai/fitting');
     });
 
     return () => subscription.remove();

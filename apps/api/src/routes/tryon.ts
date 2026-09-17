@@ -1,4 +1,5 @@
 import {
+  AI_TRYON_SLOTS,
   bodyPhotoSchema,
   createLookSchema,
   garmentQuerySchema,
@@ -39,6 +40,8 @@ import {
   addFavorite,
   createLook,
   deleteLook,
+  getSharedLook,
+  setLookShared,
   getSlotItems,
   getSlots,
   listFavorites,
@@ -187,9 +190,17 @@ tryonRouter.get(
     sendData(
       res,
       await listGarments({
-        slots: query.slot ? [query.slot] : ['top', 'outer', 'bottom'],
+        /*
+         * ⚠️ SUKUT RO'YXATI `AI_TRYON_SLOTS` DAN OLINADI.
+         *
+         * Ilgari bu yerda uchta slot QOTIRIB yozilgan edi va oyoq kiyim
+         * qo'shilganda ro'yxat ikki joyda ayri tushib qolardi: `feet`
+         * ruxsat etilgan, lekin sukut so'rovga tushmasdi.
+         */
+        slots: query.slot ? [query.slot] : [...AI_TRYON_SLOTS],
         gender: query.gender ?? null,
         category: query.category ?? null,
+        style: query.style ?? null,
         storeId: query.storeId ?? null,
         size: query.size ?? null,
         limit: query.limit,
@@ -367,6 +378,38 @@ tryonRouter.post(
   requireAuth,
   route({ body: createLookSchema }, async (input, _req, res) => {
     sendData(res, await createLook(getAuth(res).sub, input.body), 201);
+  }),
+);
+
+/*
+ * ⚠️ `/looks/shared/:id` `/looks/:id` DAN OLDIN TURISHI SHART.
+ *
+ * Express marshrutlarni tartib bo'yicha sinaydi. Pastdagi `/looks/:id`
+ * «shared» so'zini ham `id` deb qabul qilardi va ochiq o'qish hech qachon
+ * ishlamasdi (fayl ichida `/looks/suggest` bilan xuddi shu muammo bor —
+ * u ham shu sababdan tepada turibdi).
+ */
+tryonRouter.get(
+  '/looks/shared/:id',
+  route({ params: idParamSchema }, async (input, _req, res) => {
+    sendData(res, await getSharedLook(input.params.id));
+  }),
+);
+
+/** Ulashishni yoqish — faqat egasi, va istalgan payt qaytarib olinadi. */
+tryonRouter.post(
+  '/looks/:id/share',
+  requireAuth,
+  route({ params: idParamSchema }, async (input, _req, res) => {
+    sendData(res, await setLookShared(getAuth(res).sub, input.params.id, true));
+  }),
+);
+
+tryonRouter.delete(
+  '/looks/:id/share',
+  requireAuth,
+  route({ params: idParamSchema }, async (input, _req, res) => {
+    sendData(res, await setLookShared(getAuth(res).sub, input.params.id, false));
   }),
 );
 

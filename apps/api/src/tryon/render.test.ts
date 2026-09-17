@@ -33,8 +33,16 @@ describe('slot -> provayder toifasi', () => {
    * natija ishonchsiz — bu yerda `auto` qaytadi va chaqirish-chaqirmaslik
    * qarori yuqorida qabul qilinadi.
    */
-  it('kiyim bo`lmagan slotlar `auto` bo`lib qoladi', () => {
-    expect(garmentKindForSlot('feet')).toBe('auto');
+  /*
+   * ⚠️ `feet` ENDI `auto` EMAS. Oyoq kiyimi kiyintirishga qo'shildi va
+   * u alohida ko'rsatma oladi: «faqat oyoqqa, qolganiga tegilmasin».
+   * `auto` qolganda model poyabzalni butun kiyim deb qabul qilardi.
+   */
+  it('oyoq kiyimi alohida toifaga tushadi', () => {
+    expect(garmentKindForSlot('feet')).toBe('footwear');
+  });
+
+  it('kiyintirilmaydigan slotlar `auto` bo`lib qoladi', () => {
     expect(garmentKindForSlot('wrist')).toBe('auto');
     expect(garmentKindForSlot('bag')).toBe('auto');
     expect(garmentKindForSlot('head')).toBe('auto');

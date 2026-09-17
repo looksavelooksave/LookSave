@@ -36,6 +36,7 @@ export function AvatarStage({
   measurements,
   dimmed = false,
   showRings = true,
+  zoomed = false,
   children,
 }: {
   imageUrl: string | null;
@@ -45,6 +46,14 @@ export function AvatarStage({
   dimmed?: boolean;
   /** Halqalar va o'lchovlar — kiyintirish paytida chalg'itmasin uchun o'chiriladi */
   showRings?: boolean;
+  /**
+   * Yaqinlashtirish — kiyim tafsilotini ko'rish uchun.
+   *
+   * ⚠️ FAQAT SURAT KATTALASHADI, sahna emas. To'r, platforma va halqalar
+   * joyida qoladi: ular o'lcham mo'ljali bo'lib xizmat qiladi va ular ham
+   * kattalashsa, foydalanuvchi nimaga nisbatan yaqinlashganini yo'qotadi.
+   */
+  zoomed?: boolean;
   /**
    * Suratning O'RNIGA qo'yiladigan tarkib — svayp tasmasi uchun.
    *
@@ -104,6 +113,22 @@ export function AvatarStage({
         ))}
       </View>
 
+      {/*
+        Odam ORQASIDAGI nur — maketdagi binafsha halo.
+
+        ⚠️ RADIAL GRADIENT EMAS, SOYA. React Native da radial gradient yo'q;
+        `expo-linear-gradient` faqat chiziqli. Dumaloq View ning katta
+        `shadowRadius` i iOS da aynan shunday yumshoq tarqaladi va qo'shimcha
+        kutubxona talab qilmaydi.
+      */}
+      <View style={styles.auraOuter} pointerEvents="none">
+        <View style={styles.auraL4} />
+        <View style={styles.auraL3} />
+        <View style={styles.auraMid} />
+        <View style={styles.auraL1} />
+        <View style={styles.auraInner} />
+      </View>
+
       {/* Pastdagi nur — odam "platforma" ustida turgandek */}
       <Animated.View style={[styles.floorGlow, { opacity }]} pointerEvents="none">
         <LinearGradient
@@ -133,7 +158,7 @@ export function AvatarStage({
       ) : source ? (
         <Image
           source={{ uri: source }}
-          style={[styles.person, dimmed && styles.dimmed]}
+          style={[styles.person, dimmed && styles.dimmed, zoomed && styles.personZoomed]}
           resizeMode="contain"
         />
       ) : (
@@ -240,6 +265,64 @@ const styles = StyleSheet.create({
    * ko'zga tashlanadigan qismiga aylanib qolgandi. Nur odamni FONDAN
    * ajratish uchun, o'ziga e'tibor tortish uchun emas.
    */
+  /*
+   * ⚠️ SOYA EMAS, UCH QATLAM. Ilgari bu bitta dumaloq View edi va nurni
+   * katta `shadowRadius` bergan. iOS uni har kadrda qayta hisoblaydi
+   * (RN ogohlantiradi: «cannot calculate shadow efficiently») — iPhone 11
+   * da sezilarli sekinlashish. Uchta shaffof doira bir xil yumshoq
+   * o'tishni beradi va hech narsa hisoblanmaydi.
+   */
+  auraOuter: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '8%',
+    width: 300,
+    height: 300,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(139,92,246,0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /*
+   * Qatlamlar KO'P va har birining shaffofligi PAST. Uchta qatlamda
+   * doiralarning qirrasi ko'rinib qolardi — beshtasida o'tish yumshoq
+   * bo'ladi va baribir hech narsa hisoblanmaydi.
+   */
+  auraL4: {
+    position: 'absolute',
+    width: 264,
+    height: 264,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(139,92,246,0.035)',
+  },
+  auraL3: {
+    position: 'absolute',
+    width: 228,
+    height: 228,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(139,92,246,0.035)',
+  },
+  auraMid: {
+    position: 'absolute',
+    width: 192,
+    height: 192,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(139,92,246,0.035)',
+  },
+  auraL1: {
+    position: 'absolute',
+    width: 156,
+    height: 156,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(139,92,246,0.035)',
+  },
+  auraInner: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(139,92,246,0.04)',
+  },
   floorGlow: {
     position: 'absolute',
     left: '30%',
@@ -257,6 +340,13 @@ const styles = StyleSheet.create({
    */
   person: { position: 'absolute', top: 0, left: 0, right: 0, bottom: '14%' },
   dimmed: { opacity: 0.35 },
+  /*
+   * 1.45 — tajribada tanlangan. Kamrog'i sezilmaydi, ko'prog'ida bosh
+   * ramkadan chiqib ketadi va kiyim o'rniga bo'yin ko'rinadi.
+   * Kelib chiqish nuqtasi pastda: yaqinlashganda odam gavdaning USTKI
+   * qismini ko'rmoqchi bo'ladi, oyoq emas.
+   */
+  personZoomed: { transform: [{ scale: 1.45 }, { translateY: 40 }] },
 
   /*
    * ⚠️ KENGLIK GAVDAGA YAQIN. Avval 12% edi — halqa deyarli butun kadrni

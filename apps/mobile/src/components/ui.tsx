@@ -113,6 +113,12 @@ interface ButtonProps {
   variant?: 'primary' | 'ghost' | 'danger';
   disabled?: boolean;
   loading?: boolean;
+  /** Yozuvdan oldin turadigan ikonka */
+  icon?: IconName;
+  /** Yozuvdan keyin turadigan ikonka — odatda «davom etish» strelkasi */
+  trailingIcon?: IconName;
+  /** To'liq dumaloq chekka. Ekranning ASOSIY amali uchun — maketdagidek */
+  pill?: boolean;
 }
 
 /**
@@ -121,7 +127,16 @@ interface ButtonProps {
  * Oddiy funksiya komponenti `ref` ni qabul qilolmaydi va React ogohlantiradi.
  */
 export const Button = forwardRef<View, ButtonProps>(function Button(
-  { title, onPress, variant = 'primary', disabled = false, loading = false },
+  {
+    title,
+    onPress,
+    variant = 'primary',
+    disabled = false,
+    loading = false,
+    icon,
+    trailingIcon,
+    pill = false,
+  },
   ref,
 ): JSX.Element {
   const isDisabled = disabled || loading;
@@ -172,6 +187,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
         disabled={isDisabled}
         style={[
           styles.button,
+          pill && styles.buttonPill,
           variant === 'ghost' && styles.buttonGhost,
           variant === 'danger' && styles.buttonDanger,
           isDisabled && { opacity: 0.45 },
@@ -191,7 +207,15 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           />
         ) : null}
 
-        {loading ? <ActivityIndicator color={colors.text} /> : label}
+        {loading ? (
+          <ActivityIndicator color={colors.text} />
+        ) : (
+          <View style={styles.buttonRow}>
+            {icon ? <Icon name={icon} size={20} color={colors.text} /> : null}
+            {label}
+            {trailingIcon ? <Icon name={trailingIcon} size={19} color={colors.text} /> : null}
+          </View>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -305,6 +329,8 @@ const styles = StyleSheet.create({
     // Gradient `absoluteFill` bilan ichkariga chiziladi — chekkasi kesilishi shart
     overflow: 'hidden',
   },
+  buttonPill: { height: 54, borderRadius: radius.pill },
+  buttonRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   buttonGhost: { borderWidth: 1, borderColor: colors.borderStrong },
   buttonDanger: { borderWidth: 1, borderColor: colors.danger },
   buttonText: { ...text.bodyMed, color: colors.text },

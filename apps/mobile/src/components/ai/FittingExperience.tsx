@@ -7,6 +7,7 @@ import {
   Image,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -15,6 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   baseForCategory,
+  GARMENT_STYLES,
+  type GarmentStyle,
   indexRenders,
   nextPending,
   recommendSize,
@@ -26,12 +29,15 @@ import {
 import {
   ANGLE_LABEL,
   ANGLE_ORDER,
+  addFavorite,
   addToCart,
   getAvatar,
+  getFavorites,
   getFullProfile,
   getGarments,
   getRenders,
   requestAvatarAngle,
+  removeFavorite,
   requestRender,
   requestRenderBatch,
   type AvatarAngle,
@@ -114,12 +120,33 @@ const STRIP_ITEM = 72 + spacing.sm;
  * `slot` o'lcham tavsiyasi uchun kerak: ustki kiyim ko'krakdan, pastki
  * kiyim beldan hisoblanadi.
  */
+/*
+ * Uslub nomlari. Slug bazada (`products.tags`), tarjima shu yerda —
+ * sotuvchi formasidagi ro'yxat bilan bir xil bo'lishi shart.
+ */
+const STYLE_LABEL: Record<GarmentStyle, string> = {
+  casual: 'Kundalik',
+  sport: 'Sport',
+  streetwear: 'Streetwear',
+  classic: 'Klassik',
+  minimal: 'Minimal',
+};
+
 const TABS: Array<{ category: string; label: string; icon: IconName; slot: string }> = [
   { category: 'tshirt', label: 'Futbolka', icon: 'slotTop', slot: 'top' },
   { category: 'hoodie', label: 'Xudi', icon: 'slotTop', slot: 'top' },
   { category: 'jacket', label: 'Kurtka', icon: 'slotOuter', slot: 'outer' },
   { category: 'shirt', label: "Ko'ylak", icon: 'slotTop', slot: 'top' },
   { category: 'trousers', label: 'Shim', icon: 'slotBottom', slot: 'bottom' },
+  /*
+   * ⚠️ OYOQ KIYIMIDA TURKUM YO'Q — ATAYIN.
+   *
+   * Bazada beshta oyoq kiyim turkumi bor: sneakers, boots, dress-shoes,
+   * sandals, shoes. Tabga bittasini qotirib qo'ysak, qolgan to'rttasi
+   * ko'rinmasdi. Bo'sh `category` esa serverga faqat SLOT bo'yicha
+   * filtrlashni aytadi va beshalasi ham chiqadi.
+   */
+  { category: '', label: 'Oyoq kiyim', icon: 'slotFeet', slot: 'feet' },
 ];
 
 /** Biror natija hali kelmayotgan bo'lsa ro'yxat qayta so'raladi. */
@@ -138,6 +165,15 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const [tab, setTab] = useState('tshirt');
   const [size, setSize] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
+  /*
+   * Uslub filtri. `null` — hammasi.
+   *
+   * ⚠️ ILGARI SHU YERDA BESHTA CHIP BOR EDI VA ULAR HECH NARSA
+   * QILMASDI: tanlovni faqat xotiraga yozardi, ro'yxat esa o'zgarmasdi.
+   * Shuning uchun ular olib tashlangan edi. Endi mahsulotda uslub belgisi
+   * bor (`products.tags`) va filtr serverda bajariladi.
+   */
+  const [styleFilter, setStyleFilter] = useState<GarmentStyle | null>(null);
   const [angle, setAngle] = useState<AvatarAngle>('front');
   const [notice, setNotice] = useState<string | null>(null);
   const [storeOpen, setStoreOpen] = useState(false);
@@ -217,6 +253,33 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const gender = profile.data?.gender ?? null;
 
   /*
+   * ── Sevimlilar ──
+   *
+   * Ro'yxat butunlay olinadi (limit 50), chunki bitta mahsulot sevimlimi
+   * yoki yo'qligini so'raydigan endpoint yo'q. Ro'yxat kichik va u
+   * profil ekranida ham kerak — kesh baham ko'riladi.
+   */
+  const favorites = useQuery({
+    queryKey: ['favorites'],
+    queryFn: getFavorites,
+    enabled: signedIn,
+  });
+
+  const favoriteIds = useMemo(
+    () => new Set((favorites.data ?? []).map((item) => item.id)),
+    [favorites.data],
+  );
+
+  const favorite = useMutation({
+    mutationFn: ({ productId, on }: { productId: string; on: boolean }) =>
+      on ? addFavorite(productId) : removeFavorite(productId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    },
+    onError: () => setNotice('Sevimlilarga qo`shib bo`lmadi'),
+  });
+
+  /*
    * ⚠️ TAYYORLIK QADAMLARDAN OLDIN HISOBLANADI, chunki undan SO'ROVLAR
    * ham bog'liq. Ilgari tekshiruv shartli `return` da, hamma so'rovdan
    * KEYIN turardi: surati yo'q yangi foydalanuvchi uchun ham kiyimlar
@@ -249,8 +312,18 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const sizeFilter = onlyMySize ? fitSize : null;
 
   const garments = useQuery({
-    queryKey: ['garments', tab, storeId, sizeFilter, gender],
-    queryFn: () => getGarments({ category: tab, storeId, size: sizeFilter, gender, limit: 30 }),
+    queryKey: ['garments', tab, storeId, sizeFilter, gender, styleFilter],
+    queryFn: () =>
+      getGarments({
+        // Bo'sh turkum — «faqat slot bo'yicha» degani (oyoq kiyim tabi)
+        category: tab || undefined,
+        slot: tab ? undefined : (activeTab?.slot ?? 'feet'),
+        style: styleFilter,
+        storeId,
+        size: sizeFilter,
+        gender,
+        limit: 30,
+      }),
     enabled: ready,
   });
 
@@ -361,9 +434,21 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     if (!stripBase.ready || stripIds.length === 0) return;
     if (limitReached) return;
 
-    const missing = stripIds.filter(
-      (variantId) => !renderIndex.has(renderKey(variantId, stripBase.baseRenderId)),
-    );
+    /*
+     * ⚠️ FAQAT BIRINCHISI OLDINDAN YASALADI, HAMMASI EMAS.
+     *
+     * Ilgari tasmadagi BARCHA kiyim bir yo'la kiyintirilardi. Ikki zarari
+     * bor edi: har kiyim alohida OpenAI chaqiruvi, ya'ni
+     * foydalanuvchi ko'rmagan kiyimlari uchun ham to'lanardi; va hammasi
+     * navbatga tushgani uchun BIRINCHI natija ham oxirigacha kutardi.
+     *
+     * Mijoz qarori: turkum ochilganda birinchisi darhol chiqsin, qolganlari
+     * esa BOSILGANDA yasalsin — buni pastdagi komplekt zanjiri effekti
+     * o'zi qiladi, chunki tanlangan kiyim `resolveOutfit` ga tushadi.
+     */
+    const missing = stripIds
+      .filter((variantId) => !renderIndex.has(renderKey(variantId, stripBase.baseRenderId)))
+      .slice(0, 1);
     if (missing.length === 0) return;
 
     const key = `batch:${angle}:${stripBase.baseRenderId ?? 'root'}:${missing.join(',')}`;
@@ -543,8 +628,17 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     };
   });
 
-  const colorOptions = current ? items.filter((item) => item.productId === current.productId) : [];
+  /*
+   * ⚠️ SERVERDAN KELADI, RO'YXATDAN QIDIRILMAYDI.
+   *
+   * Ilgari bu yerda `items.filter(productId bir xil)` turardi. Server esa
+   * har mahsulotdan BITTA karta qaytaradi, ya'ni moslik hech qachon
+   * topilmasdi va `colorOptions.length > 1` sharti bajarilmasdi —
+   * rang tanlagich umuman chizilmasdi.
+   */
+  const colorOptions = current?.colors ?? [];
   const sizes = current?.sizes ?? [];
+  const soldOutSizes = current?.soldOutSizes ?? [];
   const picked = size ?? (fitSize && sizes.includes(fitSize) ? fitSize : sizes[0]) ?? null;
 
   /* ── Komplekt jamlanmasi ── */
@@ -602,6 +696,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
       {/* ── Avatar maydoni ── */}
       <View style={styles.stage}>
         <AvatarStage
+          zoomed={zoomed}
           imageUrl={worn?.imageUrl ?? baseImage}
           cutoutUrl={worn?.cutoutUrl ?? baseCutout}
           dimmed={!worn && currentWorking}
@@ -666,6 +761,25 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           />
         </View>
 
+        {/*
+          ── Sizga mos uslub ──
+
+          ⚠️ BU YERDA KOMPLEKT YASALMAYDI. Tayyor komplekt bir necha
+          qatlamni birdan chizishni talab qiladi, ya'ni bir bosishda bir
+          necha kredit ketardi. Shuning uchun karta mavjud AI Designer
+          ekraniga olib boradi — komplekt o'sha yerda ko'riladi va
+          foydalanuvchi nimani kiyintirishni o'zi tanlaydi.
+        */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sizga mos uslub"
+          onPress={() => router.push('/ai/look')}
+          style={styles.suggestCard}
+        >
+          <Icon name="looks" size={22} color={colors.accent} />
+          <Text style={styles.suggestText}>Sizga{'\n'}mos uslub</Text>
+        </Pressable>
+
         {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
         {resolved.length > 0 ? (
           <View style={styles.layerRail} pointerEvents="none">
@@ -704,11 +818,31 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
       </View>
 
       {/* ── Kategoriya tablari ── */}
+      {/*
+        ⚠️ GORIZONTAL SCROLL EMAS, O'RALADIGAN `View`.
+
+        Bu ekranda gorizontal scroll idishi (ScrollView ham, FlatList ham)
+        ICHIDAGI MATNNI CHIZMAYDI: matn o'lchanadi va joy egallaydi, lekin
+        ko'rinmaydi. 2026-09-14 da simulyatorda o'lchangan — chipga fon
+        berilsa fon chiqadi, yozuv yo'q; xuddi shu chip oddiy `View` ichida
+        to'g'ri chiqadi. Shu sabab tab yozuvlari uzoq vaqt yo'q edi.
+
+        Oltita tab bitta qatorga sig'adi; sig'masa ikkinchi qatorga tushadi.
+      */}
+      {/*
+        ── Turkum tablari ──
+
+        ⚠️ `tabsWrap` DAGI BALANDLIK MAJBURIY. Usiz gorizontal ScrollView
+        o'z balandligini yig'ib qo'yadi va bolalarini KESADI: ikonka
+        yuqorida ko'rinib, yozuv pastda kesilib ketadi. Bu uzoq vaqt
+        «matn chizilmayapti» deb tushunilgan — aslida qirqilgan.
+        2026-09-14 da simulyatorda o'lchangan.
+      */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabs}
         style={styles.tabsWrap}
+        contentContainerStyle={styles.tabs}
       >
         {TABS.map((item) => {
           const active = tab === item.category;
@@ -716,7 +850,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
           return (
             <Pressable
-              key={item.category}
+              key={item.category || item.slot}
               accessibilityRole="button"
               onPress={() => setTab(item.category)}
               style={[styles.tab, active && styles.tabActive]}
@@ -725,6 +859,43 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               <Text style={[styles.tabText, active && { color: colors.text }]}>{item.label}</Text>
               {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
               {dressed ? <View style={styles.tabDressed} /> : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/*
+        ── Uslub chiplari ──
+
+        ⚠️ TANLANGAN KIYIMDAN TASHQARIDA TURADI. Ilgari o'lcham va rang
+        `current ? (...)` ichida edi; uslubni ham o'sha yerga qo'ysak,
+        bo'sh ro'yxatda chiplar yo'qolardi va foydalanuvchi o'zi qo'ygan
+        filtrni BEKOR QILA OLMASDI — boshi berk ko'cha.
+
+        Filtr serverda bajariladi: chip `queryKey` ni o'zgartiradi va
+        ro'yxat qaytadan so'raladi. Qayta bosilsa — bekor bo'ladi.
+      */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.styleRowWrap}
+        contentContainerStyle={styles.styleRow}
+      >
+        {GARMENT_STYLES.map((item) => {
+          const active = styleFilter === item;
+
+          return (
+            <Pressable
+              key={item}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
+              onPress={() => setStyleFilter((value) => (value === item ? null : item))}
+              style={[styles.styleChip, active && styles.styleChipActive]}
+            >
+              <Text style={[styles.styleChipText, active && { color: colors.text }]}>
+                {STYLE_LABEL[item]}
+              </Text>
             </Pressable>
           );
         })}
@@ -751,11 +922,21 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           */
           <View style={styles.emptyBox}>
             <Text style={styles.emptyStrip}>
-              {sizeFilter
-                ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
-                : 'Bu turkumda hozircha kiyim yo`q'}
+              {styleFilter
+                ? `${STYLE_LABEL[styleFilter]} uslubidagi ${activeTab?.label.toLowerCase()} topilmadi`
+                : sizeFilter
+                  ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
+                  : 'Bu turkumda hozircha kiyim yo`q'}
             </Text>
             <View style={styles.emptyActions}>
+              {/* Uslub filtri bo'sh qilgan bo'lsa — birinchi chiqish yo'li shu */}
+              {styleFilter ? (
+                <Button
+                  title="Uslub filtrini olib tashlash"
+                  variant="ghost"
+                  onPress={() => setStyleFilter(null)}
+                />
+              ) : null}
               {sizeFilter ? (
                 <Button
                   title="Barcha o`lchamlarni ko`rsat"
@@ -834,12 +1015,77 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
         {current ? (
           <View style={styles.details}>
-            <Text style={styles.title} numberOfLines={1}>
-              {current.title}
-            </Text>
-            <Text style={styles.store} numberOfLines={1}>
-              {current.store.name}
-            </Text>
+            {/*
+              ── Mahsulot sarlavhasi ──
+
+              Chapda nom, do'kon va NARX; o'ngda sevimli va ulashish.
+
+              ⚠️ NARX YUQORIGA CHIQDI. Ilgari u faqat «Savatga» tugmasida
+              ko'rinardi — ya'ni foydalanuvchi kiyimni tanlab, o'lcham
+              qo'yib, pastgacha tushmaguncha narxini bilmasdi. Endi u
+              tanlov bilan birga ko'rinadi.
+            */}
+            <View style={styles.detailsHead}>
+              <View style={styles.detailsText}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {current.title}
+                </Text>
+                <Text style={styles.store} numberOfLines={1}>
+                  {current.store.name}
+                </Text>
+                <Text style={styles.price}>{money(current.price, current.currency)}</Text>
+              </View>
+
+              <View style={styles.detailsActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    favoriteIds.has(current.productId)
+                      ? 'Sevimlilardan olib tashlash'
+                      : 'Sevimlilarga qo`shish'
+                  }
+                  accessibilityState={{ selected: favoriteIds.has(current.productId) }}
+                  hitSlop={6}
+                  disabled={favorite.isPending}
+                  onPress={() =>
+                    favorite.mutate({
+                      productId: current.productId,
+                      on: !favoriteIds.has(current.productId),
+                    })
+                  }
+                  style={styles.roundButton}
+                >
+                  <Icon
+                    name={favoriteIds.has(current.productId) ? 'favoriteOn' : 'favorite'}
+                    size={17}
+                    color={favoriteIds.has(current.productId) ? colors.accent : colors.text}
+                  />
+                </Pressable>
+
+                {/*
+                  ⚠️ HAVOLA EMAS, MATN. Mahsulotning veb sahifasi hali
+                  yo'q, shuning uchun soxta manzil yubormaymiz — nom,
+                  do'kon va narx yuboriladi. Sahifa paydo bo'lganda shu
+                  yerga havola qo'shiladi.
+                */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ulashish"
+                  hitSlop={6}
+                  onPress={() => {
+                    void Share.share({
+                      message: `${current.title} — ${current.store.name}\n${money(
+                        current.price,
+                        current.currency,
+                      )}\n\nLookSave'da ko'rdim`,
+                    });
+                  }}
+                  style={styles.roundButton}
+                >
+                  <Icon name="share" size={17} color={colors.text} />
+                </Pressable>
+              </View>
+            </View>
 
             {colorOptions.length > 1 ? (
               <>
@@ -849,16 +1095,22 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                     <Pressable
                       key={option.variantId}
                       accessibilityRole="button"
-                      accessibilityLabel={`Rang: ${option.colorHex ?? option.title}`}
+                      accessibilityLabel={`Rang: ${option.colorHex ?? 'variant'}`}
                       onPress={() => {
                         putOn(tab, option.variantId);
                       }}
                       style={[
                         styles.color,
-                        { backgroundColor: option.colorHex ?? colors.surface2 },
                         option.variantId === current.variantId && styles.colorActive,
                       ]}
-                    />
+                    >
+                      <View
+                        style={[
+                          styles.colorDot,
+                          { backgroundColor: option.colorHex ?? colors.surface2 },
+                        ]}
+                      />
+                    </Pressable>
                   ))}
                 </View>
               </>
@@ -906,6 +1158,25 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                         {item}
                       </Text>
                     </Pressable>
+                  ))}
+
+                  {/*
+                    ⚠️ TUGAGANLARI HAM KO'RSATILADI — bosib bo'lmaydi.
+
+                    Ilgari ular ro'yxatdan shunchaki tushib qolardi va
+                    foydalanuvchi «bu o'lcham umuman yo'q» deb tushunardi.
+                    Ko'rsatilsa, u kutishi yoki boshqa do'konni ochishi
+                    mumkin — qaror uniki bo'ladi.
+                  */}
+                  {soldOutSizes.map((item) => (
+                    <View
+                      key={`sold-${item}`}
+                      accessible
+                      accessibilityLabel={`${item} — tugagan`}
+                      style={[styles.size, styles.sizeSoldOut]}
+                    >
+                      <Text style={styles.sizeSoldOutText}>{item}</Text>
+                    </View>
                   ))}
                 </View>
               </>
@@ -958,10 +1229,16 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             ) : null}
 
             <View style={styles.actions}>
+              {/*
+                ⚠️ NARX ENDI TUGMADA EMAS. U yuqorida, nom ostida turadi —
+                maketdagidek. Tugmada takrorlash faqat joy egallardi va
+                uzun narxda yozuv ikki qatorga tushardi.
+              */}
               <Button
-                title={
-                  picked ? `Savatga · ${money(current.price, current.currency)}` : 'O`lcham tanlang'
-                }
+                title={picked ? 'Savatga qo`shish' : 'O`lcham tanlang'}
+                icon="tryon"
+                trailingIcon={picked ? 'next' : undefined}
+                pill
                 disabled={!picked || cart.isPending}
                 loading={cart.isPending}
                 onPress={() =>
@@ -1147,6 +1424,23 @@ const styles = StyleSheet.create({
    * va ularni sanashdan ko'ra ko'rish tez: to'lgan nuqta — tayyor
    * qatlam, bo'shi — kelayotgani.
    */
+  /* Maketdagi o'ng-past burchakdagi karta */
+  suggestCard: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    width: 76,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 6,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(28,25,40,0.85)',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    gap: 6,
+  },
+  suggestText: { ...text.tiny, fontSize: 10, lineHeight: 13, color: colors.text, textAlign: 'center' },
+
   layerRail: {
     position: 'absolute',
     right: spacing.sm,
@@ -1173,30 +1467,87 @@ const styles = StyleSheet.create({
   overlayText: { ...text.bodyMed, color: colors.text, textAlign: 'center' },
   overlayHint: { ...text.tiny, color: colors.textDim, textAlign: 'center' },
 
-  tabsWrap: { flexGrow: 0 },
-  tabs: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.sm },
-  tab: {
-    minWidth: 76,
+  /*
+   * ⚠️ GORIZONTAL `ScrollView` EMAS, ODDIY `View`.
+   *
+   * Bu ekranda gorizontal ScrollView ichidagi MATN CHIZILMAYDI: joyni
+   * egallaydi, o'lchami to'g'ri, lekin ko'rinmaydi (2026-09-14 da
+   * simulyatorda o'lchangan — chipga fon berilsa fon chiqadi, yozuv yo'q).
+   * Shu sabab turkum tablarining yozuvlari ham yo'qolgan.
+   *
+   * Beshta chip 402pt ekranga sig'adi, shuning uchun bu yerda scroll
+   * kerak emas — `flexWrap` tor ekranda ikkinchi qatorga tushiradi.
+   */
+  /* Balandlik SHART — tablardagi bilan bir sabab (kesilish) */
+  /*
+   * ⚠️ FON SHART. Bu qator aylanadigan maydondan tashqarida turadi;
+   * fonsiz pastdagi matn chiplar orasidan ko'rinib qoladi.
+   */
+  styleRowWrap: { flexGrow: 0, height: 46, paddingTop: 6, backgroundColor: colors.bg },
+  styleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
-  tabActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
+  /*
+   * ⚠️ BALANDLIK ANIQ BERILADI, padding bilan emas. Gorizontal
+   * ScrollView ichida balandligi o'lchanadigan bola yig'ilib qoladi va
+   * yozuvi pastdan kesiladi — tablarda ham shu sabab `height: 34` bor.
+   */
+  styleChip: {
+    height: 30,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  styleChipActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
+  styleChipText: { ...text.tiny, color: colors.textDim },
+  tabsWrap: { flexGrow: 0, height: 46, backgroundColor: colors.bg },
+  tabs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  /* Maketdagi pilla: ikonka va yozuv YONMA-YON, dumaloq chegara */
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 34,
+    paddingHorizontal: 13,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  /*
+   * ⚠️ SOYASIZ. Ilgari faol tabda nurlanish uchun `shadowRadius` bor edi;
+   * fon yarim shaffof bo'lgani uchun iOS soya konturini har kadrda qayta
+   * hisoblardi. Qalinroq chegara bir xil «yorqin» taassurot beradi.
+   */
+  tabActive: {
+    borderColor: colors.borderAccent,
+    borderWidth: 1.5,
+    backgroundColor: colors.primarySoft,
+  },
   tabText: { ...text.tiny, color: colors.textDim },
   tabDressed: {
     position: 'absolute',
-    top: 6,
-    right: 10,
+    top: 5,
+    right: 7,
     width: 6,
     height: 6,
     borderRadius: radius.pill,
     backgroundColor: colors.success,
   },
 
-  bottom: { paddingBottom: spacing.xl },
+  bottom: { paddingTop: spacing.xs, paddingBottom: 96 },
   stripLoader: { marginVertical: spacing.lg },
 
   banner: {
@@ -1247,6 +1598,27 @@ const styles = StyleSheet.create({
 
   details: { paddingHorizontal: spacing.md, gap: spacing.xs },
   title: { ...text.h3, color: colors.text },
+
+  /* ── Maketdagi mahsulot sarlavhasi ── */
+  detailsHead: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  detailsText: { flex: 1, minWidth: 0, gap: 2 },
+  price: { ...text.price, fontSize: 21, lineHeight: 27, color: colors.accent, marginTop: 3 },
+  detailsActions: { flexDirection: 'row', gap: spacing.sm },
+  roundButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   store: { ...text.tiny, color: colors.textDim },
 
   label: { ...text.label, color: colors.textDim, marginTop: spacing.md },
@@ -1267,26 +1639,49 @@ const styles = StyleSheet.create({
   filterPillActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
   filterText: { ...text.tiny, color: colors.textDim },
 
-  colors: { flexDirection: 'row', gap: spacing.sm },
+  colors: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  /*
+   * Maketdagi halqa: tashqi chegara TANLOVNI bildiradi, ichki dumaloq —
+   * rangning o'zi. Ilgari chegara rangning ustida turardi va och
+   * ranglarda tanlangan-tanlanmagani bilinmasdi.
+   */
   color: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: radius.pill,
     borderWidth: 2,
-    borderColor: colors.borderStrong,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  colorActive: { borderColor: colors.accent, borderWidth: 3 },
+  colorDot: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  colorActive: { borderColor: colors.accent },
 
   sizes: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   size: {
+    flexGrow: 1,
+    flexBasis: 0,
     minWidth: 52,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    height: 42,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: 'center',
+    justifyContent: 'center',
   },
+  /*
+   * Tugagan o'lcham — bor, lekin tanlab bo'lmaydi. Chegara punktir:
+   * to'liq chiziq «tanlanadi» degani, punktir esa «bu boshqa holat».
+   */
+  sizeSoldOut: { borderStyle: 'dashed', opacity: 0.55 },
+  sizeSoldOutText: { ...text.bodyMed, color: colors.textDim, textDecorationLine: 'line-through' },
   sizeActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
   sizeText: { ...text.bodyMed, color: colors.textMuted },
 

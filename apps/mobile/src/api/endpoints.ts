@@ -490,6 +490,13 @@ export interface UserAvatar {
   angles: Partial<Record<AvatarAngle, string>>;
   /** Hozir yasalayotgan burchak — ilova kutish holatini ko'rsatadi */
   anglePending: AvatarAngle | null;
+  /**
+   * Operator navbatidagi ish (bo'lsa) — `developer_ai` yo'li.
+   *
+   * ⚠️ KUTISH EKRANI SHUNGA QARAB TANLANADI: AI o'zi yasasa ~40 soniya,
+   * operator bajarsa ~5 daqiqa.
+   */
+  queue: { queuedAt: string; claimed: boolean } | null;
 }
 
 /** Avatarni yasashni boshlaydi. Tayyori bo'lsa qayta yasalmaydi. */
@@ -521,6 +528,23 @@ export interface Garment {
   colorHex: string | null;
   /** Faqat OMBORDA BOR o'lchamlar (band qilinganlar chegirilgan) */
   sizes: string[];
+  /**
+   * Sotilib ketgan o'lchamlar.
+   *
+   * ⚠️ NEGA ALOHIDA RO'YXAT. Ilgari tugagan o'lcham shunchaki
+   * ko'rsatilmasdi va foydalanuvchi uchun ikki holat bir xil ko'rinardi:
+   * «bu do'kon M ishlab chiqarmaydi» va «M bor edi, sotilib ketdi».
+   * Ikkinchisida odam kutishi yoki boshqa do'konga o'tishi mumkin.
+   */
+  soldOutSizes: string[];
+  /**
+   * Shu MAHSULOTNING rang variantlari.
+   *
+   * ⚠️ RO'YXATDAN QIDIRIB BO'LMAYDI. Server har mahsulotdan bitta karta
+   * qaytaradi (`DISTINCT ON`), shuning uchun boshqa ranglar tasmada
+   * umuman bo'lmaydi — ular faqat shu maydonda keladi.
+   */
+  colors: Array<{ variantId: string; colorHex: string | null }>;
   store: { id: string; name: string };
 }
 
@@ -536,6 +560,8 @@ export interface GarmentFilters {
   gender?: string | null;
   /** Kategoriya — slotdan aniqroq. Kiyintirish tablari shu bo'yicha */
   category?: string | null;
+  /** Uslub slugi (`GARMENT_STYLES`) — `products.tags` bilan kesishma */
+  style?: string | null;
   /** Tanlangan do'kon — kiyimlar va buyurtma shu do'kondan */
   storeId?: string | null;
   /** Faqat OMBORDA shu o'lchami borlari */
@@ -550,6 +576,7 @@ export const getGarments = (filters: GarmentFilters = {}): Promise<Garment[]> =>
   if (filters.category) params.set('category', filters.category);
   if (filters.storeId) params.set('storeId', filters.storeId);
   if (filters.size) params.set('size', filters.size);
+  if (filters.style) params.set('style', filters.style);
   return api<Garment[]>(`/tryon/garments?${params.toString()}`);
 };
 
@@ -740,6 +767,28 @@ export const createLook = (input: {
   occasion?: string;
   items: Array<{ slot: string; variantId: string; size?: string }>;
 }): Promise<{ id: string }> => api('/looks', { method: 'POST', body: input });
+
+/**
+ * Komplektni ulashishni yoqadi va ochiq havolani qaytaradi.
+ *
+ * ⚠️ BU SHAXSIY SURATNI TARQATADI — eskizda foydalanuvchining avatari,
+ * ya'ni yuzi bor. Shuning uchun chaqirishdan oldin ekranda tasdiq
+ * so'raladi va istalgan payt `unshareLook` bilan qaytarib olinadi.
+ */
+export const shareLook = (id: string): Promise<{ id: string; isPublic: boolean }> =>
+  api<{ id: string; isPublic: boolean }>(`/looks/${id}/share`, { method: 'POST' });
+
+export const unshareLook = (id: string): Promise<{ id: string; isPublic: boolean }> =>
+  api<{ id: string; isPublic: boolean }>(`/looks/${id}/share`, { method: 'DELETE' });
+
+/**
+ * Ulashilgan komplekt havolasi.
+ *
+ * ⚠️ SAYT DOMENI, ilova sxemasi EMAS. `looksave://` havolasini ilova
+ * o'rnatilmagan odam ocholmaydi — do'stga yuborishdan maqsad esa aynan
+ * o'sha odam ko'rishi. Sayt havolasi brauzerda ochiladi.
+ */
+export const sharedLookUrl = (id: string): string => `https://looksave.app/looks/${id}`;
 
 export const deleteLook = (id: string): Promise<void> =>
   api<void>(`/looks/${id}`, { method: 'DELETE' });
@@ -982,6 +1031,11 @@ export interface CreateProductInput {
   gender: 'male' | 'female' | 'unisex';
   basePrice: string;
   images: string[];
+  /**
+   * Erkin belgilar. Uslub slugi shu yerda saqlanadi (`GARMENT_STYLES`) —
+   * kiyintirish ekranidagi filtr kesishma bo'yicha ishlaydi.
+   */
+  tags?: string[];
   /**
    * `draft` — qoralama, katalogda ko'rinmaydi va rasm soni tekshirilmaydi.
    * `pending` — moderatsiyaga yuboriladi, kamida 3 rasm SHART.

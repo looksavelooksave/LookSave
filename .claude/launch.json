@@ -1,7 +1,7 @@
 {
   "version": "0.0.1",
   "_comment": [
-    "Brauzerda ochiladigan uchta ilova (docs/12-tz.md, IP-06).",
+    "Brauzerda ochiladigan to'rtta ilova (docs/12-tz.md, IP-06).",
     "Uchalasi bir vaqtda ishlashi kerak — portlar shuning uchun belgilangan",
     "va vite.config.ts dagi qiymatlar bilan bir xil.",
     "",
@@ -30,21 +30,47 @@
     {
       "name": "looksave-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--workspace", "@looksave/web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "@looksave/web"
+      ],
       "port": 5175,
       "autoPort": true
     },
     {
       "name": "looksave-store-panel",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--workspace", "@looksave/store-panel"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "@looksave/store-panel"
+      ],
       "port": 5173
     },
     {
       "name": "looksave-admin-panel",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--workspace", "@looksave/admin-panel"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "@looksave/admin-panel"
+      ],
       "port": 5174
+    },
+    {
+      "name": "looksave-developer-ai",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "@looksave/developer-ai"
+      ],
+      "port": 5176
     }
   ]
 }

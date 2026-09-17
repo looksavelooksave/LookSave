@@ -95,6 +95,71 @@ export const storeProductsQuerySchema = z.object({
   cursor: cursorSchema.optional(),
 });
 
+/**
+ * ── KIYIM USLUBLARI ───────────────────────────────────────────────────
+ *
+ * Uslub `products.tags` massivida SLUG bo'lib saqlanadi. Ko'rinadigan
+ * nom ilovada tarjima qilinadi — bazada tarjima saqlanmaydi, aks holda
+ * til qo'shilganda eski yozuvlar eskirib qolardi.
+ *
+ * ⚠️ RO'YXAT SHU YERDA, uchta joy undan o'qiydi: sotuvchi formasi
+ * (tanlash), server (filtr) va kiyintirish ekrani (chiplar). Ilgari
+ * kiyintirishda beshta chip bor edi, lekin ular hech narsani
+ * filtrlamasdi — mahsulotda uslub belgisi umuman yo'q edi va chiplar
+ * faqat xotiraga yozardi. Shuning uchun ular olib tashlangan edi.
+ *
+ * ⚠️ `tags` DA BOSHQA NARSA HAM BO'LISHI MUMKIN. Massiv erkin: do'kon
+ * o'z belgilarini qo'shishi mumkin. Filtr shuning uchun kesishma bilan
+ * ishlaydi, tenglik bilan emas.
+ */
+export const GARMENT_STYLES = ['casual', 'sport', 'streetwear', 'classic', 'minimal'] as const;
+
+export type GarmentStyle = (typeof GARMENT_STYLES)[number];
+
+export function isGarmentStyle(value: string): value is GarmentStyle {
+  return (GARMENT_STYLES as readonly string[]).includes(value);
+}
+
+/**
+ * ── KIYIM RASMLARINING TARTIBI ─────────────────────────────────────────
+ *
+ * `images` massivining dastlabki UCH o'rni MA'NOGA EGA:
+ *
+ *     images[0] — old tomon    images[1] — orqa tomon    images[2] — yon tomon
+ *
+ * ⚠️ NEGA TARTIB, ALOHIDA USTUN EMAS. Massiv allaqachon bor va uning
+ * nol-elementi hamma joyda "asosiy surat" sifatida o'qiladi (katalog,
+ * karta, tasma — API'da 7, mobil'da 3 joy). Yangi ustun qo'shilsa o'sha
+ * o'nta joyni ham qayta yozish kerak bo'lardi; tartib esa mavjud
+ * ma'noni buzmaydi — nol-element old tomon bo'lib qolaveradi.
+ *
+ * ⚠️ NEGA MUHIM. AI kiyintirish burchak bo'yicha ishlaydi: odam yon
+ * tomonga burilsa, modelga ham kiyimning YON surati berilishi kerak.
+ * Old suratdan yon ko'rinish yasalganda mato va kesim o'ylab topiladi.
+ *
+ * Tartibni forma ta'minlaydi (`seller/product-new.tsx` — uchta alohida
+ * uyacha). Bu yerdagi yordamchi esa indekslar kod bo'ylab sochilib
+ * ketmasligi uchun: o'qish faqat shu funksiya orqali.
+ */
+export const GARMENT_ANGLE_ORDER = ['front', 'back', 'side'] as const;
+
+export type GarmentAngle = (typeof GARMENT_ANGLE_ORDER)[number];
+
+/**
+ * Berilgan burchak uchun kiyim suratini qaytaradi.
+ *
+ * Sotuvchi faqat old tomonni qo'ygan bo'lsa — hamma burchak uchun o'sha
+ * qaytadi: kiyintirish umuman ishlamagandan ko'ra, aniqligi past bo'lsa
+ * ham natija bo'lgani yaxshi.
+ */
+export function garmentImageForAngle(
+  images: readonly string[],
+  angle: GarmentAngle,
+): string | null {
+  const index = GARMENT_ANGLE_ORDER.indexOf(angle);
+  return images[index] ?? images[0] ?? null;
+}
+
 /** Rasm yuklash uchun imzolangan havola (09-integrations §4.2). */
 export const presignSchema = z.object({
   fileName: z.string().trim().min(1).max(200),
