@@ -111,7 +111,13 @@ async function main(): Promise<number> {
          * buni aytmaydi («extension "postgis" is not available»), shuning
          * uchun yechim shu yerda.
          */
-        if (/extension "postgis"/i.test(message)) {
+        /*
+         * ⚠️ IKKI XIL MATN. Postgres versiyasiga qarab xato yo `extension
+         * "postgis" is not available`, yo `could not open extension control
+         * file ".../postgis.control"` bo'ladi. Serverda (Postgres 14)
+         * ikkinchisi chiqdi va maslahat ko'rsatilmay qoldi.
+         */
+        if (/extension "postgis"|postgis\.control/i.test(message)) {
           console.error('\n   PostGIS o`rnatilmagan. Serverda (Postgres versiyasiga mos):');
           console.error('     apt install -y postgresql-$(pg_lsclusters -h | cut -d" " -f1)-postgis-3');
         }
