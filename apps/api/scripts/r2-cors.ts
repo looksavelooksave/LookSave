@@ -47,6 +47,8 @@ const ORIGINS = [
   'https://admin.looksave.app',
   // developer_ai paneli — operator natija suratini to'g'ridan-to'g'ri yuklaydi
   'https://ai.looksave.app',
+  // Panel haqiqatda shu domenda (2026-09-18) — .app emas, .uz
+  'https://developer.looksave.uz',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
