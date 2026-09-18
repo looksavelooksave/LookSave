@@ -107,23 +107,30 @@ async function main(): Promise<number> {
         console.error(`\n❌ ${name}: ${message}`);
 
         /*
-         * Eng ko'p uchraydigan sabab — PostGIS o'rnatilmagan. Xato matni
-         * buni aytmaydi («extension "postgis" is not available»), shuning
-         * uchun yechim shu yerda.
-         */
-        /*
+         * Eng ko'p uchraydigan sabab — PostGIS o'rnatilmagan, xato matni esa
+         * nima o'rnatishni aytmaydi. Shuning uchun yechim shu yerda.
+         *
          * ⚠️ IKKI XIL MATN. Postgres versiyasiga qarab xato yo `extension
          * "postgis" is not available`, yo `could not open extension control
          * file ".../postgis.control"` bo'ladi. Serverda (Postgres 14)
-         * ikkinchisi chiqdi va maslahat ko'rsatilmay qoldi.
+         * ikkinchisi chiqdi va maslahat ko'rsatilmay qolgan edi.
          */
-        if (/extension "postgis"|postgis\.control/i.test(message)) {
+        /*
+         * ⚠️ `extension "postgis"` YETARLI EMAS: «permission denied to create
+         * extension "postgis"» da ham shu so'zlar bor va skript ikkala
+         * maslahatni birdan chiqarardi. Faqat «mavjud emas» holatlari.
+         */
+        if (/extension "postgis" is not available|postgis\.control/i.test(message)) {
           console.error('\n   PostGIS o`rnatilmagan. Serverda (Postgres versiyasiga mos):');
           console.error('     apt install -y postgresql-$(pg_lsclusters -h | cut -d" " -f1)-postgis-3');
         }
         if (/permission denied to create extension|must be owner|superuser/i.test(message)) {
           console.error('\n   Kengaytma yaratishga huquq yo`q. Bir marta postgres nomidan:');
-          console.error('     sudo -u postgres psql -d <baza> -c "CREATE EXTENSION postgis"');
+          console.error(
+            '     sudo -u postgres psql -d <baza> -c "CREATE EXTENSION IF NOT EXISTS postgis; ' +
+              'CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS pgcrypto; ' +
+              'CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"',
+          );
         }
         console.error(`\n   ${applied} ta qo'llandi, xatodan keyingilari qo'llanmadi.`);
         return 1;
