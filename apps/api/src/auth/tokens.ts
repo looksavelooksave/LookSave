@@ -126,8 +126,17 @@ export async function consumeRefreshToken(token: string): Promise<{ userId: stri
     throw new ApiError('TOKEN_INVALID', 'Qayta kirish talab qilinadi');
   }
 
-  // Atomik: kalit bor bo'lsa o'chiriladi va eski qiymat qaytadi
-  const storedUserId = await redis.getdel(refreshKey(claims.jti));
+  /*
+   * Atomik: kalit bor bo'lsa o'chiriladi va eski qiymat qaytadi.
+   *
+   * ⚠️ `GETDEL` EMAS. U faqat Redis 6.2+ da bor, serverdagi Ubuntu 22.04
+   * esa 6.0 beradi — u yerda buyruq topilmay `/auth/refresh` 500 qaytarardi
+   * va panel har yangilanishda foydalanuvchini chiqarib yuborardi
+   * (2026-09-20). `MULTI GET+DEL` ham atomik va hamma versiyada ishlaydi.
+   */
+  const results = await redis.multi().get(refreshKey(claims.jti)).del(refreshKey(claims.jti)).exec();
+  const stored = results?.[0]?.[1];
+  const storedUserId = typeof stored === 'string' ? stored : null;
 
   if (storedUserId === null) {
     await revokeAllSessions(claims.sub);
