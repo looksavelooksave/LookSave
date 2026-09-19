@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5174,
     // Dev'da API'ga proksi — CORS bilan ovora bo'lmaymiz
     proxy: {
-      '/v1': { target: 'https://api.looksave.uz', changeOrigin: true },
+      '/v1': { target: process.env.API_PROXY ?? 'https://api.looksave.uz', changeOrigin: true },
     },
   },
   build: { outDir: 'dist', sourcemap: true },

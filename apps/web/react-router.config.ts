@@ -8,7 +8,7 @@ import type { Config } from '@react-router/dev/config';
  * aynen o'sha sahifa muhim.
  *
  * Yon foydasi: `loader` Node'da ishlaydi va API ga to'g'ridan-to'g'ri
- * murojaat qiladi — brauzer hech qachon `api.looksave.app` bilan
+ * murojaat qiladi — brauzer hech qachon `api.looksave.uz` bilan
  * gaplashmaydi, ya'ni CORS ham, tokenni JS'da saqlash ham kerak emas
  * (13-sayt.md §9, BFF).
  *

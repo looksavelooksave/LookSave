@@ -33,7 +33,7 @@ export default defineConfig({
      * boradi (`src/api/client.ts`), ya'ni ular bu yerga tegmaydi.
      */
     proxy: {
-      '/v1': { target: 'http://127.0.0.1:3000', changeOrigin: true },
+      '/v1': { target: process.env.API_PROXY ?? 'https://api.looksave.uz', changeOrigin: true },
     },
   },
 

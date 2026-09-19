@@ -9,7 +9,7 @@ import { clientIp } from '@/lib/client-ip.server';
  * Sessiya — BFF namunasi (docs/13-sayt.md §9, S-04).
  *
  * ```
- * brauzer ──(httpOnly cookie)──▶ SSR server ──(Bearer JWT)──▶ api.looksave.app
+ * brauzer ──(httpOnly cookie)──▶ SSR server ──(Bearer JWT)──▶ api.looksave.uz
  * ```
  *
  * ⚠️ NEGA `localStorage` EMAS: panellarda token `localStorage` da
