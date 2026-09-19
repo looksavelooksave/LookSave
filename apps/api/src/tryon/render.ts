@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { AI_TRYON_SLOTS, garmentImageForAngle } from '@looksave/validation';
 
+import { enqueueTask, isManual } from '../developer-ai/tasks';
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
 import {
@@ -447,7 +448,13 @@ export async function requestRender(
   angle: RenderAngle = 'front',
   baseRenderId: string | null = null,
 ): Promise<RenderDto> {
-  if (!isOpenAiEnabled()) {
+  /*
+   * ⚠️ OPERATOR REJIMIDA OPENAI SHART EMAS (avatardagidek). `render`
+   * `DEVELOPER_AI_KINDS` da bo'lsa ish navbatga tushadi va uni odam
+   * bajaradi — payloadga gavda va KIYIM rasmi yoziladi.
+   */
+  const manual = isManual('render');
+  if (!manual && !isOpenAiEnabled()) {
     throw new ApiError('SERVICE_UNAVAILABLE', 'AI kiyintirish hozircha sozlanmagan');
   }
 
@@ -521,6 +528,26 @@ export async function requestRender(
   } catch (err) {
     await pool.query(`DELETE FROM tryon_renders WHERE id = $1`, [fresh.id]);
     throw err;
+  }
+
+  /*
+   * ── Operator rejimi ──
+   * OpenAI o'rniga ishni navbatga qo'yamiz. Payloadga KANONIK manzillar
+   * yoziladi (`...Url` bilan tugagan kalitlarni panel o'qiyotgan paytda
+   * `signPreviews` yangidan imzolaydi). `refId` = render qatori id'si —
+   * operator natijani yuklaganda `applyResult` aynan shu `tryon_renders`
+   * qatorini `ready` qiladi.
+   */
+  if (manual) {
+    await enqueueTask('render', userId, fresh.id, {
+      bodyUrl: sources.bodyPhotoUrl,
+      garmentImageUrl: sources.garmentImageUrl,
+      ...(sources.faceReferenceUrl ? { faceUrl: sources.faceReferenceUrl } : {}),
+      angle,
+      slot: sources.slot,
+    });
+    logger.info({ userId, renderId: fresh.id }, 'kiyintirish operator navbatiga qo`yildi');
+    return toDto(fresh);
   }
 
   /*
