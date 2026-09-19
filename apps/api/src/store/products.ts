@@ -102,6 +102,14 @@ export async function createProduct(
     const store = storeRows[0];
     if (!store) throw ApiError.notFound('Do`kon topilmadi yoki faol emas');
 
+    /*
+     * ⚠️ AVTO-NASHR: moderatsiyaga yuborilgan (`pending`) mahsulot DARHOL
+     * `active` bo'ladi. Do'kon mahsulot qo'shishi bilan katalogda ko'rinadi —
+     * admin keyin xohlasa «Rad etish» bilan olib tashlaydi (post-moderatsiya).
+     * `draft` (qoralama) tegilmaydi — u ataylab yashirin.
+     */
+    const publishStatus = input.status === 'pending' ? 'active' : input.status;
+
     const { rows } = await client.query<{ id: string; status: string }>(
       `INSERT INTO products (store_id, brand_id, category_id, title, description, slot,
                              gender, base_price, old_price, currency, images, tags,
@@ -123,7 +131,7 @@ export async function createProduct(
         JSON.stringify(input.images),
         input.tags,
         input.isLimited,
-        input.status,
+        publishStatus,
       ],
     );
 
