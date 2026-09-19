@@ -788,7 +788,7 @@ export const unshareLook = (id: string): Promise<{ id: string; isPublic: boolean
  * o'rnatilmagan odam ocholmaydi — do'stga yuborishdan maqsad esa aynan
  * o'sha odam ko'rishi. Sayt havolasi brauzerda ochiladi.
  */
-export const sharedLookUrl = (id: string): string => `https://looksave.app/looks/${id}`;
+export const sharedLookUrl = (id: string): string => `https://looksave.uz/looks/${id}`;
 
 export const deleteLook = (id: string): Promise<void> =>
   api<void>(`/looks/${id}`, { method: 'DELETE' });

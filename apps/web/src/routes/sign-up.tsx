@@ -1,5 +1,9 @@
 import { Form, Link, data, redirect, useNavigation } from 'react-router';
 
+import { AuthShell, PasswordField } from '@/components/auth/AuthShell';
+import authStyles from '@/components/auth/auth.css?url';
+import landingStyles from '@/components/landing/landing.css?url';
+
 import { Button, Field } from '@looksave/ui-web';
 
 import { register } from '@/api/endpoints';
@@ -7,6 +11,14 @@ import { isLocale, type Locale } from '@/i18n/locale';
 import { auth, guest, startSession } from '@/session.server';
 
 import type { Route } from './+types/sign-up';
+
+export const handle = { standalone: true };
+export function links() {
+  return [
+    { rel: 'stylesheet', href: landingStyles },
+    { rel: 'stylesheet', href: authStyles },
+  ];
+}
 
 export function meta(): Route.MetaDescriptors {
   return [{ title: "Ro'yxatdan o'tish — LookSave" }, { name: 'robots', content: 'noindex' }];
@@ -61,61 +73,62 @@ export default function SignUp({ loaderData, actionData }: Route.ComponentProps)
   const errors = actionData?.errors ?? {};
 
   return (
-    <div className="shell py-20">
-      <div className="mx-auto max-w-md">
-        <h1 className="text-h1 font-bold">Ro'yxatdan o'tish</h1>
-        <p className="mt-3 text-body text-muted-foreground">
-          Telefon raqami buyurtmani do'kon bilan bog'laydi — soxta buyurtmaga qarshi asosiy himoya.
-        </p>
+    <AuthShell locale={locale} mode="sign-up">
+      <h1 className="auth-title">Ro'yxatdan o'tish</h1>
+      <p className="auth-description">
+        Sizga mos moda shu yerdan boshlanadi. Shaxsiy hisobingizni yarating.
+      </p>
 
-        <Form method="post" className="mt-8 flex flex-col gap-4">
-          <Field
-            name="name"
-            label="Ism"
-            autoComplete="name"
-            placeholder="Ismingiz"
-            error={errors['name'] ?? null}
-            required
-          />
+      <Form method="post" className="auth-form">
+        <Field
+          name="name"
+          label="Ism"
+          autoComplete="name"
+          placeholder="Ismingiz"
+          error={errors['name'] ?? null}
+          required
+        />
 
-          <Field
-            name="phone"
-            label="Telefon"
-            type="tel"
-            autoComplete="tel"
-            placeholder="+998 90 123 45 67"
-            error={errors['phone'] ?? null}
-            required
-          />
+        <Field
+          name="phone"
+          label="Telefon"
+          type="tel"
+          autoComplete="tel"
+          placeholder="+998 90 123 45 67"
+          error={errors['phone'] ?? null}
+          required
+        />
 
-          <Field
-            name="password"
-            label="Parol"
-            type="password"
-            autoComplete="new-password"
-            placeholder="Kamida 8 belgi"
-            error={errors['password'] ?? null}
-            required
-          />
+        <PasswordField
+          name="password"
+          label="Parol"
+          autoComplete="new-password"
+          placeholder="Kamida 8 belgi"
+          error={errors['password'] ?? null}
+          required
+        />
 
-          <Button
-            type="submit"
-            className="mt-2 w-full shadow-glow"
-            loading={navigation.state === 'submitting'}
-          >
-            Davom etish
-          </Button>
+        <Button
+          type="submit"
+          className="auth-submit w-full"
+          loading={navigation.state === 'submitting'}
+        >
+          Davom etish
+        </Button>
 
-          {actionData?.error ? <p className="text-small text-danger">{actionData.error}</p> : null}
-        </Form>
+        {actionData?.error ? (
+          <p role="alert" className="auth-error">
+            {actionData.error}
+          </p>
+        ) : null}
+      </Form>
 
-        <p className="mt-6 text-small text-dim">
-          Hisobingiz bormi?{' '}
-          <Link to={`/${locale}/sign-in`} className="text-brand hover:underline">
-            Kirish
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="auth-switch">
+        Hisobingiz bormi?{' '}
+        <Link to={`/${locale}/sign-in`} className="text-brand hover:underline">
+          Kirish
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

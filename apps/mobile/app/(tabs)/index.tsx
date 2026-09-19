@@ -139,9 +139,28 @@ export default function Home(): JSX.Element {
     getNextPageParam: (last) => (last.hasMore ? (last.nextCursor ?? undefined) : undefined),
   });
 
-  if (products.isLoading) return <SkeletonGrid count={4} />;
+  /*
+   * ⚠️ Yuklanish/xato SHU YERDA ham `<Screen>` va yuqori otступ bilan
+   * o'raladi. Ilgari bare `<SkeletonGrid>` qaytardi: skeleton status bar
+   * ostiga tiqilib, shapka butunlay yo'qolardi (tab `headerShown: false`,
+   * ya'ni native shapka yo'q). `headerHeight` — fixed shapka egallaydigan
+   * balandlik; skeleton aynan kontent boshlanadigan joydan chiziladi.
+   */
+  if (products.isLoading) {
+    return (
+      <Screen>
+        <View style={{ paddingTop: headerHeight }}>
+          <SkeletonGrid count={4} />
+        </View>
+      </Screen>
+    );
+  }
   if (products.isError) {
-    return <ErrorView error={products.error} onRetry={() => void products.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView error={products.error} onRetry={() => void products.refetch()} />
+      </Screen>
+    );
   }
 
   const items = products.data?.pages.flatMap((page) => page.items) ?? [];

@@ -13,7 +13,11 @@ import { Button } from '@looksave/ui-web';
 
 import { DEFAULT_LOCALE, dirOf, isLocale } from '@/i18n/locale';
 
-import './index.css';
+import stylesheet from './index.css?url';
+
+export function links() {
+  return [{ rel: 'stylesheet', href: stylesheet }];
+}
 
 /**
  * Hujjat qobig'i. Ilgari bu `index.html` edi; framework rejimida sahifa

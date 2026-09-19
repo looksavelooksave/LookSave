@@ -1,4 +1,4 @@
-import { Outlet, data, isRouteErrorResponse, useRouteError } from 'react-router';
+import { Outlet, data, isRouteErrorResponse, useRouteError, useMatches } from 'react-router';
 
 import { Button, Empty } from '@looksave/ui-web';
 
@@ -53,6 +53,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
 export default function Shell({ loaderData }: Route.ComponentProps): JSX.Element {
   const { locale, user, cartCount } = loaderData;
+  const standalone = useMatches().some(
+    (match) => (match.handle as { standalone?: boolean } | undefined)?.standalone,
+  );
 
   /*
    * ⚠️ `TooltipProvider` VA `Toaster` SHU YERDA. Ilgari ular o'chirilgan
@@ -67,11 +70,11 @@ export default function Shell({ loaderData }: Route.ComponentProps): JSX.Element
    */
   return (
     <TooltipProvider delayDuration={200}>
-      <Nav locale={locale} user={user} cartCount={cartCount} />
-      <main id="content" className="pt-[5.5rem] sm:pt-[6.5rem]">
+      {!standalone && <Nav locale={locale} user={user} cartCount={cartCount} />}
+      <main id="content" className={standalone ? undefined : 'pt-[5.5rem] sm:pt-[6.5rem]'}>
         <Outlet />
       </main>
-      <Footer locale={locale} />
+      {!standalone && <Footer locale={locale} />}
       <Toaster position="bottom-right" />
     </TooltipProvider>
   );

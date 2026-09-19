@@ -116,7 +116,10 @@ export function Spotlight({
 
   return (
     <div className="relative" aria-roledescription="karusel" aria-label="Ommabop mahsulotlar">
-      <article className="grid overflow-hidden rounded-card border border-border bg-surface md:grid-cols-[1.05fr_1fr]">
+      <article
+        data-landing-depth
+        className="landing-spotlight-card grid overflow-hidden rounded-card border border-border bg-surface md:grid-cols-[1.05fr_1fr]"
+      >
         {/* ── Chap: neon ramkadagi surat ── */}
         <div className="relative isolate flex min-h-[24rem] items-center justify-center p-8">
           {/*

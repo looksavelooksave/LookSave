@@ -1,5 +1,9 @@
 import { Form, Link, data, redirect, useNavigation } from 'react-router';
 
+import { AuthShell, PasswordField } from '@/components/auth/AuthShell';
+import authStyles from '@/components/auth/auth.css?url';
+import landingStyles from '@/components/landing/landing.css?url';
+
 import { Button, Field } from '@looksave/ui-web';
 
 import { login } from '@/api/endpoints';
@@ -15,6 +19,14 @@ import type { Route } from './+types/sign-in';
  * `httpOnly` cookie'ga soladi va brauzerga faqat yo'naltirish yuboradi.
  * JavaScript tokenni umuman ko'rmaydi (13-sayt.md §9).
  */
+
+export const handle = { standalone: true };
+export function links() {
+  return [
+    { rel: 'stylesheet', href: landingStyles },
+    { rel: 'stylesheet', href: authStyles },
+  ];
+}
 
 export function meta(): Route.MetaDescriptors {
   return [{ title: 'Kirish — LookSave' }, { name: 'robots', content: 'noindex' }];
@@ -65,53 +77,53 @@ export default function SignIn({ loaderData, actionData }: Route.ComponentProps)
   const navigation = useNavigation();
 
   return (
-    <div className="shell py-20">
-      <div className="mx-auto max-w-md">
-        <h1 className="text-h1 font-bold">Kirish</h1>
-        <p className="mt-3 text-body text-muted-foreground">
-          Savat va buyurtmalar hisobingizga bog'lanadi — telefonda boshlab, brauzerda davom
-          ettirasiz.
-        </p>
+    <AuthShell locale={locale} mode="sign-in">
+      <h1 className="auth-title">Kirish</h1>
+      <p className="auth-description">
+        Yana ko‘rishganimizdan xursandmiz. Shaxsiy uslubingiz sari davom eting.
+      </p>
 
-        <Form method="post" className="mt-8 flex flex-col gap-4">
-          {next ? <input type="hidden" name="next" value={next} /> : null}
+      <Form method="post" className="auth-form">
+        {next ? <input type="hidden" name="next" value={next} /> : null}
 
-          <Field
-            name="phone"
-            label="Telefon"
-            type="tel"
-            autoComplete="tel"
-            placeholder="+998 90 123 45 67"
-            required
-          />
+        <Field
+          name="phone"
+          label="Telefon"
+          type="tel"
+          autoComplete="tel"
+          placeholder="+998 90 123 45 67"
+          required
+        />
 
-          <Field
-            name="password"
-            label="Parol"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            required
-          />
+        <PasswordField
+          name="password"
+          label="Parol"
+          autoComplete="current-password"
+          placeholder="••••••••"
+          required
+        />
 
-          <Button
-            type="submit"
-            className="mt-2 w-full shadow-glow"
-            loading={navigation.state === 'submitting'}
-          >
-            Kirish
-          </Button>
+        <Button
+          type="submit"
+          className="auth-submit w-full"
+          loading={navigation.state === 'submitting'}
+        >
+          Kirish
+        </Button>
 
-          {actionData?.error ? <p className="text-small text-danger">{actionData.error}</p> : null}
-        </Form>
+        {actionData?.error ? (
+          <p role="alert" className="auth-error">
+            {actionData.error}
+          </p>
+        ) : null}
+      </Form>
 
-        <p className="mt-6 text-small text-dim">
-          Hisobingiz yo'qmi?{' '}
-          <Link to={`/${locale}/sign-up`} className="text-brand hover:underline">
-            Ro'yxatdan o'ting
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="auth-switch">
+        Hisobingiz yo'qmi?{' '}
+        <Link to={`/${locale}/sign-up`} className="text-brand hover:underline">
+          Ro'yxatdan o'ting
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

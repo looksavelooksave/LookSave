@@ -36,7 +36,7 @@ const STEPS = [
 
 export function HowItWorks(): JSX.Element {
   return (
-    <section id="how" className="section-y relative isolate">
+    <section id="how" className="section-y relative isolate landing-how">
       {/*
         Fon — neon portal (`portal-bg.webp`, 35 KB).
 
@@ -79,7 +79,10 @@ export function HowItWorks(): JSX.Element {
             */
             <li key={step.title} className="relative flex list-none">
               <Reveal delay={index * 80} className="flex flex-1">
-                <Card className="flex flex-1 flex-col gap-5 border-primary/25 bg-[linear-gradient(180deg,hsl(var(--primary)/0.07),hsl(var(--panel)/0.82))] p-6 transition-colors duration-150 hover:border-primary/45">
+                <Card
+                  data-landing-depth
+                  className="landing-step-card flex flex-1 flex-col gap-5 border-primary/25 bg-[linear-gradient(180deg,hsl(var(--primary)/0.07),hsl(var(--panel)/0.82))] p-6 transition-colors duration-150 hover:border-primary/45"
+                >
                   <div className="flex items-center gap-4">
                     <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-primary/45 bg-primary/10 text-brand">
                       <step.icon className="size-6" />

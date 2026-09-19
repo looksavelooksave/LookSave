@@ -34,6 +34,7 @@
     "expo-secure-store": "~14.0.1",
     "expo-splash-screen": "~0.29.24",
     "expo-status-bar": "~2.0.1",
+    "expo-updates": "~0.27.5",
     "jpeg-js": "^0.4.4",
     "lucide-react-native": "^1.31.0",
     "react": "18.3.1",

@@ -15,13 +15,13 @@
 #      CocoaPods 1.15.2 aks holda "uninitialized constant Logger" beradi
 #   2. `expo run:ios` --no-install bilan — ichki `pod install` qotib qoladi
 #      (13+ daqiqa, 0% CPU)
-#   3. Xcode team ID = Y4Z2G3NK2N. `security find-identity` ko'rsatadigan
+#   3. Xcode team ID = AM7GF8X5BZ. `security find-identity` ko'rsatadigan
 #      PL4HJFRNR5 — bu SERTIFIKAT ID'si, team emas; u bilan build
 #      "No profiles found" bilan yiqiladi
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-TEAM_ID="Y4Z2G3NK2N"
+TEAM_ID="AM7GF8X5BZ"
 RUN_PODS=0
 CHECK_ONLY=0
 while [ $# -gt 0 ]; do

@@ -104,6 +104,16 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
   } = controller;
 
   const [storeOpen, setStoreOpen] = useState(false);
+  /*
+   * ⚠️ SEHRGAR BIR TOMONLAMA EDI. Bosqichlar serverdagi `needs.*` bilan
+   * boshqariladi: surat saqlangach `needs.photo` `false` bo'ladi va
+   * PhotoStep'ga qaytish yo'li UMUMAN qolmasdi — odam suratini qayta
+   * olmoqchi bo'lsa, faqat profilni tozalash qolardi.
+   *
+   * Bu bayroq o'sha ekranni majburan ochadi; server holati o'zgarmaydi,
+   * ya'ni bekor qilinsa hech narsa yo'qolmaydi.
+   */
+  const [redoPhoto, setRedoPhoto] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [size, setSize] = useState<string | null>(null);
@@ -138,12 +148,16 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
 
   /* ── Sozlash sehrgari ── */
 
-  if (state.needs.photo) {
+  if (state.needs.photo || redoPhoto) {
     return (
       <div className="shell section-y">
         <Header />
         <div className="mx-auto mt-8 max-w-lg">
-          <PhotoStep controller={controller} />
+          <PhotoStep
+            controller={controller}
+            onDone={() => setRedoPhoto(false)}
+            onCancel={redoPhoto ? () => setRedoPhoto(false) : undefined}
+          />
         </div>
       </div>
     );
@@ -354,6 +368,21 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
                 {ANGLE_LABEL[item]}
               </button>
             ))}
+
+            {/*
+              ⚠️ QAYTA OLISH — BURCHAKLAR YONIDA, ATAYIN. Avatar yoqmasa
+              odam birinchi navbatda shu joyga qaraydi: sahna ostidagi
+              qator avatarni boshqaradigan yagona joy. Sozlamalarga
+              yashirilsa uni hech kim topmaydi.
+            */}
+            <button
+              type="button"
+              onClick={() => setRedoPhoto(true)}
+              className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-tiny text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Icon name="camera" size={12} />
+              Suratni qayta olish
+            </button>
 
             {outfit.some((layer) => layer.category === tab) ? (
               <button

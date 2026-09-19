@@ -206,7 +206,7 @@ ogohlantirish bilan aytadi.
 |---|---|---|
 | 1 | `pod` har doim `RUBYOPT=-rlogger` bilan | Tizim Ruby 2.6 + CocoaPods 1.15.2 aks holda «uninitialized constant Logger» beradi |
 | 2 | `expo run:ios` **`--no-install`** bilan | Ichki `pod install` qotib qoladi (13+ daqiqa, 0% CPU). Alohida: `cd apps/mobile/ios && RUBYOPT=-rlogger pod install` — 40 soniya |
-| 3 | Team ID = `Y4Z2G3NK2N` | `security find-identity` ko'rsatadigan `PL4HJFRNR5` — **sertifikat ID'si, team emas**; u bilan build «No profiles found» beradi |
+| 3 | Team ID = `AM7GF8X5BZ` | `security find-identity` ko'rsatadigan `PL4HJFRNR5` — **sertifikat ID'si, team emas**; u bilan build «No profiles found» beradi |
 
 ### ⚠️ Wi-Fi almashsa
 

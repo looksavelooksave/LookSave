@@ -9,23 +9,29 @@
     "_comment_newArch": "expo-gl yangi arxitekturada (Fabric/bridgeless) sirtini ekranga ulay olmaydi: kontekst yaratiladi, bufer to'g'ri o'lchamda, kadrlar chiziladi — lekin ekran bo'sh qoladi. Shu sabab eski arxitektura. Qaytarishdan oldin expo-gl yangilanганini tekshiring.",
     "newArchEnabled": false,
     "backgroundColor": "#0A0A0F",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "bundleIdentifier": "com.umidjon.umidjon",
+      "bundleIdentifier": "com.looksave.looksave",
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "Avatar yasash uchun yuzingiz va gavdangiz suratini olamiz. Surat serverimizda saqlanadi va avatarni yasash uchun tashqi AI xizmatiga yuboriladi. Uni istalgan vaqtda ilovadan o'chirishingiz mumkin.",
         "NSLocationWhenInUseUsageDescription": "Yaqin atrofdagi do'konlarni ko'rsatish uchun",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "5"
     },
     "android": {
-      "package": "com.umidjon.umidjon",
+      "package": "com.looksave.looksave",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-mark.png",
         "backgroundColor": "#0A0A0F"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -55,13 +61,22 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": null
+      "apiUrl": null,
+      "eas": {
+        "projectId": "5503e8f4-4f2a-4e86-8ff3-8ab012c74531"
+      }
     },
     "icon": "./assets/logo.png",
     "splash": {
       "image": "./assets/logo-mark.png",
       "resizeMode": "contain",
       "backgroundColor": "#0A0A0F"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5503e8f4-4f2a-4e86-8ff3-8ab012c74531"
     }
   }
 }

@@ -30,7 +30,7 @@ const BENEFITS: Array<{ icon: IconName; title: string; body: string }> = [
 
 export function Stores(): JSX.Element {
   return (
-    <section id="stores" className="section-y relative isolate">
+    <section id="stores" className="section-y relative isolate landing-sellers">
       {/* Fon rasmi — chetlari fonga singiydi, qo'shni bo'limga tutashadi */}
       <SectionBackdrop
         src="/img/bg-store.webp"
@@ -38,6 +38,11 @@ export function Stores(): JSX.Element {
         sideFade="linear-gradient(to left, hsl(var(--background)) 8%, transparent 58%)"
       />
 
+      <div className="landing-silk-motion" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
       <div className="shell-wide grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
         <Reveal>
           <div>
@@ -59,7 +64,7 @@ export function Stores(): JSX.Element {
         <div className="grid gap-5">
           {BENEFITS.map((benefit, index) => (
             <Reveal key={benefit.title} delay={index * 90}>
-              <Card className="border-border bg-surface">
+              <Card data-landing-depth className="landing-benefit-card border-border bg-surface">
                 <CardContent className="flex items-start gap-5 p-6">
                   {/* Chapdagi urg'u chizig'i — kartani bo'lim ritmiga bog'laydi */}
                   <div

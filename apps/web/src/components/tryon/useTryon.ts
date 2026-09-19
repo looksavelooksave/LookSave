@@ -209,18 +209,39 @@ export function useTryon(locale: string) {
 
   const act = useCallback(
     async (body: ActBody): Promise<{ data?: unknown; error?: string; code?: string }> => {
-      const response = await fetch(`/${locale}/try-on/act`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(body),
-      });
+      /*
+       * ⚠️ IKKALA QADAM HAM OTIB KETISHI MUMKIN, va ikkalasida ham
+       * natija bir xil ko'rinardi: xom brauzer xabari ekranga chiqib
+       * qolardi («Load failed» / «Failed to fetch»). Bu chaqiruvchilar
+       * `error` maydonini o'qishini hisobga olib, xatoni TASHLAMAYMIZ —
+       * o'sha shaklda qaytaramiz.
+       */
+      let response: Response;
+      try {
+        response = await fetch(`/${locale}/try-on/act`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(body),
+        });
+      } catch {
+        return { error: 'Serverga ulanib bo`lmadi — ulanishni tekshiring' };
+      }
 
-      const payload = (await response.json()) as {
+      /*
+       * ⚠️ JSON BO'LMASLIGI MUMKIN: proksi yoki SSR qatlami xato
+       * sahifasini (HTML) qaytarsa `response.json()` otib ketadi va
+       * yuqoridagi `catch` uni ushlamaydi — u faqat tarmoq uchun.
+       */
+      const payload = (await response.json().catch(() => null)) as {
         data?: unknown;
         error?: string;
         code?: string;
         fields?: string[];
-      };
+      } | null;
+
+      if (!payload) {
+        return { error: `Server kutilmagan javob qaytardi (HTTP ${response.status})` };
+      }
 
       /*
        * BFF validatsiyasi yiqilsa qaysi maydon aybdorligini xabarga
@@ -242,7 +263,7 @@ export function useTryon(locale: string) {
    * ⚠️ ILGARI BU YERDA `op: 'batch'` TURARDI: tasmadagi HAMMA kiyim
    * bir yo'la kiyintirilardi. Ikki jiddiy kamchiligi bor edi.
    *
-   * 1. PUL. Har kiyim alohida `gpt-image-1` chaqiruvi. Foydalanuvchi
+   * 1. PUL. Har kiyim alohida OpenAI chaqiruvi. Foydalanuvchi
    *    turkumni ochishi bilanoq o'nlab so'rov ketardi — ko'rmagan
    *    kiyimlari uchun ham to'lanardi.
    *

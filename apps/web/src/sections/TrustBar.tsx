@@ -34,7 +34,10 @@ export function TrustBar(): JSX.Element {
           uchlari so'nadi: panel yaxlit qoladi, kataklar shunchaki
           bir-biridan ajraladi.
         */}
-        <div className="edge-beam rounded-card border border-borderStrong bg-panel/75 shadow-[0_0_44px_hsl(var(--primary)/0.14),inset_0_1px_0_rgba(255,255,255,0.045)] backdrop-blur-xl">
+        <div
+          data-landing-depth
+          className="landing-trust-panel edge-beam rounded-card border border-borderStrong bg-panel/75 shadow-[0_0_44px_hsl(var(--primary)/0.14),inset_0_1px_0_rgba(255,255,255,0.045)] backdrop-blur-xl"
+        >
           <div className="grid sm:grid-cols-3">
             {ITEMS.map((item, index) => (
               <div key={item.title} className="relative flex items-center gap-5 px-8 py-6">

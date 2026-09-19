@@ -229,9 +229,30 @@ export default function Cart(): JSX.Element {
     );
   }
 
-  if (cart.isLoading) return <SkeletonList count={3} />;
+  /*
+   * ⚠️ Yuklanish/xato ham `<Screen>` va shu ekranning topBar'i bilan
+   * o'raladi. Ilgari bare `<SkeletonList>` qaytardi: tab `headerShown:
+   * false` bo'lgani uchun skeleton status bar ostiga tiqilardi. Endi
+   * sarlavha ko'rinib turadi va skeleton uning ostidan boshlanadi.
+   */
+  if (cart.isLoading) {
+    return (
+      <Screen>
+        <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
+          <View style={styles.clearButtonGhost} />
+          <Text style={styles.topTitle}>{t.tabs.cart}</Text>
+          <View style={styles.clearButtonGhost} />
+        </View>
+        <SkeletonList count={3} />
+      </Screen>
+    );
+  }
   if (cart.isError) {
-    return <ErrorView error={cart.error} onRetry={() => void cart.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView error={cart.error} onRetry={() => void cart.refetch()} />
+      </Screen>
+    );
   }
 
   if (!cart.data || cart.data.itemCount === 0) {

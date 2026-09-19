@@ -22,7 +22,7 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.looksave.app"
+        "EXPO_PUBLIC_API_URL": "https://api.looksave.uz"
       },
       "android": { "buildType": "apk" }
     },
@@ -30,12 +30,20 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.looksave.app"
+        "EXPO_PUBLIC_API_URL": "https://api.looksave.uz"
       },
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "app-bundle" },
+      "ios": { "image": "macos-tahoe-26.5-xcode-26.6" }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6813230137",
+        "ascApiKeyPath": "/Users/umidjon2/.appstoreconnect/private_keys/AuthKey_Y4BK8G3895.p8",
+        "ascApiKeyId": "Y4BK8G3895",
+        "ascApiKeyIssuerId": "1fe4411f-92e9-4881-8288-8aeae4f2ad86"
+      }
+    }
   }
 }

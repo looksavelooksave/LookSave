@@ -56,11 +56,12 @@ export function Waitlist(): JSX.Element {
   };
 
   return (
-    <section id="waitlist" className="section-y relative isolate overflow-hidden">
+    <section id="waitlist" className="section-y relative isolate overflow-hidden landing-waitlist">
       {' '}
       {/* Fon rasmi — chetlari fonga singiydi, qo'shni bo'limga tutashadi */}
       <SectionBackdrop src="/img/bg-planet.webp" position="object-bottom" />
-      <Grid />
+      <Grid className="landing-grid-motion" />
+      <div className="landing-planet-horizon" aria-hidden="true" />
       <div className="shell relative max-w-3xl text-center">
         <Reveal>
           <p className="eyebrow">Erta kirish</p>
@@ -81,7 +82,7 @@ export function Waitlist(): JSX.Element {
               </AlertDescription>
             </Alert>
           ) : (
-            <Card className="mx-auto mt-10 max-w-md border-border bg-surface text-left shadow-card">
+            <Card className="landing-waitlist-card edge-beam mx-auto mt-10 max-w-md border-border bg-surface text-left shadow-card">
               <CardContent className="p-6">
                 <form onSubmit={submit}>
                   <ToggleGroup

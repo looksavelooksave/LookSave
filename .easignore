@@ -1,0 +1,136 @@
+# EAS Build'ga yuklanadigan arxivdan chiqariladigan fayllar.
+#
+# ⚠️ BU FAYL BOR EKAN, EAS `.gitignore` NI UMUMAN O'QIMAYDI. Shuning uchun
+# pastda root `.gitignore` ning to'liq nusxasi turibdi — `.env` va
+# kalitlar (`*.p8`, `*.p12`) Expo serveriga ketmasligi o'shanga bog'liq.
+# `.gitignore` ga yangi qoida qo'shsangiz, uni SHU YERGA HAM ko'chiring.
+#
+# NEGA KERAK (2026-09-19): arxiv 42 MB edi va sekin internetda yuklash
+# `write EPIPE` bilan uzildi. Uning yarmi `.claude/worktrees/` — repo'ning
+# ikkinchi to'liq nusxasi: u faqat `.git/info/exclude` da e'tiborsiz,
+# EAS esa o'sha faylni o'qimaydi. Qolganini `.git` tarixi (14 MB) va mobil
+# buildga aloqasi yo'q 3D/dizayn fayllari egallardi.
+#
+# Workspace'larning `package.json` lari QOLISHI SHART: `npm ci` monorepo
+# lock-faylini ular bilan solishtiradi.
+
+# ── Faqat EAS uchun ──────────────────────────────────────────────────────
+.git
+.claude/
+assets-3d/
+design/
+docs/
+blender_scripts/
+/*.pdf
+apps/web/public/
+
+# ── apps/mobile/.gitignore ───────────────────────────────────────────────
+apps/mobile/expo-env.d.ts
+
+# ── root .gitignore nusxasi ──────────────────────────────────────────────
+# Dependencies
+node_modules/
+.npm/
+.pnp.*
+
+# Build artefaktlari
+dist/
+build/
+.output/
+*.tsbuildinfo
+
+# Environment — hech qachon commit qilinmaydi
+.env
+.env.*
+!.env.example
+
+# Loglar
+*.log
+npm-debug.log*
+logs/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+apps/mobile/ios/
+apps/mobile/android/
+
+# Xcode — foydalanuvchiga xos holat (D-38).
+# Bu fayllar oyna joylashuvi va ochiq tablarni saqlaydi: har mashinada
+# boshqacha va har ochilishda o'zgaradi. Ilgari `umidjon/` shablon
+# loyihasi bilan birga repoga tushib qolgan edi.
+**/xcuserdata/
+*.xcuserstate
+DerivedData/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Vite / web panellar
+apps/*/dist/
+.vite/
+
+# Test va coverage
+coverage/
+.nyc_output/
+
+# IDE va OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# Cache
+.eslintcache
+.cache/
+.turbo/
+
+# 3D ish fayllari (manba .blend git-lfs orqali, backup fayllar yo'q)
+*.blend1
+*.blend2
+assets-3d/**/tmp/
+
+# Ma'lumotlar bazasi dump/backup
+*.dump
+*.sql.gz
+backups/
+
+# Infra — volume ma`lumotlari va sirlar
+infra/data/
+infra/.env
+
+# API lokal muhit
+apps/api/.env
+
+# Python (blender_scripts)
+__pycache__/
+*.pyc
+
+# Generatsiya natijasi — `assets-3d/export` dan avtomatik ko`chiriladi.
+# Manba bitta: `assets-3d/export`. Nusxalarni commit qilish har model
+# o`zgarishida ~8 MB binar diff beradi va tarixni bekorga shishiradi.
+#   sayt:  apps/web/scripts/sync-models.mjs      (predev / prebuild)
+#   mobil: apps/mobile/scripts/sync-models.mjs   (prestart / preios)
+apps/web/public/models/
+apps/mobile/assets/models/
+
+# React Router yasaydigan marshrut tiplari
+.react-router/
+
+# MediaPipe modeli — `@vladmandic/human` ga o'tilgandan keyin ishlatilmaydi,
+# lekin 3.6 MB. Kerak bo'lsa qaytadan yuklab olinadi, gitda saqlanmaydi.
+assets-3d/generator/models/
+
+# CatVTON sifat testi — ichida haqiqiy gavda suratlari havolasi bor
+pairs.json
+bench-out/
+bench-data/
+
+# Lokal dev jarayonlarining PID fayllari (scripts/dev-up.sh)
+.dev-*.pid
+# Kuryer ilovasi vaqtincha chetga olingan (Metro uni package.json siz ko'rib yiqilardi)
+.courier-parked/

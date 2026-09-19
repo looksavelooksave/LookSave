@@ -44,7 +44,7 @@ export function SectionBackdrop({
         loading="lazy"
         decoding="async"
         style={edgeMaskStyle}
-        className={cn('object-cover', imageClass, position)}
+        className={cn('landing-backdrop-image object-cover', imageClass, position)}
       />
       {sideFade ? <div className="absolute inset-0" style={{ background: sideFade }} /> : null}
     </div>

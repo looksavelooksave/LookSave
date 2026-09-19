@@ -19,6 +19,12 @@ import {
   type ProductCard as Card,
 } from '@/api/endpoints';
 import { Reveal } from '@/components/Reveal';
+import { LandingMotion } from '@/components/landing/LandingMotion';
+import landingStyles from '@/components/landing/landing.css?url';
+
+export function links() {
+  return [{ rel: 'stylesheet', href: landingStyles }];
+}
 import { guest } from '@/session.server';
 import { Categories } from '@/sections/Categories';
 import { Hero } from '@/sections/Hero';
@@ -181,7 +187,7 @@ export default function Home({ loaderData }: Route.ComponentProps): JSX.Element 
   const { locale, trending, brands, spotlight, details } = loaderData;
 
   return (
-    <>
+    <LandingMotion>
       <Hero locale={locale} />
 
       {/* Ishonch qatori — hero ostida, TOP BRANDS ustida (maketdagi tartib) */}
@@ -231,7 +237,8 @@ export default function Home({ loaderData }: Route.ComponentProps): JSX.Element 
                   <li key={brand.id}>
                     <Link
                       to={`/${locale}/catalog?brand=${brand.id}`}
-                      className="group relative flex h-[9.875rem] flex-col items-center justify-center gap-5 overflow-hidden rounded-card border border-primary/25 bg-[linear-gradient(180deg,hsl(var(--primary)/0.09),hsl(var(--panel)/0.9))] px-3 py-5 transition-colors duration-200 hover:border-primary/45 hover:bg-[linear-gradient(180deg,hsl(var(--primary)/0.17),hsl(var(--panel)/0.92))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      data-landing-depth
+                      className="landing-brand-tile group relative flex h-[9.875rem] flex-col items-center justify-center gap-5 overflow-hidden rounded-card border border-primary/25 bg-[linear-gradient(180deg,hsl(var(--primary)/0.09),hsl(var(--panel)/0.9))] px-3 py-5 transition-colors duration-200 hover:border-primary/45 hover:bg-[linear-gradient(180deg,hsl(var(--primary)/0.17),hsl(var(--panel)/0.92))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       {brand.logoUrl ? (
                         <img
@@ -334,6 +341,6 @@ export default function Home({ loaderData }: Route.ComponentProps): JSX.Element 
       <HowItWorks />
       <Stores />
       <Waitlist />
-    </>
+    </LandingMotion>
   );
 }

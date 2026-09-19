@@ -53,14 +53,15 @@ const LANES: Lane[] = [
 
 export function Categories({ locale }: { locale: Locale }): JSX.Element {
   return (
-    <section className="shell-wide section-y">
+    <section className="shell-wide section-y landing-categories">
       <Reveal>
         <div className="grid gap-4 md:grid-cols-3 xl:gap-6">
           {LANES.map((lane) => (
             <Link
               key={lane.key}
               to={lane.to(locale)}
-              className="group relative isolate block overflow-hidden rounded-card border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              data-landing-depth
+              className="landing-category-card group relative isolate block overflow-hidden rounded-card border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <div className="aspect-[4/5] md:aspect-[3/4]">
                 <img

@@ -95,8 +95,11 @@ function apiUrl(): string {
     return devHostFromMetro(fromEnv) ?? fromEnv;
   }
 
+  // ⚠️ Zaxira domen `.uz` — jonli backend shu (health 200). `.app` DNS'da
+  // yo'q (o'lik): eas.json va bu fallback ilgari o'shanga qarab turardi va
+  // ishlab chiqarish build'ida backend UMUMAN ulanmasdi.
   const fromConfig = Constants.expoConfig?.extra?.['apiUrl'];
-  return typeof fromConfig === 'string' ? fromConfig : 'https://api.looksave.app';
+  return typeof fromConfig === 'string' ? fromConfig : 'https://api.looksave.uz';
 }
 
 let accessToken: string | null = null;
