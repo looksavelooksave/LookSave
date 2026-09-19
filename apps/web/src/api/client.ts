@@ -36,10 +36,16 @@ export function isNetworkError(error: unknown): boolean {
   return error instanceof ApiError && error.code === 'NETWORK';
 }
 
-const SERVER_ORIGIN =
-  typeof process !== 'undefined' && process.env['API_URL']
-    ? process.env['API_URL']
-    : 'https://api.looksave.uz';
+/*
+ * ⚠️ `API_URL` oxiridagi `/` va `/v1` OLIB TASHLANADI. `baseUrl()` bazaviy
+ * yo'lni (`/v1`) o'zi qo'shadi. Agar env `https://api.looksave.uz/v1` deb
+ * berilsa (Vercel'da shunday bo'lgan edi), yo'l `/v1/v1/auth/...` bo'lib
+ * ikkilanardi va API «Bunday manzil yo'q» (404) qaytarardi. Endi env `/v1`
+ * bilan ham, `/v1`siz ham to'g'ri ishlaydi.
+ */
+const RAW_API_URL =
+  (typeof process !== 'undefined' && process.env['API_URL']) || 'https://api.looksave.uz';
+const SERVER_ORIGIN = RAW_API_URL.replace(/\/+$/, '').replace(/\/v1$/, '');
 
 function onServer(): boolean {
   return typeof document === 'undefined';
