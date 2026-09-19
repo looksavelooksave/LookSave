@@ -17,6 +17,16 @@ import type { ApiFailure, ApiSuccess, AuthUser, ErrorCode } from '@looksave/shar
 
 const REFRESH_KEY = 'looksave.refresh';
 
+/**
+ * API manzili.
+ *
+ * ⚠️ Ishlab chiqarish build'ida `VITE_API_URL=https://api.looksave.uz` SHART.
+ * Bo'sh bo'lsa (lokal) — nisbiy `/v1`, Vite proksi uni backendga uzatadi.
+ * Deploy'da proksi YO'Q: nisbiy yo'l panel domeniga ketadi
+ * (`store.looksave.uz/v1/...` → Vercel `404 NOT_FOUND`) va kirish ishlamaydi.
+ */
+export const API_BASE = `${(import.meta.env['VITE_API_URL'] ?? '').replace(/\/+$/, '')}/v1`;
+
 let accessToken: string | null = null;
 let storeId: string | null = null;
 
@@ -64,7 +74,7 @@ async function refreshAccessToken(): Promise<boolean> {
   const refreshToken = localStorage.getItem(REFRESH_KEY);
   if (!refreshToken) return false;
 
-  const response = await fetch('/v1/auth/refresh', {
+  const response = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -112,7 +122,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   let response: Response;
   try {
-    response = await fetch(`/v1${path}`, {
+    response = await fetch(`${API_BASE}${path}`, {
       method,
       headers: {
         ...authHeaders(),
@@ -151,7 +161,7 @@ export interface LoginResult {
 }
 
 export async function login(phoneNumber: string, password: string): Promise<AuthUser> {
-  const response = await fetch('/v1/auth/login', {
+  const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone: phoneNumber, password, platform: 'web' }),
@@ -184,7 +194,7 @@ export async function logout(): Promise<void> {
   clearTokens();
   if (!refreshToken) return;
 
-  await fetch('/v1/auth/logout', {
+  await fetch(`${API_BASE}/auth/logout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),

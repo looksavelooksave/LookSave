@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
-import { authHeaders } from '../api/client';
+import { API_BASE, authHeaders } from '../api/client';
 
 /**
  * Do'kon paneli uchun real vaqt oqimi (07-web-panels §4.4).
@@ -54,7 +54,7 @@ export function useOrderStream(enabled: boolean, options: Options = {}): StreamS
 
     const connect = async (): Promise<void> => {
       try {
-        const response = await fetch('/v1/store/events/stream', {
+        const response = await fetch(`${API_BASE}/store/events/stream`, {
           headers: { ...authHeaders(), Accept: 'text/event-stream' },
           signal: controller.signal,
         });
