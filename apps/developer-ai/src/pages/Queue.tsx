@@ -15,6 +15,7 @@ import { ApiClientError } from '../api/client';
 import { DressBoard } from '../components/DressBoard';
 import { EmptyState, Spinner } from '../components/Spinner';
 import { useAuth } from '../hooks/useAuth';
+import { useTaskAlerts } from '../hooks/useTaskAlerts';
 import { timeAgo } from '../lib/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -108,12 +109,30 @@ export function QueuePage(): JSX.Element {
     refetchInterval: tab === 'open' ? 5000 : false,
   });
 
+  /*
+   * ⚠️ SIGNAL UCHUN ALOHIDA, DOIMIY SO'ROV. Asosiy so'rov faqat «Navbat»
+   * tabida yangilanadi — operator «Tayyor»da bo'lsa yangi ishni sezmasdi.
+   * Bu so'rov tab qanday bo'lishidan qat'i nazar 5 soniyada yangilanadi
+   * (fon oynada ham) va faqat ovoz/bildirishnoma hamda nishon uchun.
+   */
+  const openWatch = useQuery({
+    queryKey: ['alerts', 'open'],
+    queryFn: () => listTasks('open'),
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+  });
+  const pendingTasks = useMemo(
+    () => (openWatch.data ?? []).filter((task) => task.status === 'pending'),
+    [openWatch.data],
+  );
+  const alerts = useTaskAlerts(pendingTasks);
+
   const items = useMemo(() => tasks.data ?? [], [tasks.data]);
   const selectedId = params.get('task');
   const selected = items.find((task) => task.id === selectedId) ?? null;
 
   // Sarlavhada kutayotganlar soni — operator boshqa oynada bo'lsa ham ko'rsin
-  const pending = tab === 'open' ? items.filter((task) => task.status === 'pending').length : 0;
+  const pending = pendingTasks.length;
   useEffect(() => {
     document.title = pending > 0 ? `(${pending}) Navbat — LookSave` : 'Navbat — LookSave';
   }, [pending]);
@@ -135,6 +154,29 @@ export function QueuePage(): JSX.Element {
           <span className="text-sm text-dim">developer_ai</span>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <button
+            type="button"
+            onClick={alerts.toggle}
+            aria-pressed={alerts.enabled}
+            title={
+              alerts.enabled
+                ? 'Ovozli xabar yoniq — yangi so`rovda signal beradi'
+                : 'Ovozli xabarni yoqish (bir marta bosing)'
+            }
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              alerts.enabled
+                ? 'border-brand/40 bg-primary/10 text-brand'
+                : 'border-border text-dim hover:text-foreground'
+            }`}
+          >
+            <span aria-hidden>{alerts.enabled ? '🔔' : '🔕'}</span>
+            {alerts.enabled ? 'Xabar yoniq' : 'Xabarni yoqish'}
+          </button>
+          {alerts.enabled && alerts.permission === 'denied' ? (
+            <span className="text-xs text-warning" title="Brauzer bildirishnomasi bloklangan">
+              faqat ovoz
+            </span>
+          ) : null}
           <span className="text-dim">{user?.fullName}</span>
           <Button variant="ghost" size="sm" onClick={() => void signOut()}>
             Chiqish
