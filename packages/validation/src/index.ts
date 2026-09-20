@@ -17,3 +17,4 @@ export * from './developer-ai';
 export * from './store-products';
 export * from './outfit';
 export * from './sizing';
+export * from './delivery';

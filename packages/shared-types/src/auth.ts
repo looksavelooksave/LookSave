@@ -1,6 +1,6 @@
 import type { CountryCode, IsoDateTime, Locale, Uuid } from './api';
 
-export type UserRole = 'customer' | 'store_owner' | 'admin';
+export type UserRole = 'customer' | 'store_owner' | 'admin' | 'courier';
 
 export type Gender = 'male' | 'female';
 

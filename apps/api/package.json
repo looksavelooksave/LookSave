@@ -19,7 +19,8 @@
     "bench:pairs:local": "tsx --env-file=.env scripts/make-bench-pairs-local.ts",
     "r2:cors": "tsx --env-file=.env scripts/r2-cors.ts",
     "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
-    "admin:create": "tsx --env-file=.env scripts/create-admin.ts"
+    "admin:create": "tsx --env-file=.env scripts/create-admin.ts",
+    "courier:create": "tsx --env-file=.env scripts/create-courier.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1109.0",

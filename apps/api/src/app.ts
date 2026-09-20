@@ -7,6 +7,7 @@ import { errorHandler, notFoundHandler } from './http/error-handler';
 import { requestId } from './http/request-id';
 import { logger } from './logger';
 import { adminRouter } from './routes/admin';
+import { deliveryRouter } from './routes/delivery';
 import { developerAiRouter } from './routes/developer-ai';
 import { authRouter } from './routes/auth';
 import { healthRouter } from './routes/health';
@@ -111,6 +112,7 @@ export function createApp(): Express {
   app.use('/v1', telegramRouter);
   app.use('/v1', adminRouter);
   app.use('/v1', developerAiRouter);
+  app.use('/v1', deliveryRouter);
   app.use('/v1', storePanelRouter);
   app.use('/v1', cartRouter);
   app.use('/v1', ordersRouter);
