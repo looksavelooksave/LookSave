@@ -19,7 +19,6 @@ import { Hero } from '../../src/components/home/Hero';
 import { ScrollFade } from '../../src/components/ScrollFade';
 import { BrandRow, SectionHeader } from '../../src/components/home/Sections';
 import { ErrorView, Screen } from '../../src/components/ui';
-import { SkeletonGrid } from '../../src/components/Skeleton';
 import { rtlStyles, useI18n } from '../../src/i18n';
 import { useLocationStore } from '../../src/store/locationStore';
 import { useSplashLanding } from '../../src/store/splashTargetStore';
@@ -140,17 +139,16 @@ export default function Home(): JSX.Element {
   });
 
   /*
-   * ⚠️ Yuklanish/xato SHU YERDA ham `<Screen>` va yuqori otступ bilan
-   * o'raladi. Ilgari bare `<SkeletonGrid>` qaytardi: skeleton status bar
-   * ostiga tiqilib, shapka butunlay yo'qolardi (tab `headerShown: false`,
-   * ya'ni native shapka yo'q). `headerHeight` — fixed shapka egallaydigan
-   * balandlik; skeleton aynan kontent boshlanadigan joydan chiziladi.
+   * ⚠️ Yuklanish SHU YERDA ham `<Screen>` va yuqori otступ bilan o'raladi.
+   * Ilgari bu yerda skeleton grid ko'rsatilardi; foydalanuvchi so'roviga
+   * ko'ra (2026-09-20) u olib tashlandi va o'rniga oddiy spinner qo'yildi.
+   * `headerHeight` — fixed shapka egallaydigan balandlik.
    */
   if (products.isLoading) {
     return (
       <Screen>
-        <View style={{ paddingTop: headerHeight }}>
-          <SkeletonGrid count={4} />
+        <View style={[styles.loading, { paddingTop: headerHeight }]}>
+          <ActivityIndicator color={colors.accent} />
         </View>
       </Screen>
     );
@@ -196,7 +194,13 @@ export default function Home(): JSX.Element {
             void products.fetchNextPage();
           }
         }}
-        ListFooterComponent={products.isFetchingNextPage ? <SkeletonGrid count={2} /> : null}
+        ListFooterComponent={
+          products.isFetchingNextPage ? (
+            <View style={styles.footerLoading}>
+              <ActivityIndicator color={colors.accent} size="small" />
+            </View>
+          ) : null
+        }
         ListHeaderComponent={
           <View style={styles.header}>
             <Hero
@@ -348,6 +352,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   imagePlaceholder: { borderWidth: 1, borderColor: colors.border },
+  // Skeleton o'rniga oddiy spinner (2026-09-20)
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  footerLoading: { paddingVertical: spacing.lg, alignItems: 'center' },
   heart: {
     position: 'absolute',
     top: spacing.sm,
