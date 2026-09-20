@@ -95,7 +95,7 @@ export function AvatarStage({
     return () => loop.stop();
   }, [pulse]);
 
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1.03] });
+  // Pastdagi nur sekin "nafas oladi" (halqalar olib tashlangach faqat shu qoldi)
   const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0.95] });
 
   // Kesim bor bo'lsa u ustun: faqat u qorong'i fonda to'g'ri ko'rinadi
@@ -103,14 +103,16 @@ export function AvatarStage({
 
   return (
     <View style={styles.root}>
-      {/* To'r — maketdagi kabi, juda past kontrastda */}
-      <View style={styles.grid} pointerEvents="none">
-        {Array.from({ length: 14 }, (_, index) => (
-          <View key={`h${index}`} style={[styles.gridLine, { top: `${(index + 1) * 7}%` }]} />
-        ))}
-        {Array.from({ length: 8 }, (_, index) => (
-          <View key={`v${index}`} style={[styles.gridLineV, { left: `${(index + 1) * 12}%` }]} />
-        ))}
+      {/*
+        Orqa fon — bir-birining ustiga tushgan neon romkalar (maketdagi
+        3-rasm). Ilgari bu to'r chiziqlari edi; foydalanuvchi ularni
+        olib tashlab, romkali fonni so'radi. Romkalar biroz burilgan va
+        past shaffoflikda — gavdaga e'tibor tortmaydi, chuqurlik beradi.
+      */}
+      <View style={styles.frames} pointerEvents="none">
+        <View style={[styles.frame, styles.frameA]} />
+        <View style={[styles.frame, styles.frameB]} />
+        <View style={[styles.frame, styles.frameC]} />
       </View>
 
       {/*
@@ -144,14 +146,25 @@ export function AvatarStage({
         Platforma odamdan keyin chizilsa halqa oyoq ustidan o'tib ketadi va
         odam platforma ichida emas, uning orqasida turgandek ko'rinadi.
       */}
-      {showRings ? (
-        <Animated.View
-          style={[styles.platform, { transform: [{ scaleX: scale }] }]}
-          pointerEvents="none"
-        >
-          <View style={styles.platformRing} />
-        </Animated.View>
-      ) : null}
+      {/*
+        Oyoq ostidagi PODIUM (maketdagi 2-rasm) — yaltiroq binafsha disk.
+        Ilgari bu shunchaki neon halqa edi; foydalanuvchi to'liq podium
+        so'radi. Uch qatlam: yon devor (chuqurlik), yaltiroq usti
+        (gradient) va yuqori qirradagi yorug'lik chizig'i.
+
+        ⚠️ ODAMDAN OLDIN CHIZILADI — u podium USTIDA turgandek ko'rinadi.
+        Puls yo'q: podium qimirlamaydigan buyum.
+      */}
+      <View style={styles.podium} pointerEvents="none">
+        <View style={styles.podiumSide} />
+        <LinearGradient
+          colors={['#2b2150', '#150e28']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.podiumTop}
+        />
+        <View style={styles.podiumRim} />
+      </View>
 
       {children ? (
         <View style={[StyleSheet.absoluteFill, dimmed && styles.dimmed]}>{children}</View>
@@ -166,34 +179,11 @@ export function AvatarStage({
       )}
 
       {/*
-        Halqalar odam USTIDAN o'tadi — maketda ham shunday: ular gavdani
-        "skanerlayotgandek" ko'rinadi. Shuning uchun ular odamdan keyin.
+        ⚠️ GAVDANI KESIB O'TGAN HALQALAR OLIB TASHLANDI (2026-09-20).
+        Ilgari 34% va 56% da ikkita neon ellips gavdadan o'tardi —
+        foydalanuvchi ularni «aylanachalar» deb, olib tashlashni so'radi.
+        Podium (pastdagi) va orqa fon romkalari qoldi.
       */}
-      {showRings ? (
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/*
-            ⚠️ ELLIPS, TO'G'RI CHIZIQ EMAS. Ilgari bu gorizontal gradient
-            chiziq edi va gavdani KESIB o'tgandek ko'rinardi. Maketda esa
-            halqa gavdani O'RAB oladi — old tomoni odamning ustidan,
-            orqa tomoni ostidan o'tadi.
-            
-            To'liq o'rash uchun halqani ikkiga bo'lish kerak bo'lardi
-            (yarmi odam ostida, yarmi ustida) va bu kesim shaklini
-            bilishni talab qiladi — biz uni bilmaymiz. Shuning uchun
-            yassi ellips ishlatiladi: perspektivada ko'rilgan halqa
-            aynan shunday ko'rinadi va ko'z uni o'ralgan deb qabul
-            qiladi.
-          */}
-          {[0.34, 0.56].map((top) => (
-            <Animated.View
-              key={top}
-              style={[styles.ring, { top: `${top * 100}%`, transform: [{ scaleX: scale }] }]}
-            >
-              <View style={styles.ringEllipse} />
-            </Animated.View>
-          ))}
-        </View>
-      ) : null}
 
       {/* O'lchovlar — maketdagi joylashuvda */}
       {showRings && measurements ? (
@@ -246,18 +236,52 @@ const styles = StyleSheet.create({
    * SEZILARLI qorong'iroq bo'lishi kerak — aks holda ramka bilinmaydi va
    * "sahna" hissi yo'qoladi.
    */
+  /*
+   * ⚠️ CHETKI CHIZIQ (border) OLIB TASHLANDI (2026-09-20) — foydalanuvchi
+   * so'radi. Sahna endi ilova foniga chegarasiz qo'shiladi; orqa fon
+   * romkalari o'zi «sahna» hissini beradi.
+   */
   root: {
     flex: 1,
     backgroundColor: '#050509',
     borderRadius: radius.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 
-  grid: { ...StyleSheet.absoluteFillObject, opacity: 0.5 },
-  gridLine: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: colors.border },
-  gridLineV: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: colors.border },
+  /*
+   * ── Orqa fon romkalari (maketdagi 3-rasm) ──
+   *
+   * ⚠️ NOZIK VA GAVDA ORTIDA. Ilgari ular yorqin va katta edi — bosh
+   * ustidan o'tib, gavdadan e'tiborni tortardi. Endi past shaffoflik,
+   * kichikroq o'lcham va biroz pastroq markaz (torsо ortida turadi).
+   */
+  frames: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  frame: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  frameA: {
+    width: '52%',
+    height: '58%',
+    top: '20%',
+    borderColor: 'rgba(124,58,237,0.28)',
+    transform: [{ rotate: '-5deg' }],
+  },
+  frameB: {
+    width: '46%',
+    height: '62%',
+    top: '18%',
+    borderColor: 'rgba(139,92,246,0.22)',
+    transform: [{ rotate: '4deg' }],
+  },
+  frameC: {
+    width: '40%',
+    height: '54%',
+    top: '24%',
+    borderColor: 'rgba(192,132,252,0.18)',
+    transform: [{ rotate: '9deg' }],
+  },
 
   /*
    * ⚠️ TOR VA PAST. Avval kadrning 70% kengligi va 18% balandligi edi —
@@ -354,40 +378,49 @@ const styles = StyleSheet.create({
    * ko'rinardi. Odam kadrning o'rtadagi ~45% ini egallaydi, halqa esa
    * undan bir oz kengroq bo'lishi kerak.
    */
-  ring: { position: 'absolute', left: '27%', right: '27%', height: 26, justifyContent: 'center' },
   /*
-   * Ellips — balandligi kichik, `borderRadius` esa yarmiga teng.
-   * Faqat CHEGARA bo'yaladi, ichi shaffof: to'ldirilsa u odamni
-   * bekitardi.
+   * ── Podium (maketdagi 2-rasm) ──
+   *
+   * ⚠️ OYOQ OSTIDA, PAST. Ilgari u yuqorida (son sohasida) va juda
+   * yorqin edi. Endi sahnaning tagiga tushirilgan va rangi bosiqroq —
+   * odam ustida turgandek ko'rinadi, e'tibor tortmaydi.
    */
-  ringEllipse: {
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: colors.accent,
-    // Neon taassuroti — chegara atrofidagi yorug'lik
-    shadowColor: colors.accent,
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  platform: {
+  podium: {
     position: 'absolute',
-    left: '30%',
+    left: '26%',
     right: '30%',
-    bottom: '13%',
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    bottom: '4%',
+    height: 44,
   },
-  platformRing: {
-    width: '100%',
-    height: 40,
+  // Yon devor — diskka qalinlik beradi
+  podiumSide: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 14,
+    bottom: 0,
     borderRadius: 999,
-    borderWidth: 2,
-    borderColor: colors.accent,
-    opacity: 0.75,
+    backgroundColor: '#120c22',
+  },
+  // Yaltiroq usti — gradient bilan
+  podiumTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 30,
+    borderRadius: 999,
+  },
+  // Yuqori qirradagi yorug'lik — yaltiroqlik shu bilan seziladi
+  podiumRim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 30,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(192,132,252,0.45)',
   },
 
   label: { position: 'absolute' },

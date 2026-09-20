@@ -1483,12 +1483,17 @@ const styles = StyleSheet.create({
    * ⚠️ FON SHART. Bu qator aylanadigan maydondan tashqarida turadi;
    * fonsiz pastdagi matn chiplar orasidan ko'rinib qoladi.
    */
-  styleRowWrap: { flexGrow: 0, height: 46, paddingTop: 6, backgroundColor: colors.bg },
+  /*
+   * ⚠️ IKKI QATOR ORASIDA NAFAS. Ilgari tab qatori va chip qatori
+   * bir-biriga yopishib, qisilib turardi (foydalanuvchi 2026-09-20 da
+   * shuni ko'rsatdi). Endi balandlik va yuqori padding kattaroq.
+   */
+  styleRowWrap: { flexGrow: 0, height: 50, paddingTop: 12, backgroundColor: colors.bg },
   styleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+    gap: 10,
   },
   /*
    * ⚠️ BALANDLIK ANIQ BERILADI, padding bilan emas. Gorizontal
@@ -1507,20 +1512,20 @@ const styles = StyleSheet.create({
   },
   styleChipActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
   styleChipText: { ...text.tiny, color: colors.textDim },
-  tabsWrap: { flexGrow: 0, height: 46, backgroundColor: colors.bg },
+  tabsWrap: { flexGrow: 0, height: 48, marginTop: 6, backgroundColor: colors.bg },
   tabs: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+    gap: 10,
   },
   /* Maketdagi pilla: ikonka va yozuv YONMA-YON, dumaloq chegara */
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    height: 34,
-    paddingHorizontal: 13,
+    gap: 7,
+    height: 36,
+    paddingHorizontal: 15,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
