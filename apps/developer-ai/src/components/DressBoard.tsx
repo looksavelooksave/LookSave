@@ -29,7 +29,14 @@ function errorText(err: unknown): string {
   return err instanceof ApiClientError ? err.message : 'Xatolik yuz berdi';
 }
 
-export function DressBoard({ taskId }: { taskId: string }): JSX.Element {
+export function DressBoard({
+  taskId,
+  avatarReady,
+}: {
+  taskId: string;
+  /** Avatar yasalib yuklandimi. Yo'q bo'lsa grid ko'rinadi, lekin ogohlantirish chiqadi. */
+  avatarReady: boolean;
+}): JSX.Element {
   const board = useQuery({
     queryKey: ['dress', taskId],
     queryFn: () => dressBoard(taskId),
@@ -69,6 +76,12 @@ export function DressBoard({ taskId }: { taskId: string }): JSX.Element {
           {done}/{data.garments.length} tayyor
         </span>
       </div>
+
+      {!avatarReady ? (
+        <p className="rounded-md bg-warning/10 px-3 py-2 text-sm text-warning">
+          Avval yuqorida avatarni yasab yuklang — keyin shu kiyimlarni bittalab kiydirasiz.
+        </p>
+      ) : null}
 
       {data.avatarImage ? (
         <div className="flex items-center gap-3 rounded-md bg-surface2/60 p-3">
