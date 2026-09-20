@@ -72,11 +72,14 @@ export async function listDressBoard(
             ) AS done
        FROM product_variants v
        JOIN products p ON p.id = v.product_id
+       JOIN stores s ON s.id = p.store_id
       WHERE p.status = 'active'
+        AND s.status = 'active'
+        AND v.is_active
         AND p.slot = ANY($2::text[])
         AND ($3::uuid IS NULL OR p.store_id = $3)
         AND EXISTS (SELECT 1 FROM variant_stock vs WHERE vs.variant_id = v.id AND vs.stock > vs.reserved)
-      ORDER BY p.id, (v.images->>0) IS NOT NULL DESC, v.created_at ASC`,
+      ORDER BY p.id, (v.images->>0) IS NOT NULL DESC, v.sort_order ASC, v.id ASC`,
     [userId, [...AI_TRYON_SLOTS], storeId],
   );
 
