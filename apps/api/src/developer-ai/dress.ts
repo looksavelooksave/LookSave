@@ -44,7 +44,10 @@ export interface DressBoard {
  * kiydirishning ma'nosi yo'q — mijoz uni baribir sotib ololmaydi.
  * `DISTINCT ON (p.id)` — har mahsulotdan bitta (ranglar takrorlanmasin).
  */
-export async function listDressBoard(userId: string): Promise<DressBoard> {
+export async function listDressBoard(
+  userId: string,
+  storeId: string | null,
+): Promise<DressBoard> {
   const avatar = await pool.query<{ avatar_image_url: string | null }>(
     `SELECT avatar_image_url FROM profiles WHERE user_id = $1`,
     [userId],
@@ -71,9 +74,10 @@ export async function listDressBoard(userId: string): Promise<DressBoard> {
        JOIN products p ON p.id = v.product_id
       WHERE p.status = 'active'
         AND p.slot = ANY($2::text[])
+        AND ($3::uuid IS NULL OR p.store_id = $3)
         AND EXISTS (SELECT 1 FROM variant_stock vs WHERE vs.variant_id = v.id AND vs.stock > vs.reserved)
       ORDER BY p.id, (v.images->>0) IS NOT NULL DESC, v.created_at ASC`,
-    [userId, [...AI_TRYON_SLOTS]],
+    [userId, [...AI_TRYON_SLOTS], storeId],
   );
 
   const garments = rows.map((row) => ({

@@ -147,9 +147,16 @@ tryonRouter.put(
  * Manba: yuz skaneri (`profiles.face_texture_url`) va o'lchovlar.
  * Javob darhol qaytadi, natija fonda tayyorlanadi.
  */
-tryonRouter.post('/tryon/avatar', requireAuth, async (_req, res) => {
-  sendData(res, await requestAvatar(getAuth(res).sub));
-});
+tryonRouter.post(
+  '/tryon/avatar',
+  requireAuth,
+  route(
+    { body: z.object({ storeId: z.string().uuid().nullish() }).partial() },
+    async (input, _req, res) => {
+      sendData(res, await requestAvatar(getAuth(res).sub, input.body.storeId ?? null));
+    },
+  ),
+);
 
 /**
  * POST /v1/tryon/avatar/angle — aylantirish uchun burchak yasaydi.

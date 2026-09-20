@@ -1105,13 +1105,15 @@ function DoneStep({
   const storeName = useAiFlowStore((state) => state.storeName);
   const occasion = useAiFlowStore((state) => state.occasion);
   const style = useAiFlowStore((state) => state.style);
+  const storeId = useAiFlowStore((state) => state.storeId);
 
   const profile = useQuery({ queryKey: ['profile'], queryFn: getFullProfile });
   const queryClient = useQueryClient();
   const pushEnabled = usePushEnabled();
 
   const startAvatar = useMutation({
-    mutationFn: requestAvatar,
+    // Tanlangan do'kon so'rov bilan ketadi — operator o'sha kiyimlarni kiydiradi
+    mutationFn: () => requestAvatar(storeId),
     // Ish boshlangach holatni darhol so'raymiz — 3 soniya kutilmasin
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['avatar'] }),
   });

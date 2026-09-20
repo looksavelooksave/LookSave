@@ -166,7 +166,10 @@ export async function getAvatar(userId: string): Promise<AvatarDto> {
  *
  * Tayyor avatar bor va manba o'zgarmagan bo'lsa — qayta yasalmaydi.
  */
-export async function requestAvatar(userId: string): Promise<AvatarDto> {
+export async function requestAvatar(
+  userId: string,
+  storeId: string | null = null,
+): Promise<AvatarDto> {
   /*
    * ⚠️ OPERATOR REJIMIDA OPENAI SHART EMAS. Ish navbatga tushadi va uni
    * odam bajaradi — kalit bo'lmasa ham so'rov qabul qilinishi kerak.
@@ -232,8 +235,23 @@ export async function requestAvatar(userId: string): Promise<AvatarDto> {
       prompt,
       gender: row.gender,
       measurements: row.measurements ?? {},
+      storeId,
     });
-    logger.info({ userId, taskId: task.id }, 'avatar operator navbatiga qo`yildi');
+    /*
+     * ⚠️ TAKRORIY SO'ROVDA DO'KON YANGILANADI. Avatar bir marta yasaladi va
+     * qayta so'rovda mavjud ish qaytariladi — lekin mijoz boshqa do'kon
+     * tanlab qayta so'rasa, operator O'SHA do'kon kiyimlarini ko'rishi
+     * kerak. Shuning uchun ochiq ishning payload'idagi storeId yangilanadi.
+     */
+    if (storeId) {
+      await pool.query(
+        `UPDATE developer_ai_tasks
+            SET payload = jsonb_set(payload, '{storeId}', to_jsonb($2::text))
+          WHERE id = $1 AND status IN ('pending', 'claimed')`,
+        [task.id, storeId],
+      );
+    }
+    logger.info({ userId, taskId: task.id, storeId }, 'avatar operator navbatiga qo`yildi');
     return bare('processing', null, null, {
       queuedAt: task.createdAt,
       claimed: task.status === 'claimed',

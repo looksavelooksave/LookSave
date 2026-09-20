@@ -499,9 +499,17 @@ export interface UserAvatar {
   queue: { queuedAt: string; claimed: boolean } | null;
 }
 
-/** Avatarni yasashni boshlaydi. Tayyori bo'lsa qayta yasalmaydi. */
-export const requestAvatar = (): Promise<UserAvatar> =>
-  api<UserAvatar>('/tryon/avatar', { method: 'POST' });
+/**
+ * Avatarni yasashni boshlaydi. Tayyori bo'lsa qayta yasalmaydi.
+ *
+ * `storeId` — mijoz tanlagan do'kon. Operator paneli aynan shu do'kon
+ * kiyimlarini avatarga kiydiradi, shuning uchun so'rov bilan yuboriladi.
+ */
+export const requestAvatar = (storeId?: string | null): Promise<UserAvatar> =>
+  api<UserAvatar>('/tryon/avatar', {
+    method: 'POST',
+    ...(storeId ? { body: { storeId } } : {}),
+  });
 
 /** Holat — ilova tayyor bo'lguncha takrorlaydi. */
 export const getAvatar = (): Promise<UserAvatar> => api<UserAvatar>('/tryon/avatar');

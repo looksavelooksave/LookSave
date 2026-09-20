@@ -110,8 +110,8 @@ developerAiRouter.post(
 developerAiRouter.get(
   '/developer-ai/tasks/:id/garments',
   route({ params: idParamSchema }, async (input, _req, res) => {
-    const { userId } = await taskCustomer(input.params.id);
-    sendData(res, await listDressBoard(userId));
+    const { userId, storeId } = await taskCustomer(input.params.id);
+    sendData(res, await listDressBoard(userId, storeId));
   }),
 );
 

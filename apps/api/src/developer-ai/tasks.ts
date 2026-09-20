@@ -218,9 +218,12 @@ export async function openTaskFor(kind: TaskKind, refId: string): Promise<OpenTa
  * ⚠️ FAQAT `avatar` ISHIDA. Kiyintirish avatar ustiga bo'ladi; render
  * ishining `ref_id` esa render yozuvi, mijoz emas.
  */
-export async function taskCustomer(taskId: string): Promise<{ userId: string; kind: TaskKind }> {
-  const { rows } = await pool.query<{ user_id: string; kind: TaskKind }>(
-    `SELECT user_id, kind FROM developer_ai_tasks WHERE id = $1`,
+export async function taskCustomer(
+  taskId: string,
+): Promise<{ userId: string; kind: TaskKind; storeId: string | null }> {
+  const { rows } = await pool.query<{ user_id: string; kind: TaskKind; store_id: string | null }>(
+    `SELECT user_id, kind, payload->>'storeId' AS store_id
+       FROM developer_ai_tasks WHERE id = $1`,
     [taskId],
   );
   const row = rows[0];
@@ -228,7 +231,7 @@ export async function taskCustomer(taskId: string): Promise<{ userId: string; ki
   if (row.kind !== 'avatar') {
     throw new ApiError('VALIDATION_ERROR', 'Kiyintirish faqat avatar ishida bo`ladi');
   }
-  return { userId: row.user_id, kind: row.kind };
+  return { userId: row.user_id, kind: row.kind, storeId: row.store_id };
 }
 
 /** Panel uchun navbat. Sukut bo'yicha — hali bajarilmaganlari. */
