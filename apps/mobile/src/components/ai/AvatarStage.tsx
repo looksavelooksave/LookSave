@@ -139,33 +139,6 @@ export function AvatarStage({
         />
       </Animated.View>
 
-      {/*
-        Oyoq ostidagi platforma — odamdan OLDIN, ya'ni uning ORQASIDA.
-
-        ⚠️ TARTIB MUHIM: React Native da keyingi element ustga tushadi.
-        Platforma odamdan keyin chizilsa halqa oyoq ustidan o'tib ketadi va
-        odam platforma ichida emas, uning orqasida turgandek ko'rinadi.
-      */}
-      {/*
-        Oyoq ostidagi PODIUM (maketdagi 2-rasm) — yaltiroq binafsha disk.
-        Ilgari bu shunchaki neon halqa edi; foydalanuvchi to'liq podium
-        so'radi. Uch qatlam: yon devor (chuqurlik), yaltiroq usti
-        (gradient) va yuqori qirradagi yorug'lik chizig'i.
-
-        ⚠️ ODAMDAN OLDIN CHIZILADI — u podium USTIDA turgandek ko'rinadi.
-        Puls yo'q: podium qimirlamaydigan buyum.
-      */}
-      <View style={styles.podium} pointerEvents="none">
-        <View style={styles.podiumSide} />
-        <LinearGradient
-          colors={['#2b2150', '#150e28']}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={styles.podiumTop}
-        />
-        <View style={styles.podiumRim} />
-      </View>
-
       {children ? (
         <View style={[StyleSheet.absoluteFill, dimmed && styles.dimmed]}>{children}</View>
       ) : source ? (
@@ -177,6 +150,39 @@ export function AvatarStage({
       ) : (
         <View style={styles.person} />
       )}
+
+      {/*
+        ── Pastki singdirish (fade) + PODIUM ──
+
+        ⚠️ ODAMDAN KEYIN CHIZILADI, ATAYIN. Avatar rasmlari SON sohasida
+        kesilgan (oyoq yo'q) — agar podium ortida qolsa, kesilgan oyoq
+        podium ustidan chiqib, «disk ichiga tiqilgan oyoq» bo'lib ko'rinadi.
+        Shuning uchun avval gavdaning pastki qismini qorong'iga singdiramiz,
+        keyin podiumni OLDINDA chizamiz — figura pedestal ORTIDA turgandek,
+        kesim chizig'i esa ko'rinmaydi.
+
+        Bu kompozitsiya to'liq bo'yli avatar bo'lmaganda eng toza yechim;
+        haqiqiy oyoq faqat avatar qayta yasalganda chiqadi.
+      */}
+      {!children ? (
+        <LinearGradient
+          colors={['rgba(5,5,9,0)', 'rgba(5,5,9,0.92)', '#050509']}
+          locations={[0, 0.42, 0.68]}
+          style={styles.bottomFade}
+          pointerEvents="none"
+        />
+      ) : null}
+
+      <View style={styles.podium} pointerEvents="none">
+        <View style={styles.podiumSide} />
+        <LinearGradient
+          colors={['#3a2c66', '#181030']}
+          start={{ x: 0.3, y: 0 }}
+          end={{ x: 0.7, y: 1 }}
+          style={styles.podiumTop}
+        />
+        <View style={styles.podiumRim} />
+      </View>
 
       {/*
         ⚠️ GAVDANI KESIB O'TGAN HALQALAR OLIB TASHLANDI (2026-09-20).
@@ -362,7 +368,23 @@ const styles = StyleSheet.create({
    * bo'lib turadi va odam to'liq ekranni egallasa, ular oyoq ustiga
    * tushadi. 14% — tugmalar balandligi va biroz nafas.
    */
-  person: { position: 'absolute', top: 0, left: 0, right: 0, bottom: '14%' },
+  /*
+   * ⚠️ ORQAROQ OLINDI (2026-09-20). Ilgari `top: 0, bottom: 14%` edi va
+   * gavda sahnani to'ldirib, kesilgan pastki qismi podium bilan qo'shilib
+   * ketardi. `top: 5%, bottom: 20%` — figura kichrayadi va yuqoriroq
+   * turadi, pastda podium uchun joy qoladi.
+   *
+   * ⚠️ Avatar rasmlari SON sohasida kesilgan (oyoq yo'q) — bu rasm
+   * cheklovi, UI emas. Orqaroq olish podium kompozitsiyasini beradi,
+   * lekin haqiqiy oyoq faqat to'liq bo'yli avatar qayta yasalganda chiqadi.
+   */
+  person: { position: 'absolute', top: '2%', left: 0, right: 0, bottom: '13%' },
+
+  /*
+   * Pastki singdirish — gavdaning kesilgan pastki qismini qorong'iga
+   * eritadi. Podium shu zona ichida, uning ustida turadi.
+   */
+  bottomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '40%' },
   dimmed: { opacity: 0.35 },
   /*
    * 1.45 — tajribada tanlangan. Kamrog'i sezilmaydi, ko'prog'ida bosh
@@ -387,10 +409,10 @@ const styles = StyleSheet.create({
    */
   podium: {
     position: 'absolute',
-    left: '26%',
-    right: '30%',
-    bottom: '4%',
-    height: 44,
+    left: '21%',
+    right: '25%',
+    bottom: '8%',
+    height: 50,
   },
   // Yon devor — diskka qalinlik beradi
   podiumSide: {
