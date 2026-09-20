@@ -63,13 +63,13 @@ function isImageType(value: string): value is ImageType {
 }
 
 /**
- * Natija suratini yuklab, ishni yopadi.
+ * Suratni imzolangan manzilga yuklab, ombordagi ochiq havolasini qaytaradi.
  *
  * ⚠️ IKKI QADAM, BITTA EMAS. Surat server orqali o'tmaydi — avval
  * imzolangan manzilga to'g'ridan-to'g'ri R2 ga yuklanadi, keyin faqat
  * manzil serverga beriladi. Server tashqi havolani qabul qilmaydi.
  */
-export async function submitResult(id: string, file: File): Promise<Task> {
+async function uploadImage(file: File): Promise<string> {
   if (!isImageType(file.type)) {
     throw new ApiClientError('VALIDATION_ERROR', 'Faqat JPG, PNG yoki WEBP', 0);
   }
@@ -104,8 +104,47 @@ export async function submitResult(id: string, file: File): Promise<Task> {
     throw new ApiClientError('NETWORK', `Surat yuklanmadi (${uploaded.status})`, uploaded.status);
   }
 
+  return presign.publicUrl;
+}
+
+/** Natija suratini yuklab, avatar ishini yopadi. */
+export async function submitResult(id: string, file: File): Promise<Task> {
+  const resultUrl = await uploadImage(file);
   return api<Task>(`/developer-ai/tasks/${id}/result`, {
     method: 'POST',
-    body: { resultUrl: presign.publicUrl },
+    body: { resultUrl },
   });
+}
+
+/**
+ * Kiyintirish taxtasi — avatar tayyor bo'lgach, mijozning do'konidagi
+ * AI'ga yaroqli, omborda bor kiyimlar. Operator har birini kiydiradi.
+ */
+export interface DressGarment {
+  variantId: string;
+  productId: string;
+  title: string;
+  slot: string;
+  garmentImage: string | null;
+  done: boolean;
+}
+export interface DressBoard {
+  avatarImage: string | null;
+  garments: DressGarment[];
+}
+
+export const dressBoard = (taskId: string): Promise<DressBoard> =>
+  api<DressBoard>(`/developer-ai/tasks/${taskId}/garments`);
+
+/** Bitta kiyim kiydirildi — suratni yuklab, mijozning renderiga yozadi. */
+export async function submitDress(
+  taskId: string,
+  variantId: string,
+  file: File,
+): Promise<{ variantId: string; done: true }> {
+  const resultUrl = await uploadImage(file);
+  return api<{ variantId: string; done: true }>(
+    `/developer-ai/tasks/${taskId}/garments/${variantId}`,
+    { method: 'POST', body: { resultUrl } },
+  );
 }

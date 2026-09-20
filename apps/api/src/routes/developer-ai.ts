@@ -1,18 +1,22 @@
 import {
   developerAiPresignSchema,
+  dressResultSchema,
   idParamSchema,
   taskFailSchema,
   taskQuerySchema,
   taskResultSchema,
+  variantParamSchema,
 } from '@looksave/validation';
 import { Router } from 'express';
 
+import { listDressBoard, submitDress } from '../developer-ai/dress';
 import {
   claimTask,
   completeTask,
   failTask,
   listTasks,
   releaseTask,
+  taskCustomer,
 } from '../developer-ai/tasks';
 import { presignUpload } from '../integrations/r2';
 import { getAuth, requireAuth, requireRole } from '../http/auth-middleware';
@@ -97,4 +101,31 @@ developerAiRouter.post(
   route({ body: developerAiPresignSchema }, async (input, _req, res) => {
     sendData(res, await presignUpload(input.body));
   }),
+);
+
+/**
+ * GET /v1/developer-ai/tasks/:id/garments — shu avatarga kiydiriladigan
+ * do'kon kiyimlari (grid). Operator har birini yuklaydi.
+ */
+developerAiRouter.get(
+  '/developer-ai/tasks/:id/garments',
+  route({ params: idParamSchema }, async (input, _req, res) => {
+    const { userId } = await taskCustomer(input.params.id);
+    sendData(res, await listDressBoard(userId));
+  }),
+);
+
+/**
+ * POST /v1/developer-ai/tasks/:id/garments/:variantId — bitta kiyim
+ * kiydirildi. Natija mijozning renderiga yoziladi.
+ */
+developerAiRouter.post(
+  '/developer-ai/tasks/:id/garments/:variantId',
+  route(
+    { params: variantParamSchema, body: dressResultSchema },
+    async (input, _req, res) => {
+      const { userId } = await taskCustomer(input.params.id);
+      sendData(res, await submitDress(userId, input.params.variantId, input.body.resultUrl));
+    },
+  ),
 );

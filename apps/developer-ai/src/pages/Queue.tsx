@@ -12,6 +12,7 @@ import {
   type TaskFilter,
 } from '../api/tasks';
 import { ApiClientError } from '../api/client';
+import { DressBoard } from '../components/DressBoard';
 import { EmptyState, Spinner } from '../components/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { timeAgo } from '../lib/format';
@@ -546,6 +547,8 @@ function TaskDetail({
           ) : null}
         </section>
       </div>
+
+      {task.kind === 'avatar' && task.status === 'done' ? <DressBoard taskId={task.id} /> : null}
 
       {task.payload.prompt ? (
         <section className="card space-y-3 p-5">

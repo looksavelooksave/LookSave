@@ -63,3 +63,15 @@ export const developerAiPresignSchema = presignSchema.extend({
 });
 
 export type DeveloperAiPresignInput = z.output<typeof developerAiPresignSchema>;
+
+/** Operator kiyintirish natijasi — manzil bizning ombordan tekshiriladi. */
+export const dressResultSchema = z.object({
+  resultUrl: z.string().url().max(2048),
+});
+export type DressResultInput = z.output<typeof dressResultSchema>;
+
+/** `:id` (avatar ishi) + `:variantId` (kiyim) param. */
+export const variantParamSchema = z.object({
+  id: z.string().uuid(),
+  variantId: z.string().uuid(),
+});

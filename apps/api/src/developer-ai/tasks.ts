@@ -212,6 +212,25 @@ export async function openTaskFor(kind: TaskKind, refId: string): Promise<OpenTa
   return { queuedAt: row.created_at.toISOString(), claimed: row.status === 'claimed' };
 }
 
+/**
+ * Ishning egasi (mijoz) — operator kiyintirishida kerak.
+ *
+ * ⚠️ FAQAT `avatar` ISHIDA. Kiyintirish avatar ustiga bo'ladi; render
+ * ishining `ref_id` esa render yozuvi, mijoz emas.
+ */
+export async function taskCustomer(taskId: string): Promise<{ userId: string; kind: TaskKind }> {
+  const { rows } = await pool.query<{ user_id: string; kind: TaskKind }>(
+    `SELECT user_id, kind FROM developer_ai_tasks WHERE id = $1`,
+    [taskId],
+  );
+  const row = rows[0];
+  if (!row) throw ApiError.notFound('Bunday ish yo`q');
+  if (row.kind !== 'avatar') {
+    throw new ApiError('VALIDATION_ERROR', 'Kiyintirish faqat avatar ishida bo`ladi');
+  }
+  return { userId: row.user_id, kind: row.kind };
+}
+
 /** Panel uchun navbat. Sukut bo'yicha — hali bajarilmaganlari. */
 export async function listTasks(
   status: TaskStatus | 'open' = 'open',
