@@ -1,8 +1,15 @@
-/** Pul serverdan string bo'lib keladi va string bo'lib qoladi. */
-export function money(amount: string, currency: string): string {
-  const [whole = '0'] = amount.split('.');
+/**
+ * Pul serverdan string bo'lib keladi va string bo'lib qoladi.
+ *
+ * ⚠️ HIMOYA: qiymat kutilmaganda son/null/undefined bo'lsa ham crash
+ * bermaydi. Pul formatlagichi butun ekranni yiqitmasligi kerak — ma'lumot
+ * shakli o'zgarsa bir katak «0» ko'rsatgani ekran qulaganidan yaxshi.
+ */
+export function money(amount: string | number | null | undefined, currency: string): string {
+  const raw = amount == null ? '0' : String(amount);
+  const [whole = '0'] = raw.split('.');
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return currency === 'UZS' ? `${grouped} so'm` : `${grouped} ${currency}`;
+  return currency === 'UZS' ? `${grouped} so'm` : `${grouped} ${currency ?? ''}`.trim();
 }
 
 /**
