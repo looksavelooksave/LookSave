@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -193,7 +194,7 @@ function BrandRow({
   onDelete: () => void;
 }): JSX.Element {
   return (
-    <article className="card flex flex-wrap items-center gap-4 p-4">
+    <article className="card flex flex-wrap items-center gap-4 p-5">
       {brand.logoUrl ? (
         <img
           src={brand.logoUrl}
@@ -282,18 +283,18 @@ export function BrandsPage(): JSX.Element {
   const items = brands.data ?? [];
 
   return (
-    <section className="grid gap-4">
+    <section className="page-shell grid gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Brendlar</h1>
-          <p className="text-sm text-dim">
+          <h1 className="page-title">Brendlar</h1>
+          <p className="page-copy max-w-3xl">
             Ilovaning bosh sahifasidagi «TOP BRANDS» qatori shu ro&apos;yxatdan quriladi. Tartib
             raqami kichik bo&apos;lgani birinchi chiqadi.
           </p>
         </div>
         {!adding && !editing ? (
-          <Button type="button" onClick={() => setAdding(true)}>
-            Brend qo&apos;shish
+          <Button className="h-11 rounded-xl px-5 shadow-[0_12px_30px_rgba(124,58,237,.25)]" type="button" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" /> Brend qo&apos;shish
           </Button>
         ) : null}
       </header>
@@ -305,7 +306,7 @@ export function BrandsPage(): JSX.Element {
       ) : null}
 
       {adding ? (
-        <div className="card p-4">
+        <div className="card p-6">
           <h2 className="mb-3 font-semibold text-foreground">Yangi brend</h2>
           <BrandForm
             initial={EMPTY}
@@ -321,7 +322,7 @@ export function BrandsPage(): JSX.Element {
       ) : null}
 
       {editing ? (
-        <div className="card p-4">
+        <div className="card p-6">
           <h2 className="mb-3 font-semibold text-foreground">{editing.name} — tahrirlash</h2>
           <BrandForm
             initial={{

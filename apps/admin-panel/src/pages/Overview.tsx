@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { ArrowUpRight, PackageCheck, ShoppingCart, Store, TriangleAlert, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { getOverview } from '../api/admin';
@@ -8,16 +9,25 @@ function Stat({
   label,
   value,
   hint,
+  icon: Icon,
 }: {
   label: string;
   value: string;
   hint?: string;
+  icon: typeof Store;
 }): JSX.Element {
   return (
-    <div className="card p-4">
-      <p className="label">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-dim">{hint}</p> : null}
+    <div className="card group p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="mt-3 text-3xl font-bold text-foreground">{value}</p>
+        </div>
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand/20 bg-primary/10 text-brand transition group-hover:scale-105">
+          <Icon className="h-6 w-6" />
+        </span>
+      </div>
+      {hint ? <p className="mt-3 text-xs text-dim">{hint}</p> : null}
     </div>
   );
 }
@@ -41,9 +51,6 @@ export function OverviewPage(): JSX.Element {
     ...(data.moderation.productsPending > 0
       ? [{ text: `${data.moderation.productsPending} ta mahsulot moderatsiyada`, to: '/products' }]
       : []),
-    ...(data.moderation.assetsQueued > 0
-      ? [{ text: `${data.moderation.assetsQueued} ta 3D model navbatda`, to: '/3d' }]
-      : []),
     ...(data.attention.globalBlocks > 0
       ? [{ text: `${data.attention.globalBlocks} ta raqam global blokda`, to: '/moderation' }]
       : []),
@@ -66,11 +73,15 @@ export function OverviewPage(): JSX.Element {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-foreground">Umumiy holat</h1>
+    <div className="page-shell space-y-7">
+      <div>
+        <h1 className="page-title">Umumiy holat</h1>
+        <p className="page-copy">Platformadagi asosiy ko‘rsatkichlar va tezkor nazorat markazi.</p>
+      </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
+          icon={Store}
           label="Do'konlar"
           value={String(data.stores.active)}
           hint={
@@ -78,34 +89,40 @@ export function OverviewPage(): JSX.Element {
           }
         />
         <Stat
+          icon={Users}
           label="Foydalanuvchilar"
           value={String(data.users.total)}
           hint={`+${data.users.newThisWeek} bu hafta`}
         />
-        <Stat label="Buyurtmalar" value={String(data.ordersThisWeek)} hint="bu hafta" />
+        <Stat icon={ShoppingCart} label="Buyurtmalar" value={String(data.ordersThisWeek)} hint="bu hafta" />
         <Stat
-          label="3D navbat"
-          value={String(data.moderation.assetsQueued + data.moderation.assetsProcessing)}
-          hint={`${data.moderation.assetsProcessing} ta ishlanmoqda`}
+          icon={PackageCheck}
+          label="Moderatsiya"
+          value={String(data.moderation.productsPending)}
+          hint="tekshiruvdagi mahsulotlar"
         />
       </div>
 
-      <section className="card p-5">
-        <h2 className="text-sm font-semibold text-foreground">Diqqat talab qiladi</h2>
+      <section className="card overflow-hidden p-0">
+        <div className="flex items-center gap-3 border-b border-border px-6 py-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><TriangleAlert className="h-5 w-5" /></span>
+          <div><h2 className="font-semibold text-foreground">Diqqat talab qiladi</h2><p className="text-xs text-dim">Muhim vazifalar va tekshiruvlar</p></div>
+        </div>
         {attention.length === 0 ? (
-          <p className="mt-3 text-sm text-dim">
+          <p className="px-6 py-8 text-sm text-dim">
             Hozircha hammasi joyida. Yangi do'kon yoki mahsulot kelganda shu yerda ko'rinadi.
           </p>
         ) : (
-          <ul className="mt-3 space-y-2">
+          <ul className="divide-y divide-border">
             {attention.map((item) => (
               <li key={item.text}>
                 <Link
                   to={item.to}
-                  className="flex items-center gap-2 text-sm text-warning hover:underline"
+                  className="group flex items-center gap-3 px-6 py-4 text-sm text-foreground transition hover:bg-surface2"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-warning" />
+                  <span className="h-2 w-2 rounded-full bg-warning" />
                   {item.text}
+                  <ArrowUpRight className="ml-auto h-4 w-4 text-dim transition group-hover:text-brand" />
                 </Link>
               </li>
             ))}

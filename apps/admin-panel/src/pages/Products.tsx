@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CircleCheck, CircleX, Clock3 } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -18,6 +19,8 @@ const TABS = [
   { value: 'rejected', label: 'Rad etilgan' },
   { value: 'active', label: 'Nashr qilingan' },
 ] as const;
+
+const TAB_ICONS = { pending: Clock3, rejected: CircleX, active: CircleCheck } as const;
 
 type Tab = (typeof TABS)[number]['value'];
 
@@ -40,26 +43,29 @@ export function ProductsPage(): JSX.Element {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="page-shell space-y-7">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Mahsulotlar</h1>
-        <p className="mt-1 text-sm text-dim">
+        <h1 className="page-title">Mahsulotlar</h1>
+        <p className="page-copy">
           Rasmlar haqiqiy mahsulotnikimi, nom va narx mos keladimi, o'lchamlar to'g'rimi — shuni
           tekshiring.
         </p>
       </div>
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto border border-border bg-surface p-1">
-          {TABS.map((item) => (
+        <TabsList className="premium-tabs h-auto min-h-[70px] w-full justify-start gap-2 overflow-x-auto rounded-3xl border border-border bg-surface/70 p-2">
+          {TABS.map((item) => {
+            const TabIcon = TAB_ICONS[item.value];
+            return (
             <TabsTrigger
               key={item.value}
               value={item.value}
-              className="whitespace-nowrap rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="min-h-[52px] flex-1 gap-3 whitespace-nowrap rounded-2xl px-5 py-3 text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand data-[state=active]:to-primary data-[state=active]:text-white"
             >
+              <TabIcon className="h-5 w-5" />
               {item.label}
             </TabsTrigger>
-          ))}
+          )})}
         </TabsList>
       </Tabs>
 
@@ -76,7 +82,7 @@ export function ProductsPage(): JSX.Element {
 
       <div className="space-y-4">
         {products.data?.map((product) => (
-          <article key={product.id} className="card p-4 sm:p-5">
+          <article key={product.id} className="card p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-foreground">{product.title}</h2>

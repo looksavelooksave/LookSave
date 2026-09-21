@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell';
 import { Spinner } from './components/Spinner';
 import { useAuth } from './hooks/useAuth';
-import { AssetsPage } from './pages/Assets';
 import { LoginPage } from './pages/Login';
 import { ModerationPage } from './pages/Moderation';
 import { OrdersPage } from './pages/Orders';
@@ -54,7 +53,6 @@ export function App(): JSX.Element {
         <Route path="stores" element={<StoresPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="brands" element={<BrandsPage />} />
-        <Route path="3d" element={<AssetsPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="moderation" element={<ModerationPage />} />
       </Route>

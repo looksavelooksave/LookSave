@@ -4,7 +4,6 @@ import {
   Boxes,
   ChevronDown,
   ClipboardList,
-  Cuboid,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -26,7 +25,6 @@ const NAV = [
   { to: '/stores', label: "Do'konlar", icon: Store, end: false },
   { to: '/products', label: 'Mahsulotlar', icon: Package, end: false },
   { to: '/brands', label: 'Brendlar', icon: Tags, end: false },
-  { to: '/3d', label: '3D navbat', icon: Cuboid, end: false },
   { to: '/orders', label: 'Buyurtmalar', icon: ClipboardList, end: false },
   { to: '/moderation', label: 'Bloklar', icon: Boxes, end: false },
 ];

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
 
 import { getOrderEvents, getOrders, type AdminOrderStatus } from '../api/admin';
@@ -67,25 +68,25 @@ export function OrdersPage(): JSX.Element {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="page-shell space-y-7">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Buyurtmalar</h1>
-        <p className="mt-1 text-sm text-dim">
+        <h1 className="page-title">Buyurtmalar</h1>
+        <p className="page-copy">
           Nizo bo'lganda buyurtma raqami yoki mijoz telefoni bo'yicha qidiring — status tarixida kim
           nima qilgani ko'rinadi.
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex flex-1 gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="premium-tabs flex flex-1 gap-1 overflow-x-auto rounded-2xl border border-border bg-surface/70 p-2">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               type="button"
               onClick={() => setStatus(tab.value)}
-              className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
+              className={`min-h-11 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition ${
                 status === tab.value
-                  ? 'bg-primary text-foreground'
+                  ? 'bg-gradient-to-r from-brand to-primary text-white shadow-[0_8px_24px_rgba(124,58,237,.24)]'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -94,12 +95,10 @@ export function OrdersPage(): JSX.Element {
           ))}
         </div>
 
-        <Input
-          className="sm:w-64"
-          placeholder="LS-260812-0043 yoki telefon"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+        <label className="search-box flex h-12 items-center gap-3 rounded-xl border border-border px-4 xl:w-80">
+          <Search className="h-4 w-4 text-dim" />
+          <Input className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0" placeholder="Buyurtma raqami yoki telefon" value={search} onChange={(event) => setSearch(event.target.value)} />
+        </label>
       </div>
 
       {orders.isLoading ? <Spinner /> : null}
@@ -115,7 +114,7 @@ export function OrdersPage(): JSX.Element {
 
       <div className="space-y-3">
         {orders.data?.map((order) => (
-          <article key={order.id} className="card p-4">
+          <article key={order.id} className="card p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-mono text-sm font-semibold text-foreground">

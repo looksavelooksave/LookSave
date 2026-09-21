@@ -25,11 +25,11 @@ export function ModerationPage(): JSX.Element {
   const unrestrict = useMutation({ mutationFn: unrestrictUser, onSuccess: invalidate });
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
+    <div className="page-shell space-y-8">
+      <section className="space-y-5">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Global bloklar</h1>
-          <p className="mt-1 text-sm text-dim">
+          <h1 className="page-title">Global bloklar</h1>
+          <p className="page-copy max-w-4xl">
             Uch do'kon bir raqamni bloklasa, u avtomatik barcha do'konlarda bloklanadi. Uchala
             do'kon ham xato qilishi mumkin — sabablarni ko'rib qaror qiling.
           </p>
@@ -43,7 +43,7 @@ export function ModerationPage(): JSX.Element {
 
         <div className="space-y-3">
           {blocks.data?.map((block) => (
-            <article key={block.id} className="card p-4">
+            <article key={block.id} className="card p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-medium text-foreground">{formatPhone(block.phone)}</p>
@@ -74,11 +74,11 @@ export function ModerationPage(): JSX.Element {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-5 border-t border-border pt-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Cheklangan foydalanuvchilar</h2>
-            <p className="mt-1 text-sm text-dim">
+            <h2 className="text-2xl font-bold text-foreground">Cheklangan foydalanuvchilar</h2>
+            <p className="mt-2 text-sm leading-6 text-dim">
               Cheklov `user_trust` bo'yicha avtomatik qo'yiladi: uch marta bekor qilingan yoki
               javobsiz buyurtma.
             </p>
@@ -95,7 +95,7 @@ export function ModerationPage(): JSX.Element {
         {users.data?.length === 0 ? <EmptyState title="Cheklangan foydalanuvchi yo'q" /> : null}
 
         {users.data && users.data.length > 0 ? (
-          <div className="card overflow-x-auto">
+          <div className="card overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead>
                 <tr className="text-left text-dim">

@@ -92,7 +92,9 @@
    * ketsa panel ikki xil ko'rinishga bo'linadi.
    */
   .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+    @apply rounded-2xl border border-border bg-card/80 text-card-foreground;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025), 0 18px 45px rgb(0 0 0 / 0.13);
+    backdrop-filter: blur(14px);
   }
 
   .field {
@@ -100,6 +102,34 @@
            shadow-sm transition-colors placeholder:text-muted-foreground
            focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
            disabled:cursor-not-allowed disabled:opacity-50;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto max-w-[1320px];
+  }
+
+  .page-title {
+    @apply text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  .page-copy {
+    @apply mt-2 text-base leading-7 text-dim;
+  }
+
+  .page-shell input:not([type='checkbox']):not([type='file']),
+  .page-shell textarea,
+  .page-shell select {
+    @apply border-borderStrong bg-surface/70;
+  }
+
+  .page-shell table thead {
+    @apply border-b border-border bg-surface2/80;
+  }
+
+  .page-shell table tbody tr {
+    @apply border-b border-border/70 transition-colors hover:bg-primary/5;
   }
 }
 
