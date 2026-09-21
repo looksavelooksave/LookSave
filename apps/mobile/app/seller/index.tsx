@@ -134,7 +134,12 @@ export default function SellerOrders(): JSX.Element {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+      <LinearGradient
+        colors={['#171126', colors.bg]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
+      >
         <View style={styles.headerBar}>
           <Pressable
             accessibilityRole="button"
@@ -162,13 +167,25 @@ export default function SellerOrders(): JSX.Element {
           </Pressable>
         </View>
 
+        <View style={styles.brandRow}>
+          <View style={styles.brandMark}>
+            <Icon name="bag" size={20} color={colors.text} />
+          </View>
+          <View>
+            <Text style={styles.wordmark}>
+              LOOK<Text style={styles.wordmarkAccent}>SAVE</Text>
+            </Text>
+            <Text style={styles.panelLabel}>Seller admin</Text>
+          </View>
+        </View>
+
         <Text style={styles.title}>Do`konim</Text>
         {stats ? (
           <Text style={styles.subtitle}>
             {stats.newOrders} yangi · {stats.inProgress} jarayonda
           </Text>
         ) : null}
-      </View>
+      </LinearGradient>
 
       {/* Oylik ko'rsatkichlar */}
       {stats ? (
@@ -305,8 +322,11 @@ function ManageButton({
 }): JSX.Element {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.manageButton}>
-      <Icon name={icon} size={18} color={colors.accent} />
+      <View style={styles.manageIcon}>
+        <Icon name={icon} size={18} color={colors.accent} />
+      </View>
       <Text style={styles.manageText}>{label}</Text>
+      <Icon name="next" size={16} color={colors.textDim} />
     </Pressable>
   );
 }
@@ -434,7 +454,13 @@ function OrderCard({
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: spacing.xs },
+  header: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+    gap: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,12 +470,12 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 44,
     height: 44,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.borderAccent,
-    backgroundColor: colors.surface,
+    borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(20, 18, 28, 0.74)',
   },
   bellBadge: {
     position: 'absolute',
@@ -464,18 +490,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   bellBadgeText: { ...text.tiny, color: colors.text, fontWeight: '700' },
-  title: { ...text.h1, color: colors.text },
-  subtitle: { ...text.small, color: colors.textMuted, marginTop: 2 },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  brandMark: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  wordmark: { ...text.bodyMed, color: colors.text, letterSpacing: 1.2 },
+  wordmarkAccent: { color: colors.accent },
+  panelLabel: { ...text.tiny, color: colors.textMuted, marginTop: 2 },
+  title: { ...text.h1, color: colors.text, marginTop: spacing.xs },
+  subtitle: { ...text.body, color: colors.textMuted, marginTop: 2 },
 
-  stats: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  stats: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm },
   stat: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(20, 18, 28, 0.9)',
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm + 2,
+    borderColor: colors.borderStrong,
+    padding: spacing.md,
     gap: spacing.xs,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
   },
   statIcon: {
     width: 38,
@@ -484,7 +535,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.borderAccent,
+    borderColor: colors.borderStrong,
     backgroundColor: colors.primarySoft,
     marginBottom: spacing.xs,
   },
@@ -492,26 +543,42 @@ const styles = StyleSheet.create({
   statLabel: { ...text.tiny, color: colors.textDim },
 
   manage: {
-    flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
   },
   manageButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 58,
+    paddingHorizontal: spacing.md,
     justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
   },
-  manageText: { ...text.small, color: colors.text },
+  manageIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+  },
+  manageText: { ...text.bodyMed, color: colors.text, flex: 1 },
 
-  filters: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md },
+  filters: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    padding: spacing.xs,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(15, 13, 22, 0.92)',
+  },
   filterWrap: { flex: 1 },
   filter: {
     paddingHorizontal: spacing.md,
@@ -520,7 +587,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // Faol chip gradient bilan chiziladi, bu esa tanlanmagani
-  filterIdle: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  filterIdle: { borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
   filterText: { ...text.small, color: colors.textMuted, fontWeight: '600' },
 
   emptyBox: {
@@ -533,6 +600,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(20, 18, 28, 0.55)',
   },
   emptyIcon: {
     width: 76,
@@ -540,6 +608,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
     backgroundColor: colors.primarySoft,
     marginBottom: spacing.xs,
   },
@@ -568,15 +638,19 @@ const styles = StyleSheet.create({
   },
   emptyActionText: { ...text.small, color: colors.text, fontWeight: '600' },
 
-  list: { padding: spacing.md, gap: spacing.md },
+  list: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
 
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    backgroundColor: 'rgba(20, 18, 28, 0.95)',
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     padding: spacing.md,
-    gap: spacing.xs,
+    gap: spacing.sm,
+    shadowColor: '#000000',
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   orderNumber: { ...text.bodyMed, color: colors.text },
@@ -585,6 +659,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface2,
   },
   timerUrgent: { backgroundColor: 'rgba(239, 68, 68, 0.14)' },
@@ -607,11 +683,12 @@ const styles = StyleSheet.create({
   callButton: {
     width: 48,
     height: 52,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
   },
   actionMain: { flex: 1 },
   actionSecondary: { flex: 1 },

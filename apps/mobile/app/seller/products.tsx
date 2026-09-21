@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -75,7 +76,12 @@ export default function SellerProducts(): JSX.Element {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <LinearGradient
+        colors={['#171126', colors.bg]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Orqaga"
@@ -85,9 +91,12 @@ export default function SellerProducts(): JSX.Element {
         >
           <Icon name="back" size={20} color={colors.text} />
         </Pressable>
-        <Text style={styles.title}>Mahsulotlar</Text>
+        <View style={styles.headerText}>
+          <Text style={styles.panelLabel}>LOOKSAVE admin</Text>
+          <Text style={styles.title}>Mahsulotlar</Text>
+        </View>
         <View style={styles.back} />
-      </View>
+      </LinearGradient>
 
       <View style={styles.filters}>
         {FILTERS.map((item) => (
@@ -95,11 +104,22 @@ export default function SellerProducts(): JSX.Element {
             key={item.key}
             accessibilityRole="button"
             onPress={() => setFilter(item.key)}
-            style={[styles.filter, filter === item.key && styles.filterActive]}
+            style={styles.filterWrap}
           >
-            <Text style={[styles.filterText, filter === item.key && { color: colors.text }]}>
-              {item.label}
-            </Text>
+            {filter === item.key ? (
+              <LinearGradient
+                colors={[colors.accent, colors.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.filter}
+              >
+                <Text style={[styles.filterText, { color: colors.text }]}>{item.label}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={styles.filter}>
+                <Text style={styles.filterText}>{item.label}</Text>
+              </View>
+            )}
           </Pressable>
         ))}
       </View>
@@ -315,51 +335,88 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { ...text.h3, color: colors.text, flex: 1, textAlign: 'center' },
+  back: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(20, 18, 28, 0.74)',
+  },
+  headerText: { flex: 1, alignItems: 'center' },
+  panelLabel: { ...text.tiny, color: colors.accent, letterSpacing: 1.1, textTransform: 'uppercase' },
+  title: { ...text.h2, color: colors.text, marginTop: 2 },
 
   filters: {
     flexDirection: 'row',
     gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  filter: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.xs,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(15, 13, 22, 0.92)',
   },
-  filterActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
-  filterText: { ...text.tiny, color: colors.textMuted },
+  filterWrap: { flex: 1 },
+  filter: {
+    minHeight: 38,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterText: { ...text.tiny, color: colors.textMuted, fontWeight: '700', textAlign: 'center' },
 
   list: { padding: spacing.md, gap: spacing.md, paddingBottom: 100 },
 
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    backgroundColor: 'rgba(20, 18, 28, 0.95)',
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     padding: spacing.md,
     gap: spacing.sm,
+    shadowColor: '#000000',
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
   },
   cardTop: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  thumb: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.surface2 },
+  thumb: {
+    width: 62,
+    height: 62,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { ...text.bodyMed, color: colors.text },
   price: { ...text.small, color: colors.accent },
   status: { ...text.tiny },
-  delete: { padding: spacing.xs },
+  delete: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface2,
+  },
 
   stock: {
     gap: spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderStrong,
     paddingTop: spacing.sm,
   },
   stockToggle: {
@@ -367,7 +424,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderStrong,
     paddingTop: spacing.sm,
   },
   stockEdit: { ...text.tiny, color: colors.accent },
@@ -380,7 +437,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     backgroundColor: colors.surface2,
     color: colors.text,
     textAlign: 'center',
@@ -392,5 +449,9 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     bottom: spacing.lg,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.36,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
   },
 });
