@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CircleCheck, CirclePause, CircleX, ClipboardList, Clock3, Grid2X2, Store } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -10,7 +11,7 @@ import {
   type StoreStatus,
 } from '../api/admin';
 import { ReasonModal } from '../components/ReasonModal';
-import { EmptyState, ErrorState, Spinner } from '../components/Spinner';
+import { ErrorState, Spinner } from '../components/Spinner';
 import { phone as formatPhone } from '../lib/format';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +23,8 @@ const TABS: Array<{ value: StoreStatus; label: string }> = [
   { value: 'rejected', label: 'Rad etilgan' },
   { value: 'all', label: 'Barchasi' },
 ];
+
+const TAB_ICONS = { pending: Clock3, active: CircleCheck, suspended: CirclePause, rejected: CircleX, all: Grid2X2 } as const;
 
 /** Javob tezligi — ilova sifatining asosiy ko'rsatkichi (07-web-panels §5.5). */
 function responseTone(minutes: number | null): string {
@@ -151,26 +154,29 @@ export function StoresPage(): JSX.Element {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-[1320px] space-y-7">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Do'konlar</h1>
-        <p className="mt-1 text-sm text-dim">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Do'konlar</h1>
+        <p className="mt-2 text-base text-dim">
           Tasdiqlashdan oldin tekshiring: manzil xaritada haqiqiymi, telefon ishlaydimi, nom va logo
           mos keladimi.
         </p>
       </div>
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as StoreStatus)}>
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto border border-border bg-surface p-1">
-          {TABS.map((item) => (
+        <TabsList className="premium-tabs h-auto min-h-[76px] w-full justify-start gap-1 overflow-x-auto rounded-3xl border border-border bg-surface/70 p-2">
+          {TABS.map((item) => {
+            const TabIcon = TAB_ICONS[item.value];
+            return (
             <TabsTrigger
               key={item.value}
               value={item.value}
-              className="whitespace-nowrap rounded-lg px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="min-h-[58px] min-w-[180px] flex-1 gap-3 whitespace-nowrap rounded-2xl px-5 py-3 text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand data-[state=active]:to-primary data-[state=active]:text-white data-[state=active]:shadow-[0_10px_32px_rgba(124,58,237,.3)]"
             >
+              <TabIcon className="h-5 w-5" />
               {item.label}
             </TabsTrigger>
-          ))}
+          )})}
         </TabsList>
       </Tabs>
 
@@ -185,7 +191,15 @@ export function StoresPage(): JSX.Element {
         <ErrorState message="Yuklab bo'lmadi" onRetry={() => void stores.refetch()} />
       ) : null}
       {stores.data?.length === 0 ? (
-        <EmptyState title="Bu ro'yxat bo'sh" hint="Yangi ariza kelganda shu yerda ko'rinadi." />
+        <div className="empty-premium flex min-h-[405px] flex-col items-center justify-center rounded-3xl border border-border bg-surface/55 px-6 text-center">
+          <div className="relative mb-7 flex h-36 w-48 items-center justify-center">
+            <span className="absolute h-32 w-44 rounded-[42%] bg-primary/10 blur-sm" />
+            <Store className="relative h-24 w-24 text-brand/70" strokeWidth={1.4} />
+            <span className="absolute bottom-2 right-5 flex h-14 w-14 items-center justify-center rounded-xl border-2 border-brand/60 bg-surface text-brand"><ClipboardList className="h-8 w-8" /></span>
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Bu ro'yxat bo'sh</h2>
+          <p className="mt-3 text-base text-dim">Yangi ariza kelganda shu yerda ko'rinadi.</p>
+        </div>
       ) : null}
 
       <div className="space-y-4">

@@ -17,6 +17,9 @@
 
   body {
     font-family: theme('fontFamily.sans');
+    background:
+      radial-gradient(circle at 68% 24%, hsl(var(--primary) / 0.07), transparent 30%),
+      hsl(var(--panel));
   }
 
   /* Klaviatura bilan yurish ko'rinib tursin */
@@ -33,6 +36,39 @@
   }
   ::-webkit-scrollbar-thumb {
     @apply rounded-full bg-borderStrong;
+  }
+}
+
+@layer components {
+  .admin-sidebar {
+    background: linear-gradient(155deg, hsl(var(--surface)) 0%, hsl(var(--panel)) 78%);
+    box-shadow: 18px 0 55px rgb(0 0 0 / 0.14);
+  }
+
+  .admin-topbar {
+    background: hsl(var(--panel) / 0.82);
+    backdrop-filter: blur(18px);
+  }
+
+  .brand-bag {
+    @apply flex h-11 w-11 items-center justify-center rounded-xl text-white;
+    background: linear-gradient(145deg, hsl(var(--brand)), hsl(var(--primary)));
+    box-shadow: 0 10px 28px hsl(var(--primary) / 0.34);
+  }
+
+  .nav-active {
+    background: linear-gradient(100deg, hsl(var(--primary) / 0.48), hsl(var(--primary) / 0.22));
+    box-shadow: inset 0 0 0 1px hsl(var(--brand) / 0.16), 0 8px 25px hsl(var(--primary) / 0.13);
+  }
+
+  .search-box {
+    background: hsl(var(--surface) / 0.65);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+  }
+
+  .premium-tabs,
+  .empty-premium {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025), 0 18px 48px rgb(0 0 0 / 0.13);
   }
 }
 
