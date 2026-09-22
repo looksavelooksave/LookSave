@@ -240,7 +240,10 @@ export function toStoreOrderDto(row: StoreOrderRow) {
     minutesLeft: row.status === 'new' ? minutesLeft : null,
     customer: { name: row.contact_name, phone: row.contact_phone },
     deliveryType: row.delivery_type,
-    address: row.address,
+    // ⚠️ MATN, OBYEKT EMAS. `orders.address` — JSONB {text,lat,lng,landmark}.
+    // Ilova buni satr sifatida `<Text>` da ko'rsatadi; obyekt bersak
+    // «Objects are not valid as a React child» bilan ekran qulaydi.
+    address: (row.address as { text?: string } | null)?.text ?? null,
     note: row.note,
     items: row.items.map((item) => ({
       title: item.title,
