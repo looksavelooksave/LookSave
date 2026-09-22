@@ -14,7 +14,7 @@ import { QueuePage } from './pages/Queue';
  * qadam); ajratish esa interfeysda shu yerdan boshlanadi.
  */
 export function App(): JSX.Element {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -36,9 +36,19 @@ export function App(): JSX.Element {
   if (user.role !== 'admin') {
     return (
       <main className="flex min-h-full items-center justify-center px-4 text-center">
-        <div className="max-w-sm space-y-3">
+        <div className="max-w-sm space-y-4">
           <h1 className="text-lg font-semibold text-foreground">Bu panel operatorlar uchun</h1>
-          <p className="text-sm text-dim">Kirish huquqi kerak bo`lsa administratorga yozing.</p>
+          <p className="text-sm text-dim">
+            Siz <span className="text-foreground">{user.fullName ?? 'boshqa akkaunt'}</span> bilan
+            kirgansiz. Chiqib, operator login/paroli bilan kiring.
+          </p>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
+          >
+            Chiqish va qayta kirish
+          </button>
         </div>
       </main>
     );
