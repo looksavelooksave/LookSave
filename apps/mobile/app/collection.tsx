@@ -1,19 +1,31 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   addFavorite,
   getCart,
+  getMarketplaceBanners,
   getProducts,
   removeFavorite,
   type ProductCard,
+  type MarketplaceBanner,
 } from '../src/api/endpoints';
 import { Icon } from '../src/components/Icon';
 import { Empty, ErrorView, Screen } from '../src/components/ui';
-import { SkeletonGrid } from '../src/components/Skeleton';
+import { Skeleton } from '../src/components/Skeleton';
 import { useI18n } from '../src/i18n';
 import { useAuthStore } from '../src/store/authStore';
 import { useLocationStore } from '../src/store/locationStore';
@@ -42,6 +54,77 @@ const GAP = spacing.xs + 2;
 const CARD_WIDTH = Math.floor((SCREEN_WIDTH - spacing.md * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
 
 type Kind = 'men' | 'women' | 'limited';
+
+type FeedRow =
+  | { kind: 'products'; key: string; products: ProductCard[] }
+  | { kind: 'banner'; key: string; banner: MarketplaceBanner };
+
+function buildFeed(products: ProductCard[], banners: MarketplaceBanner[]): FeedRow[] {
+  const rows: FeedRow[] = [];
+  let bannerIndex = 0;
+
+  for (let index = 0; index < products.length; index += COLUMNS) {
+    const rowProducts = products.slice(index, index + COLUMNS);
+    rows.push({ kind: 'products', key: `products-${index}`, products: rowProducts });
+
+    const shown = index + rowProducts.length;
+    if (shown % 6 === 0 && banners.length > 0) {
+      const banner = banners[bannerIndex % banners.length];
+      if (banner) {
+        rows.push({ kind: 'banner', key: `banner-${shown}-${banner.id}`, banner });
+        bannerIndex += 1;
+      }
+    }
+  }
+
+  return rows;
+}
+
+/** Kolleksiya gridining o'z skeleti: uch ustun, matnsiz, karta bilan bir o'lcham. */
+function CollectionSkeleton({ rows = 3 }: { rows?: number }): JSX.Element {
+  return (
+    <View style={styles.skeletonGrid}>
+      {Array.from({ length: rows }, (_, row) => (
+        <View key={row} style={styles.column}>
+          {Array.from({ length: COLUMNS }, (_, column) => (
+            <View key={column} style={styles.skeletonCard}>
+              <Skeleton aspectRatio={3 / 4} radius={radius.md} />
+              <Skeleton width={24} height={24} radius={radius.pill} style={styles.skeletonHeart} />
+              <Skeleton height={20} radius={radius.sm} style={styles.skeletonPrice} />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function BannerCard({ banner, onPress }: { banner: MarketplaceBanner; onPress: () => void }): JSX.Element {
+  return (
+    <Pressable
+      disabled={!banner.targetUrl}
+      onPress={onPress}
+      style={({ pressed }) => [styles.banner, pressed && styles.bannerPressed]}
+    >
+      <Image source={{ uri: banner.imageUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      <LinearGradient
+        colors={['rgba(10,10,15,0.08)', 'rgba(10,10,15,0.88)']}
+        locations={[0.25, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.bannerCopy}>
+        <Text style={styles.bannerLabel}>REKLAMA</Text>
+        <Text style={styles.bannerTitle} numberOfLines={2}>{banner.title}</Text>
+        {banner.subtitle ? <Text style={styles.bannerSubtitle} numberOfLines={2}>{banner.subtitle}</Text> : null}
+      </View>
+      {banner.targetUrl ? (
+        <View style={styles.bannerArrow}>
+          <Icon name="next" size={18} color={colors.text} />
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
 
 function CollectionCard({
   product,
@@ -158,7 +241,23 @@ export default function Collection(): JSX.Element {
     getNextPageParam: (last) => (last.hasMore ? (last.nextCursor ?? undefined) : undefined),
   });
 
+  const banners = useQuery({
+    queryKey: ['marketplace-banners', kind],
+    queryFn: () => getMarketplaceBanners(kind),
+    staleTime: 60_000,
+  });
+
   const items = products.data?.pages.flatMap((page) => page.items) ?? [];
+  const feed = buildFeed(items, banners.data ?? []);
+
+  const openBanner = (banner: MarketplaceBanner): void => {
+    if (!banner.targetUrl) return;
+    if (banner.targetUrl.startsWith('/')) {
+      router.push(banner.targetUrl as Href);
+      return;
+    }
+    void Linking.openURL(banner.targetUrl);
+  };
 
   const title =
     kind === 'men'
@@ -201,17 +300,15 @@ export default function Collection(): JSX.Element {
         </Pressable>
       </View>
 
-      {products.isLoading ? <SkeletonGrid count={6} /> : null}
+      {products.isLoading ? <CollectionSkeleton /> : null}
       {products.isError ? (
         <ErrorView error={products.error} onRetry={() => void products.refetch()} />
       ) : null}
 
       {products.data ? (
         <FlatList
-          data={items}
-          keyExtractor={(product) => product.id}
-          numColumns={COLUMNS}
-          columnWrapperStyle={styles.column}
+          data={feed}
+          keyExtractor={(row) => row.key}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           /* Zich gridda ekrandan chiqqan kartalar bo'shatiladi */
@@ -226,18 +323,30 @@ export default function Collection(): JSX.Element {
               void products.fetchNextPage();
             }
           }}
-          ListFooterComponent={products.isFetchingNextPage ? <SkeletonGrid count={3} /> : null}
+          ListFooterComponent={products.isFetchingNextPage ? <CollectionSkeleton rows={1} /> : null}
           ListEmptyComponent={<Empty title={t.home.emptyTitle} hint={t.catalog.emptyCategory} />}
-          renderItem={({ item }) => (
-            <CollectionCard
-              product={item}
-              favorite={favorites[item.id] ?? false}
-              onPress={() => router.push(`/product/${item.id}`)}
-              onToggleFavorite={() =>
-                toggleFavorite.mutate({ id: item.id, next: !(favorites[item.id] ?? false) })
-              }
-            />
-          )}
+          renderItem={({ item }) =>
+            item.kind === 'banner' ? (
+              <BannerCard banner={item.banner} onPress={() => openBanner(item.banner)} />
+            ) : (
+              <View style={styles.column}>
+                {item.products.map((product) => (
+                  <CollectionCard
+                    key={product.id}
+                    product={product}
+                    favorite={favorites[product.id] ?? false}
+                    onPress={() => router.push(`/product/${product.id}`)}
+                    onToggleFavorite={() =>
+                      toggleFavorite.mutate({
+                        id: product.id,
+                        next: !(favorites[product.id] ?? false),
+                      })
+                    }
+                  />
+                ))}
+              </View>
+            )
+          }
         />
       ) : null}
     </Screen>
@@ -281,7 +390,12 @@ const styles = StyleSheet.create({
   cartBadgeText: { ...text.tiny, color: colors.text, fontWeight: '700' },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl, gap: GAP },
-  column: { gap: GAP },
+  column: { flexDirection: 'row', gap: GAP },
+
+  skeletonGrid: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl, gap: GAP },
+  skeletonCard: { position: 'relative', width: CARD_WIDTH },
+  skeletonHeart: { position: 'absolute', top: 5, right: 5 },
+  skeletonPrice: { position: 'absolute', left: 4, bottom: 4, width: CARD_WIDTH - 8 },
 
   card: { width: CARD_WIDTH },
   imageWrap: {
@@ -340,4 +454,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,10,15,0.72)',
   },
   priceText: { ...text.tiny, color: colors.text, fontWeight: '700' },
+
+  banner: {
+    height: 132,
+    marginVertical: spacing.sm,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    justifyContent: 'flex-end',
+  },
+  bannerPressed: { opacity: 0.88 },
+  bannerCopy: { padding: spacing.md, paddingRight: 58 },
+  bannerLabel: { ...text.tiny, color: colors.accent, fontWeight: '700', letterSpacing: 1 },
+  bannerTitle: { ...text.h3, color: colors.text, marginTop: 2 },
+  bannerSubtitle: { ...text.tiny, color: colors.textMuted, marginTop: 2 },
+  bannerArrow: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10,10,15,0.72)',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
 });

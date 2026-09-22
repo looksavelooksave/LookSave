@@ -5,6 +5,7 @@ import {
   PanResponder,
   StyleSheet,
   View,
+  type ImageResizeMode,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -42,6 +43,8 @@ export interface SwipePhoto {
   key: string;
   /** Ko'rsatiladigan surat — kesim (shaffof PNG) yoki oddiy surat */
   url: string | null;
+  /** Kesim `contain`, fonli oddiy surat esa sahnani to'ldirish uchun `cover`. */
+  resizeMode?: ImageResizeMode;
 }
 
 interface PhotoSwipeProps {
@@ -204,7 +207,11 @@ export function PhotoSwipe({ photos, index, onIndexChange, style }: PhotoSwipePr
             ]}
           >
             {photo.url ? (
-              <Image source={{ uri: photo.url }} style={styles.image} resizeMode="contain" />
+              <Image
+                source={{ uri: photo.url }}
+                style={styles.image}
+                resizeMode={photo.resizeMode ?? 'contain'}
+              />
             ) : null}
           </Animated.View>
         );

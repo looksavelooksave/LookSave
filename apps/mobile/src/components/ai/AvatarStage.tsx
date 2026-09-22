@@ -5,6 +5,7 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, text } from '../../theme/tokens';
 
 const PODIUM_IMAGE = require('../../../assets/tryon-podium.png');
+const STUDIO_BACKGROUND = require('../../../assets/tryon-studio-bg.png');
 
 /**
  * Avatar sahnasi — mijoz maketidagi ko'rinish.
@@ -105,33 +106,17 @@ export function AvatarStage({
 
   return (
     <View style={styles.root}>
-      {/*
-        Orqa fon — bir-birining ustiga tushgan neon romkalar (maketdagi
-        3-rasm). Ilgari bu to'r chiziqlari edi; foydalanuvchi ularni
-        olib tashlab, romkali fonni so'radi. Romkalar biroz burilgan va
-        past shaffoflikda — gavdaga e'tibor tortmaydi, chuqurlik beradi.
-      */}
-      <View style={styles.frames} pointerEvents="none">
-        <View style={[styles.frame, styles.frameA]} />
-        <View style={[styles.frame, styles.frameB]} />
-        <View style={[styles.frame, styles.frameC]} />
-      </View>
-
-      {/*
-        Odam ORQASIDAGI nur — maketdagi binafsha halo.
-
-        ⚠️ RADIAL GRADIENT EMAS, SOYA. React Native da radial gradient yo'q;
-        `expo-linear-gradient` faqat chiziqli. Dumaloq View ning katta
-        `shadowRadius` i iOS da aynan shunday yumshoq tarqaladi va qo'shimcha
-        kutubxona talab qilmaydi.
-      */}
-      <View style={styles.auraOuter} pointerEvents="none">
-        <View style={styles.auraL4} />
-        <View style={styles.auraL3} />
-        <View style={styles.auraMid} />
-        <View style={styles.auraL1} />
-        <View style={styles.auraInner} />
-      </View>
+      <Image
+        source={STUDIO_BACKGROUND}
+        style={styles.studioBackground}
+        resizeMode="cover"
+      />
+      <LinearGradient
+        colors={['rgba(5,5,9,0.42)', 'rgba(5,5,9,0.28)', 'rgba(5,5,9,0.5)']}
+        locations={[0, 0.48, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
 
       {/* Pastdagi nur — odam "platforma" ustida turgandek */}
       <Animated.View style={[styles.floorGlow, { opacity }]} pointerEvents="none">
@@ -149,7 +134,7 @@ export function AvatarStage({
       {children ? (
         <View
           style={[
-            styles.personFrame,
+            styles.swipeFrame,
             zoomed && styles.personFrameZoomed,
             dimmed && styles.dimmed,
           ]}
@@ -248,105 +233,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  /*
-   * ── Orqa fon romkalari (maketdagi 3-rasm) ──
-   *
-   * ⚠️ NOZIK VA GAVDA ORTIDA. Ilgari ular yorqin va katta edi — bosh
-   * ustidan o'tib, gavdadan e'tiborni tortardi. Endi past shaffoflik,
-   * kichikroq o'lcham va biroz pastroq markaz (torsо ortida turadi).
-   */
-  frames: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  frame: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  frameA: {
-    width: '52%',
-    height: '58%',
-    top: '20%',
-    borderColor: 'rgba(124,58,237,0.28)',
-    transform: [{ rotate: '-5deg' }],
-  },
-  frameB: {
-    width: '46%',
-    height: '62%',
-    top: '18%',
-    borderColor: 'rgba(139,92,246,0.22)',
-    transform: [{ rotate: '4deg' }],
-  },
-  frameC: {
-    width: '40%',
-    height: '54%',
-    top: '24%',
-    borderColor: 'rgba(192,132,252,0.18)',
-    transform: [{ rotate: '9deg' }],
-  },
-
-  /*
-   * ⚠️ TOR VA PAST. Avval kadrning 70% kengligi va 18% balandligi edi —
-   * oyoq ostida katta binafsha dog' bo'lib turardi va sahnaning eng
-   * ko'zga tashlanadigan qismiga aylanib qolgandi. Nur odamni FONDAN
-   * ajratish uchun, o'ziga e'tibor tortish uchun emas.
-   */
-  /*
-   * ⚠️ SOYA EMAS, UCH QATLAM. Ilgari bu bitta dumaloq View edi va nurni
-   * katta `shadowRadius` bergan. iOS uni har kadrda qayta hisoblaydi
-   * (RN ogohlantiradi: «cannot calculate shadow efficiently») — iPhone 11
-   * da sezilarli sekinlashish. Uchta shaffof doira bir xil yumshoq
-   * o'tishni beradi va hech narsa hisoblanmaydi.
-   */
-  auraOuter: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: '8%',
-    width: 300,
-    height: 300,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(139,92,246,0.03)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /*
-   * Qatlamlar KO'P va har birining shaffofligi PAST. Uchta qatlamda
-   * doiralarning qirrasi ko'rinib qolardi — beshtasida o'tish yumshoq
-   * bo'ladi va baribir hech narsa hisoblanmaydi.
-   */
-  auraL4: {
-    position: 'absolute',
-    width: 264,
-    height: 264,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(139,92,246,0.035)',
-  },
-  auraL3: {
-    position: 'absolute',
-    width: 228,
-    height: 228,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(139,92,246,0.035)',
-  },
-  auraMid: {
-    position: 'absolute',
-    width: 192,
-    height: 192,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(139,92,246,0.035)',
-  },
-  auraL1: {
-    position: 'absolute',
-    width: 156,
-    height: 156,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(139,92,246,0.035)',
-  },
-  auraInner: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(139,92,246,0.04)',
-  },
+  studioBackground: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   floorGlow: {
     position: 'absolute',
     left: '30%',
@@ -379,6 +266,7 @@ const styles = StyleSheet.create({
     right: '8%',
     bottom: '3%',
   },
+  swipeFrame: { ...StyleSheet.absoluteFillObject },
 
   /*
    * Pastki singdirish — gavdaning kesilgan pastki qismini qorong'iga

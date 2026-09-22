@@ -38,6 +38,7 @@ import {
   getGarments,
   getRenders,
   requestAvatarAngle,
+  requestAvatarCutout,
   removeFavorite,
   requestRender,
   requestRenderBatch,
@@ -249,6 +250,18 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         ? 3000
         : false,
   });
+  const cutoutRequested = useRef(false);
+  const ensureCutout = useMutation({
+    mutationFn: requestAvatarCutout,
+    onSuccess: (data) => queryClient.setQueryData(['avatar'], data),
+  });
+
+  useEffect(() => {
+    if (cutoutRequested.current || ensureCutout.isPending) return;
+    if (avatar.data?.status !== 'ready' || !avatar.data.imageUrl || avatar.data.cutoutUrl) return;
+    cutoutRequested.current = true;
+    ensureCutout.mutate();
+  }, [avatar.data, ensureCutout]);
 
   const measurements = profile.data?.measurements;
   const gender = profile.data?.gender ?? null;
@@ -549,6 +562,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const angles = avatar.data?.angles ?? {};
   const baseImage = angles[angle] ?? avatar.data?.imageUrl ?? profile.data?.bodyPhotoUrl ?? null;
   const baseCutout = angle === 'front' ? (avatar.data?.cutoutUrl ?? null) : null;
+  const preparingCutout =
+    angle === 'front' &&
+    avatar.data?.status === 'ready' &&
+    Boolean(avatar.data.imageUrl) &&
+    !avatar.data.cutoutUrl &&
+    !ensureCutout.isError;
 
   /** Komplektning eng tepa tayyor surati — sahnada shu turadi */
   const worn = topReady(resolved);
@@ -620,12 +639,20 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
 
     if (render?.status === 'ready') {
-      return { key: item.variantId, url: render.cutoutUrl ?? render.imageUrl };
+      return {
+        key: item.variantId,
+        url: render.cutoutUrl ?? render.imageUrl,
+        resizeMode: 'contain' as const,
+      };
     }
+
+    const fallbackCutout = layerBase ? layerBase.cutoutUrl : baseCutout;
+    const fallbackImage = preparingCutout ? null : layerBase ? layerBase.imageUrl : baseImage;
 
     return {
       key: item.variantId,
-      url: layerBase?.cutoutUrl ?? layerBase?.imageUrl ?? baseCutout ?? baseImage,
+      url: fallbackCutout ?? fallbackImage,
+      resizeMode: 'contain' as const,
     };
   });
 
@@ -694,36 +721,43 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         </Pressable>
       </View>
 
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+      >
+
       {/* ── Avatar maydoni ── */}
       <View style={styles.stage}>
         <AvatarStage
           zoomed={zoomed}
-          imageUrl={worn?.imageUrl ?? baseImage}
+          imageUrl={preparingCutout ? null : worn?.imageUrl ?? baseImage}
           cutoutUrl={worn?.cutoutUrl ?? baseCutout}
           dimmed={!worn && currentWorking}
           showRings
         >
-          <PhotoSwipe
-            photos={deck}
-            index={deckIndex}
-            onIndexChange={(next) => {
-              const item = items[next];
-              if (!item) return;
+          {deck.length > 0 ? (
+            <PhotoSwipe
+              photos={deck}
+              index={deckIndex}
+              onIndexChange={(next) => {
+                const item = items[next];
+                if (!item) return;
 
-              /*
-               * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
-               * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
-               * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
-               */
-              putOn(tab, item.variantId);
+                /*
+                 * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
+                 * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
+                 * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
+                 */
+                putOn(tab, item.variantId);
 
-              stripRef.current?.scrollToIndex({
-                index: next,
-                animated: true,
-                viewPosition: 0.5,
-              });
-            }}
-          />
+                stripRef.current?.scrollToIndex({
+                  index: next,
+                  animated: true,
+                  viewPosition: 0.5,
+                });
+              }}
+            />
+          ) : null}
         </AvatarStage>
 
         <View style={styles.sideControls} pointerEvents="box-none">
@@ -807,6 +841,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           </View>
         ) : null}
 
+        {preparingCutout ? (
+          <View style={styles.overlay} pointerEvents="none">
+            <ActivityIndicator color={colors.accent} />
+            <Text style={styles.overlayText}>Avatar sahnaga tayyorlanmoqda…</Text>
+            <Text style={styles.overlayHint}>Fon bir marta ajratiladi</Text>
+          </View>
+        ) : null}
+
         {failed && !currentWorking ? (
           <View style={styles.overlay} pointerEvents="none">
             <Icon name="close" size={26} color={colors.danger} />
@@ -818,9 +860,13 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         ) : null}
       </View>
 
-      {/* Oltita turkum scrollsiz 3 × 2 tartibda to'liq ko'rinadi. */}
-      <View style={styles.tabsWrap}>
-        <View style={styles.tabs}>
+      {/* Barcha turkumlar bitta gorizontal qatorda, qolganlari surib ko'riladi. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsWrap}
+        contentContainerStyle={styles.tabs}
+      >
           {TABS.map((item) => {
             const active = tab === item.category;
             const dressed = outfit.some((layer) => layer.category === item.category);
@@ -860,8 +906,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               </Pressable>
             );
           })}
-        </View>
-      </View>
+      </ScrollView>
 
       {/*
         ── Uslub chiplari ──
@@ -897,7 +942,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.bottom} showsVerticalScrollIndicator={false}>
+      <View style={styles.bottom}>
         {limitReached ? (
           <View style={styles.banner}>
             <Icon name="clock" size={14} color={colors.warning} />
@@ -1283,6 +1328,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             </View>
           </View>
         ) : null}
+      </View>
       </ScrollView>
 
       <StorePicker
@@ -1373,13 +1419,9 @@ const styles = StyleSheet.create({
   },
   storeChipText: { ...text.tiny, color: colors.textMuted, flexShrink: 1 },
 
-  /*
-   * ⚠️ BALANDLIK ULUSH BILAN, NISBAT BILAN EMAS. `aspectRatio: 3/4` da
-   * sahna ekranning 56% ini egallab, pastdagi tanlov qatorlarini yeb
-   * qo'yardi. Maketda sahna ekranning uchdan biri, qolgani tanlov uchun.
-   */
+  /* Sahna portret nisbatida; sahifa scroll bo'lgani uchun tor ekranlarda siqilmaydi. */
   stage: {
-    height: '44%',
+    aspectRatio: 0.76,
     margin: spacing.md,
     borderRadius: radius.lg,
     overflow: 'hidden',
@@ -1387,6 +1429,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  page: { paddingBottom: spacing.xl },
   avatar: { flex: 1 },
   dimmed: { opacity: 0.35 },
 
@@ -1484,7 +1527,13 @@ const styles = StyleSheet.create({
    * bir-biriga yopishib, qisilib turardi (foydalanuvchi 2026-09-20 da
    * shuni ko'rsatdi). Endi balandlik va yuqori padding kattaroq.
    */
-  styleRowWrap: { height: 44, paddingTop: 6, backgroundColor: colors.bg },
+  styleRowWrap: {
+    height: 46,
+    paddingTop: 6,
+    marginBottom: 8,
+    backgroundColor: colors.bg,
+    flexShrink: 0,
+  },
   styleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1510,23 +1559,27 @@ const styles = StyleSheet.create({
   },
   styleChipActive: { borderColor: colors.accent, backgroundColor: colors.primarySoft },
   styleChipText: { ...text.tiny, fontSize: 10, color: colors.textMuted },
-  tabsWrap: { height: 108, marginTop: 8, paddingTop: 4, backgroundColor: colors.bg },
+  tabsWrap: {
+    height: 74,
+    marginTop: 12,
+    marginBottom: 8,
+    backgroundColor: colors.bg,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   tabs: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
-    columnGap: 8,
-    rowGap: 8,
+    paddingVertical: 10,
+    gap: 8,
   },
   /* Maketdagi pilla: ikonka va yozuv YONMA-YON, dumaloq chegara */
   tab: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    minWidth: 0,
+    width: 142,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 46,
+    height: 50,
     paddingHorizontal: 12,
     borderRadius: radius.md,
     borderWidth: 1,

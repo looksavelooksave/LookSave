@@ -128,6 +128,24 @@ export interface Brand {
 /** Deckdagi "TOP BRANDS" qatori (08-slayd). */
 export const getBrands = (): Promise<Brand[]> => api<Brand[]>('/brands');
 
+export type BannerAudience = 'all' | 'men' | 'women' | 'limited';
+
+export interface MarketplaceBanner {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string;
+  targetUrl: string | null;
+  audience: BannerAudience;
+  sortOrder: number;
+}
+
+/** Market kolleksiyasida har 6 mahsulotdan keyin ko'rsatiladigan bannerlar. */
+export const getMarketplaceBanners = (
+  audience: BannerAudience,
+): Promise<MarketplaceBanner[]> =>
+  api<MarketplaceBanner[]>(`/marketplace/banners?audience=${audience}`);
+
 // ── Savat ──
 
 export interface CartStore {
@@ -513,6 +531,10 @@ export const requestAvatar = (storeId?: string | null): Promise<UserAvatar> =>
 
 /** Holat — ilova tayyor bo'lguncha takrorlaydi. */
 export const getAvatar = (): Promise<UserAvatar> => api<UserAvatar>('/tryon/avatar');
+
+/** Eski avatar uchun shaffof kesimni mavjud suratdan qayta tayyorlaydi. */
+export const requestAvatarCutout = (): Promise<UserAvatar> =>
+  api<UserAvatar>('/tryon/avatar/cutout', { method: 'POST', body: {} });
 
 /**
  * Aylantirish uchun burchak so'raydi.

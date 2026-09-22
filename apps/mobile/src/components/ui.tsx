@@ -330,10 +330,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   buttonPill: { height: 54, borderRadius: radius.pill },
-  buttonRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    maxWidth: '100%',
+  },
   buttonGhost: { borderWidth: 1, borderColor: colors.borderStrong },
   buttonDanger: { borderWidth: 1, borderColor: colors.danger },
-  buttonText: { ...text.bodyMed, color: colors.text },
+  buttonText: { ...text.bodyMed, color: colors.text, flexShrink: 1, textAlign: 'center' },
 
   field: { marginBottom: spacing.md },
   label: { ...text.label, color: colors.textDim, marginBottom: spacing.sm },

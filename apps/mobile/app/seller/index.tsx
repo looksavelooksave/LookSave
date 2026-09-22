@@ -56,6 +56,22 @@ const NEXT_ACTION: Record<
   expired: null,
 };
 
+/**
+ * Manzil matni — SATR yoki {text,lat,lng} OBYEKT bo'lishi mumkin.
+ *
+ * ⚠️ HIMOYA: eski API manzilni obyekt qaytarardi va uni to'g'ridan-to'g'ri
+ * `<Text>` da chizsak «Objects are not valid as a React child» bilan ekran
+ * qulardi. Endi ikkalasidan ham xavfsiz matn olinadi.
+ */
+function addressText(address: unknown): string {
+  if (typeof address === 'string') return address;
+  if (address && typeof address === 'object') {
+    const text = (address as { text?: unknown }).text;
+    if (typeof text === 'string') return text;
+  }
+  return '';
+}
+
 export default function SellerOrders(): JSX.Element {
   /*
    * ⚠️ Ildiz Stack bu bo'limda sarlavha chizmaydi (`headerShown: false`),
@@ -421,9 +437,9 @@ function OrderCard({
         </Text>
       </View>
 
-      {order.address ? (
+      {addressText(order.address) ? (
         <Text style={styles.address} numberOfLines={2}>
-          {order.address}
+          {addressText(order.address)}
         </Text>
       ) : null}
 

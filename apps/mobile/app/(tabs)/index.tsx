@@ -138,21 +138,6 @@ export default function Home(): JSX.Element {
     getNextPageParam: (last) => (last.hasMore ? (last.nextCursor ?? undefined) : undefined),
   });
 
-  /*
-   * ⚠️ Yuklanish SHU YERDA ham `<Screen>` va yuqori otступ bilan o'raladi.
-   * Ilgari bu yerda skeleton grid ko'rsatilardi; foydalanuvchi so'roviga
-   * ko'ra (2026-09-20) u olib tashlandi va o'rniga oddiy spinner qo'yildi.
-   * `headerHeight` — fixed shapka egallaydigan balandlik.
-   */
-  if (products.isLoading) {
-    return (
-      <Screen>
-        <View style={[styles.loading, { paddingTop: headerHeight }]}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
-      </Screen>
-    );
-  }
   if (products.isError) {
     return (
       <Screen>
@@ -253,10 +238,12 @@ export default function Home(): JSX.Element {
           />
         )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{t.home.emptyTitle}</Text>
-            <Text style={styles.emptyHint}>{t.home.emptyHint}</Text>
-          </View>
+          products.isLoading ? null : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{t.home.emptyTitle}</Text>
+              <Text style={styles.emptyHint}>{t.home.emptyHint}</Text>
+            </View>
+          )
         }
         /*
          * ⚠️ RefreshControl ATAYIN ISHLATILMAYDI. iOS'da u ro'yxat
@@ -352,8 +339,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   imagePlaceholder: { borderWidth: 1, borderColor: colors.border },
-  // Skeleton o'rniga oddiy spinner (2026-09-20)
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   footerLoading: { paddingVertical: spacing.lg, alignItems: 'center' },
   heart: {
     position: 'absolute',
