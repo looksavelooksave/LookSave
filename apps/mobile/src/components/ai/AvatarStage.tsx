@@ -4,6 +4,8 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, text } from '../../theme/tokens';
 
+const PODIUM_IMAGE = require('../../../assets/tryon-podium.png');
+
 /**
  * Avatar sahnasi — mijoz maketidagi ko'rinish.
  *
@@ -139,50 +141,42 @@ export function AvatarStage({
         />
       </Animated.View>
 
+      {/* Podium avatar ortida chiziladi: oyoqlar uning ustida turib ko'rinadi. */}
+      <View style={styles.podium} pointerEvents="none">
+        <Image source={PODIUM_IMAGE} style={styles.podiumImage} resizeMode="contain" />
+      </View>
+
       {children ? (
-        <View style={[StyleSheet.absoluteFill, dimmed && styles.dimmed]}>{children}</View>
+        <View
+          style={[
+            styles.personFrame,
+            zoomed && styles.personFrameZoomed,
+            dimmed && styles.dimmed,
+          ]}
+        >
+          {children}
+        </View>
       ) : source ? (
         <Image
           source={{ uri: source }}
-          style={[styles.person, dimmed && styles.dimmed, zoomed && styles.personZoomed]}
+          style={[
+            styles.personFrame,
+            dimmed && styles.dimmed,
+            zoomed && styles.personFrameZoomed,
+          ]}
           resizeMode="contain"
         />
       ) : (
-        <View style={styles.person} />
+        <View style={styles.personFrame} />
       )}
 
-      {/*
-        ── Pastki singdirish (fade) + PODIUM ──
-
-        ⚠️ ODAMDAN KEYIN CHIZILADI, ATAYIN. Avatar rasmlari SON sohasida
-        kesilgan (oyoq yo'q) — agar podium ortida qolsa, kesilgan oyoq
-        podium ustidan chiqib, «disk ichiga tiqilgan oyoq» bo'lib ko'rinadi.
-        Shuning uchun avval gavdaning pastki qismini qorong'iga singdiramiz,
-        keyin podiumni OLDINDA chizamiz — figura pedestal ORTIDA turgandek,
-        kesim chizig'i esa ko'rinmaydi.
-
-        Bu kompozitsiya to'liq bo'yli avatar bo'lmaganda eng toza yechim;
-        haqiqiy oyoq faqat avatar qayta yasalganda chiqadi.
-      */}
-      {!children ? (
-        <LinearGradient
-          colors={['rgba(5,5,9,0)', 'rgba(5,5,9,0.92)', '#050509']}
-          locations={[0, 0.42, 0.68]}
-          style={styles.bottomFade}
-          pointerEvents="none"
-        />
-      ) : null}
-
-      <View style={styles.podium} pointerEvents="none">
-        <View style={styles.podiumSide} />
-        <LinearGradient
-          colors={['#3a2c66', '#181030']}
-          start={{ x: 0.3, y: 0 }}
-          end={{ x: 0.7, y: 1 }}
-          style={styles.podiumTop}
-        />
-        <View style={styles.podiumRim} />
-      </View>
+      {/* Pastdagi yengil fade sahnani ilova foniga yumshoq ulaydi. */}
+      <LinearGradient
+        colors={['rgba(5,5,9,0)', 'rgba(5,5,9,0.42)', 'rgba(5,5,9,0.82)']}
+        locations={[0, 0.62, 1]}
+        style={styles.bottomFade}
+        pointerEvents="none"
+      />
 
       {/*
         ⚠️ GAVDANI KESIB O'TGAN HALQALAR OLIB TASHLANDI (2026-09-20).
@@ -378,13 +372,19 @@ const styles = StyleSheet.create({
    * cheklovi, UI emas. Orqaroq olish podium kompozitsiyasini beradi,
    * lekin haqiqiy oyoq faqat to'liq bo'yli avatar qayta yasalganda chiqadi.
    */
-  person: { position: 'absolute', top: '2%', left: 0, right: 0, bottom: '13%' },
+  personFrame: {
+    position: 'absolute',
+    top: '4%',
+    left: '8%',
+    right: '8%',
+    bottom: '3%',
+  },
 
   /*
    * Pastki singdirish — gavdaning kesilgan pastki qismini qorong'iga
    * eritadi. Podium shu zona ichida, uning ustida turadi.
    */
-  bottomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '40%' },
+  bottomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '22%' },
   dimmed: { opacity: 0.35 },
   /*
    * 1.45 — tajribada tanlangan. Kamrog'i sezilmaydi, ko'prog'ida bosh
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
    * Kelib chiqish nuqtasi pastda: yaqinlashganda odam gavdaning USTKI
    * qismini ko'rmoqchi bo'ladi, oyoq emas.
    */
-  personZoomed: { transform: [{ scale: 1.45 }, { translateY: 40 }] },
+  personFrameZoomed: { transform: [{ scale: 1.38 }, { translateY: 34 }] },
 
   /*
    * ⚠️ KENGLIK GAVDAGA YAQIN. Avval 12% edi — halqa deyarli butun kadrni
@@ -409,41 +409,12 @@ const styles = StyleSheet.create({
    */
   podium: {
     position: 'absolute',
-    left: '21%',
-    right: '25%',
-    bottom: '8%',
-    height: 50,
+    left: '12%',
+    right: '12%',
+    bottom: '-11%',
+    height: '36%',
   },
-  // Yon devor — diskka qalinlik beradi
-  podiumSide: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 14,
-    bottom: 0,
-    borderRadius: 999,
-    backgroundColor: '#120c22',
-  },
-  // Yaltiroq usti — gradient bilan
-  podiumTop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 30,
-    borderRadius: 999,
-  },
-  // Yuqori qirradagi yorug'lik — yaltiroqlik shu bilan seziladi
-  podiumRim: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 30,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(192,132,252,0.45)',
-  },
+  podiumImage: { width: '100%', height: '100%' },
 
   label: { position: 'absolute' },
   labelValue: { ...text.h3, color: colors.text, fontVariant: ['tabular-nums'] },

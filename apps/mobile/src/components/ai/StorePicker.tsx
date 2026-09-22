@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Image,
   Modal,
   Pressable,
@@ -15,6 +18,8 @@ import { getTryonStores, type TryonStore } from '../../api/endpoints';
 import { useLocationStore } from '../../store/locationStore';
 import { colors, fonts, radius, spacing, text } from '../../theme/tokens';
 import { Icon } from '../Icon';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
  * Do'kon tanlagich — kiyintirish ekranining pastida.
@@ -53,6 +58,45 @@ export function StorePicker({
 }: StorePickerProps): JSX.Element {
   const insets = useSafeAreaInsets();
   const coords = useLocationStore((state) => state.coords);
+  const [mounted, setMounted] = useState(visible);
+  const transition = useRef(new Animated.Value(visible ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      return;
+    }
+
+    if (!mounted) return;
+
+    const animation = Animated.timing(transition, {
+      toValue: 0,
+      duration: 180,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    });
+
+    animation.start(({ finished }) => {
+      if (finished) setMounted(false);
+    });
+
+    return () => animation.stop();
+  }, [mounted, transition, visible]);
+
+  useEffect(() => {
+    if (!mounted || !visible) return;
+
+    transition.setValue(0);
+    const animation = Animated.timing(transition, {
+      toValue: 1,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+
+    animation.start();
+    return () => animation.stop();
+  }, [mounted, transition, visible]);
 
   const stores = useQuery({
     queryKey: ['tryon', 'stores', coords.lat, coords.lng, gender, size],
@@ -62,13 +106,30 @@ export function StorePicker({
   });
 
   const list = stores.data ?? [];
+  const sheetTranslateY = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [36, 0],
+  });
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
       {/* Ortdagi qoraytirish — bosilsa panel yopiladi */}
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Yopish" />
+      <AnimatedPressable
+        style={[styles.backdrop, { opacity: transition }]}
+        onPress={onClose}
+        accessibilityLabel="Yopish"
+      />
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+      <Animated.View
+        style={[
+          styles.sheet,
+          {
+            paddingBottom: insets.bottom + spacing.md,
+            opacity: transition,
+            transform: [{ translateY: sheetTranslateY }],
+          },
+        ]}
+      >
         <View style={styles.grabber} />
 
         <View style={styles.head}>
@@ -135,7 +196,7 @@ export function StorePicker({
             })}
           </ScrollView>
         )}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

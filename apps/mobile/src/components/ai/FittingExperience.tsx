@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -817,52 +818,50 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         ) : null}
       </View>
 
-      {/* ── Kategoriya tablari ── */}
-      {/*
-        ⚠️ GORIZONTAL SCROLL EMAS, O'RALADIGAN `View`.
+      {/* Oltita turkum scrollsiz 3 × 2 tartibda to'liq ko'rinadi. */}
+      <View style={styles.tabsWrap}>
+        <View style={styles.tabs}>
+          {TABS.map((item) => {
+            const active = tab === item.category;
+            const dressed = outfit.some((layer) => layer.category === item.category);
 
-        Bu ekranda gorizontal scroll idishi (ScrollView ham, FlatList ham)
-        ICHIDAGI MATNNI CHIZMAYDI: matn o'lchanadi va joy egallaydi, lekin
-        ko'rinmaydi. 2026-09-14 da simulyatorda o'lchangan — chipga fon
-        berilsa fon chiqadi, yozuv yo'q; xuddi shu chip oddiy `View` ichida
-        to'g'ri chiqadi. Shu sabab tab yozuvlari uzoq vaqt yo'q edi.
-
-        Oltita tab bitta qatorga sig'adi; sig'masa ikkinchi qatorga tushadi.
-      */}
-      {/*
-        ── Turkum tablari ──
-
-        ⚠️ `tabsWrap` DAGI BALANDLIK MAJBURIY. Usiz gorizontal ScrollView
-        o'z balandligini yig'ib qo'yadi va bolalarini KESADI: ikonka
-        yuqorida ko'rinib, yozuv pastda kesilib ketadi. Bu uzoq vaqt
-        «matn chizilmayapti» deb tushunilgan — aslida qirqilgan.
-        2026-09-14 da simulyatorda o'lchangan.
-      */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabsWrap}
-        contentContainerStyle={styles.tabs}
-      >
-        {TABS.map((item) => {
-          const active = tab === item.category;
-          const dressed = outfit.some((layer) => layer.category === item.category);
-
-          return (
-            <Pressable
-              key={item.category || item.slot}
-              accessibilityRole="button"
-              onPress={() => setTab(item.category)}
-              style={[styles.tab, active && styles.tabActive]}
-            >
-              <Icon name={item.icon} size={18} color={active ? colors.accent : colors.textDim} />
-              <Text style={[styles.tabText, active && { color: colors.text }]}>{item.label}</Text>
-              {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
-              {dressed ? <View style={styles.tabDressed} /> : null}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+            return (
+              <Pressable
+                key={item.category || item.slot}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                onPress={() => setTab(item.category)}
+                style={[styles.tab, active && styles.tabActive]}
+              >
+                {active ? (
+                  <LinearGradient
+                    colors={['rgba(139,92,246,0.34)', 'rgba(76,42,158,0.18)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                ) : null}
+                <View style={[styles.tabIcon, active && styles.tabIconActive]}>
+                  <Icon
+                    name={item.icon}
+                    size={17}
+                    color={active ? colors.accent : colors.textMuted}
+                  />
+                </View>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.tabText, active && styles.tabTextActive]}
+                >
+                  {item.label}
+                </Text>
+                {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
+                {dressed ? <View style={styles.tabDressed} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
       {/*
         ── Uslub chiplari ──
@@ -875,31 +874,28 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         Filtr serverda bajariladi: chip `queryKey` ni o'zgartiradi va
         ro'yxat qaytadan so'raladi. Qayta bosilsa — bekor bo'ladi.
       */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.styleRowWrap}
-        contentContainerStyle={styles.styleRow}
-      >
-        {GARMENT_STYLES.map((item) => {
-          const active = styleFilter === item;
+      <View style={styles.styleRowWrap}>
+        <View style={styles.styleRow}>
+          {GARMENT_STYLES.map((item) => {
+            const active = styleFilter === item;
 
-          return (
-            <Pressable
-              key={item}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
-              onPress={() => setStyleFilter((value) => (value === item ? null : item))}
-              style={[styles.styleChip, active && styles.styleChipActive]}
-            >
-              <Text style={[styles.styleChipText, active && { color: colors.text }]}>
-                {STYLE_LABEL[item]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+            return (
+              <Pressable
+                key={item}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
+                onPress={() => setStyleFilter((value) => (value === item ? null : item))}
+                style={[styles.styleChip, active && styles.styleChipActive]}
+              >
+                <Text style={[styles.styleChipText, active && { color: colors.text }]}>
+                  {STYLE_LABEL[item]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
       <ScrollView contentContainerStyle={styles.bottom} showsVerticalScrollIndicator={false}>
         {limitReached ? (
@@ -1488,12 +1484,12 @@ const styles = StyleSheet.create({
    * bir-biriga yopishib, qisilib turardi (foydalanuvchi 2026-09-20 da
    * shuni ko'rsatdi). Endi balandlik va yuqori padding kattaroq.
    */
-  styleRowWrap: { flexGrow: 0, height: 50, paddingTop: 12, backgroundColor: colors.bg },
+  styleRowWrap: { height: 44, paddingTop: 6, backgroundColor: colors.bg },
   styleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    gap: 10,
+    gap: 6,
   },
   /*
    * ⚠️ BALANDLIK ANIQ BERILADI, padding bilan emas. Gorizontal
@@ -1501,35 +1497,42 @@ const styles = StyleSheet.create({
    * yozuvi pastdan kesiladi — tablarda ham shu sabab `height: 34` bor.
    */
   styleChip: {
-    height: 30,
-    paddingHorizontal: 12,
+    flex: 1,
+    minWidth: 0,
+    height: 32,
+    paddingHorizontal: 2,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: 'rgba(155,150,174,0.16)',
+    backgroundColor: 'rgba(20,18,28,0.76)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  styleChipActive: { borderColor: colors.borderAccent, backgroundColor: colors.primarySoft },
-  styleChipText: { ...text.tiny, color: colors.textDim },
-  tabsWrap: { flexGrow: 0, height: 48, marginTop: 6, backgroundColor: colors.bg },
+  styleChipActive: { borderColor: colors.accent, backgroundColor: colors.primarySoft },
+  styleChipText: { ...text.tiny, fontSize: 10, color: colors.textMuted },
+  tabsWrap: { height: 108, marginTop: 8, paddingTop: 4, backgroundColor: colors.bg },
   tabs: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
-    gap: 10,
+    columnGap: 8,
+    rowGap: 8,
   },
   /* Maketdagi pilla: ikonka va yozuv YONMA-YON, dumaloq chegara */
   tab: {
+    flexGrow: 1,
+    flexBasis: '30%',
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    height: 36,
-    paddingHorizontal: 15,
-    borderRadius: radius.pill,
+    gap: 8,
+    height: 46,
+    paddingHorizontal: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: 'rgba(155,150,174,0.14)',
+    backgroundColor: 'rgba(20,18,28,0.78)',
+    overflow: 'hidden',
   },
   /*
    * ⚠️ SOYASIZ. Ilgari faol tabda nurlanish uchun `shadowRadius` bor edi;
@@ -1537,15 +1540,25 @@ const styles = StyleSheet.create({
    * hisoblardi. Qalinroq chegara bir xil «yorqin» taassurot beradi.
    */
   tabActive: {
-    borderColor: colors.borderAccent,
+    borderColor: colors.accent,
     borderWidth: 1.5,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.surface2,
   },
-  tabText: { ...text.tiny, color: colors.textDim },
+  tabIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.035)',
+  },
+  tabIconActive: { backgroundColor: 'rgba(192,132,252,0.14)' },
+  tabText: { ...text.tiny, color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontFamily: text.label.fontFamily },
   tabDressed: {
     position: 'absolute',
-    top: 5,
-    right: 7,
+    top: 4,
+    right: 5,
     width: 6,
     height: 6,
     borderRadius: radius.pill,
