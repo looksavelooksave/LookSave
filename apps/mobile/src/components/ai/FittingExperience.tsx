@@ -752,6 +752,17 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           ) : null}
         </AvatarStage>
 
+        {/* «5 daqiqada tayyor» — kiyim operatorda kiydirilayotgan payt */}
+        {currentWorking && !worn ? (
+          <View style={styles.workingOverlay} pointerEvents="none">
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={styles.workingTitle}>5 daqiqada tayyor bo`ladi</Text>
+            <Text style={styles.workingHint}>
+              Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.sideControls} pointerEvents="box-none">
           {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
           <Control
@@ -1397,6 +1408,15 @@ const styles = StyleSheet.create({
   page: { paddingBottom: spacing.xl },
   avatar: { flex: 1 },
   dimmed: { opacity: 0.35 },
+  workingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  workingTitle: { ...text.h3, color: colors.text, textAlign: 'center', marginTop: spacing.sm },
+  workingHint: { ...text.small, color: colors.textMuted, textAlign: 'center' },
 
   /* Chapdagi tik qator — maketdagi Rotate / Zoom / Reset */
   sideControls: {
