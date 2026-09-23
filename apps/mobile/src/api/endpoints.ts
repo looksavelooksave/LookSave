@@ -1,6 +1,29 @@
 import type { AuthResult, AuthUser } from '@looksave/shared-types';
 
+import * as ImageManipulator from 'expo-image-manipulator';
+
 import { api, apiList, saveTokens } from './client';
+
+/**
+ * Yuklashdan oldin rasmni kichraytiradi va siqadi.
+ *
+ * ⚠️ NEGA. Telefon surati 3–10 MB bo'ladi va uni to'liq yuklash sekin
+ * (mobil internetда o'nlab soniya). 1280px eni + JPEG 0.8 odatda
+ * ~200–400 KB beradi — yuz, kiyim va logo uchun sifati yetarli (avatar
+ * baribir serverda 1024 ga kichrayadi). Siqib bo'lmasa asl surat ketadi.
+ */
+async function shrinkForUpload(uri: string, maxWidth = 1280): Promise<string> {
+  try {
+    const out = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: maxWidth } }],
+      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    return out.uri;
+  } catch {
+    return uri;
+  }
+}
 
 // ── Auth ──
 
@@ -400,16 +423,16 @@ export async function uploadAvatar(
   localUri: string,
   purpose: 'avatar' | 'face' = 'avatar',
 ): Promise<string> {
-  const fileName = localUri.split('/').pop() ?? 'avatar.jpg';
-  const contentType = fileName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+  // Kichraytirib-siqib olamiz — yuklash tez bo'lsin
+  const small = await shrinkForUpload(localUri);
 
   const signed = await api<PresignResult>('/profile/uploads/presign', {
     method: 'POST',
-    body: { fileName, contentType, purpose },
+    body: { fileName: 'photo.jpg', contentType: 'image/jpeg', purpose },
   });
 
   // `fetch` lokal `file://` havolasini blob'ga o'giradi — RN'da shu usul ishlaydi
-  const blob = await (await fetch(localUri)).blob();
+  const blob = await (await fetch(small)).blob();
 
   const response = await fetch(signed.uploadUrl, {
     method: 'PUT',
@@ -1142,15 +1165,14 @@ export const prepareGarmentImage = (url: string): Promise<PreparedGarment> =>
   api<PreparedGarment>('/store/uploads/prepare', { method: 'POST', body: { url } });
 
 export async function uploadStoreImage(localUri: string): Promise<string> {
-  const fileName = localUri.split('/').pop() ?? 'photo.jpg';
-  const contentType = fileName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+  const small = await shrinkForUpload(localUri);
 
   const signed = await api<PresignResult>('/store/uploads/presign', {
     method: 'POST',
-    body: { fileName, contentType, purpose: 'product' },
+    body: { fileName: 'photo.jpg', contentType: 'image/jpeg', purpose: 'product' },
   });
 
-  const blob = await (await fetch(localUri)).blob();
+  const blob = await (await fetch(small)).blob();
   const response = await fetch(signed.uploadUrl, {
     method: 'PUT',
     headers: signed.headers,

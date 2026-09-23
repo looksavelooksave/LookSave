@@ -759,7 +759,9 @@ function FaceStep({
        * EXIF belgisi umuman kerak emas.
        */
       stage = 'burilishni to`g`rilash';
-      const upright = await manipulateAsync(photo.uri, [], {
+      // Burilishni singdiramiz VA kichraytiramiz — yuklash tez bo'lsin
+      // (yuz uchun 1280px yetarli, server baribir 1024 ga tushiradi)
+      const upright = await manipulateAsync(photo.uri, [{ resize: { width: 1280 } }], {
         compress: 0.85,
         format: SaveFormat.JPEG,
       });
