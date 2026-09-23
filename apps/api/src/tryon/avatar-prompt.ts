@@ -184,10 +184,12 @@ export function buildAvatarPrompt(
   // 3-jumla: kiyim — yangisi ustiga qo'yiladi
   parts.push(`Wearing ${baseLayer(gender)}.`);
 
-  // 4-jumla: fon va yorug'lik — sodda fon chegarani aniq qiladi
+  // 4-jumla: SHAFFOF fon — orqa fon umuman bo'lmaydi (grey/oq quti yo'q),
+  // avatar sahnaga singadi. `background: transparent` param bilan birga ishlaydi.
   parts.push(
-    'Plain light grey seamless studio background, soft even lighting, no shadows on the ' +
-      'background, sharp focus, photorealistic.',
+    'The subject is fully isolated on a transparent background — absolutely no background, ' +
+      'no floor, no wall and no shadow behind the person, only the cut-out figure. Soft even ' +
+      'lighting on the subject, sharp focus, photorealistic.',
   );
 
   return parts.join(' ');

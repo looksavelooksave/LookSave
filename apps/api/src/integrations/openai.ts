@@ -145,6 +145,11 @@ export function buildImageOptions(model: string): Record<string, string> {
     // aks holda bayt bilan yorliq mos kelmaydi. `output_compression` PNG
     // uchun yo'q, shuning uchun berilmaydi.
     output_format: 'png',
+    // ⚠️ SHAFFOF FON — natijada orqa fon bo'lmaydi (grey/oq quti yo'q),
+    // avatar to'g'ridan-to'g'ri sahnaga singadi. `transparent` faqat png/
+    // webp bilan ishlaydi (shuning uchun yuqorida png). Cutout endi shart
+    // emas, lekin qoladi (zaxira).
+    background: 'transparent',
     n: '1',
   };
 

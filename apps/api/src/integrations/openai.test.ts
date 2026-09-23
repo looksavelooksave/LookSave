@@ -133,13 +133,14 @@ describe('chiqish sozlamalari', () => {
    */
   const sunburst = buildImageOptions('gpt-image-2.5-sunburst');
 
-  it('natija JPEG bo`ladi — R2 dagi yorliq shunday', () => {
+  it('natija shaffof PNG bo`ladi — R2 yorlig`i .png/image/png', () => {
     /*
-     * `storeResult` va `storeAvatar` natijani `.jpg` kaliti va
-     * `image/jpeg` sarlavhasi bilan yozadi. Sukut bo'yicha PNG kelsa
-     * bayt bilan yorliq mos kelmaydi.
+     * `storeResult` va `storeAvatar` natijani `.png` kaliti va
+     * `image/png` sarlavhasi bilan yozadi. `background: transparent`
+     * faqat png/webp bilan ishlaydi — orqa fon bo'lmaydi.
      */
-    expect(sunburst.output_format).toBe('jpeg');
+    expect(sunburst.output_format).toBe('png');
+    expect(sunburst.background).toBe('transparent');
   });
 
   it('tik kadr 16 ga bo`linadi va nisbati 1:3–3:1 ichida', () => {

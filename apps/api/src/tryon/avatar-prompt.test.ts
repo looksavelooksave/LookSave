@@ -78,9 +78,9 @@ describe('avatar tavsifi', () => {
     }
   });
 
-  it('sodda fon talabini yo`qotmaydi', () => {
+  it('shaffof fon talabini yo`qotmaydi', () => {
     expect(buildAvatarPrompt('male', { height: 175, weight: 70 })).toContain(
-      'Plain light grey seamless studio background',
+      'isolated on a transparent background',
     );
   });
 
