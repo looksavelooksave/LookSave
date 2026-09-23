@@ -8,6 +8,7 @@ import {
 import { Router } from 'express';
 
 import { decodeCursor, paginate } from '../catalog/cursor';
+import { deliveryWhenLabel } from '../orders/delivery-when';
 import { notifyNewOrder, notifyStatusChange } from '../integrations/notify';
 import { localeOf } from '../catalog/locale';
 import { ApiError } from '../http/api-error';
@@ -135,6 +136,7 @@ ordersRouter.get(
       createdAt: order.created_at.toISOString(),
       expiresAt: order.expires_at.toISOString(),
       deliveryType: order.delivery_type,
+      deliveryWhen: deliveryWhenLabel(order.delivery_slot, order.delivery_date),
       contactName: order.contact_name,
       contactPhone: order.contact_phone,
       address: order.address,

@@ -214,9 +214,15 @@ export const cancelOrder = (id: string, reason?: string): Promise<unknown> =>
 
 // ── Buyurtma yaratish ──
 
+export type DeliverySlot = 'today' | 'tomorrow' | 'scheduled';
+
 export interface CreateOrderInput {
   storeId: string;
   deliveryType: 'delivery' | 'pickup';
+  /** Yetkazish vaqti — faqat delivery uchun; scheduled bo'lsa deliveryDate kerak */
+  deliverySlot?: DeliverySlot;
+  /** YYYY-MM-DD — faqat deliverySlot='scheduled' */
+  deliveryDate?: string;
   contactName: string;
   contactPhone: string;
   address?: { text: string; lat: number; lng: number; landmark?: string };
@@ -254,6 +260,8 @@ export interface OrderDetail {
   createdAt: string;
   expiresAt: string;
   deliveryType: 'delivery' | 'pickup';
+  /** «Bugun» / «Ertaga kun davomida» / sana (YYYY-MM-DD) — null bo'lsa ko'rsatilmaydi */
+  deliveryWhen: string | null;
   contactName: string;
   contactPhone: string;
   address: { text?: string; lat?: number; lng?: number; landmark?: string } | null;
@@ -954,6 +962,7 @@ export interface StoreOrder {
   minutesLeft: number | null;
   customer: { name: string; phone: string };
   deliveryType: string;
+  deliveryWhen: string | null;
   address: string | null;
   note: string | null;
   items: StoreOrderItem[];

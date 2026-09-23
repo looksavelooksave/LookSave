@@ -434,6 +434,7 @@ function OrderCard({
         <Text style={styles.total}>{money(order.total, order.currency)}</Text>
         <Text style={styles.delivery}>
           {order.deliveryType === 'pickup' ? 'Olib ketish' : 'Yetkazish'}
+          {order.deliveryWhen ? ` · ${order.deliveryWhen}` : ''}
         </Text>
       </View>
 

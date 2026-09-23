@@ -36,6 +36,7 @@ export interface DeliveryOrder {
   /** { text, lat, lng, landmark } — delivery uchun */
   address: { text?: string; lat?: number; lng?: number; landmark?: string } | null;
   note: string | null;
+  deliveryWhen: string | null;
   subtotal: string;
   deliveryFee: string;
   total: string;

@@ -32,6 +32,16 @@ export const createOrderSchema = z
   .object({
     storeId: uuidSchema,
     deliveryType: z.enum(['delivery', 'pickup']),
+    /**
+     * Yetkazib berish vaqti — faqat `delivery` uchun.
+     *   today | tomorrow — sana kerak emas
+     *   scheduled        — `deliveryDate` majburiy (YYYY-MM-DD)
+     */
+    deliverySlot: z.enum(['today', 'tomorrow', 'scheduled']).optional(),
+    deliveryDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Sana YYYY-MM-DD ko`rinishida bo`lsin')
+      .optional(),
     contactName: personNameSchema.max(80),
     contactPhone: e164PhoneSchema,
     address: addressSchema.optional(),
@@ -41,6 +51,18 @@ export const createOrderSchema = z
   .refine((value) => value.deliveryType === 'pickup' || value.address !== undefined, {
     path: ['address'],
     message: 'Yetkazib berish uchun manzil kerak',
+  })
+  .refine((value) => value.deliveryType !== 'delivery' || value.deliverySlot !== undefined, {
+    path: ['deliverySlot'],
+    message: 'Yetkazib berish vaqtini tanlang',
+  })
+  .refine((value) => value.deliverySlot !== 'scheduled' || value.deliveryDate !== undefined, {
+    path: ['deliveryDate'],
+    message: 'Kunni tanlang',
+  })
+  .refine((value) => value.deliverySlot === 'scheduled' || value.deliveryDate === undefined, {
+    path: ['deliveryDate'],
+    message: 'Sana faqat «tanlangan kun» uchun',
   })
   .refine(
     (value) => {

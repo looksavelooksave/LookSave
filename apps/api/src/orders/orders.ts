@@ -263,9 +263,9 @@ export async function createOrder(
     }>(
       `INSERT INTO orders (user_id, store_id, delivery_type, contact_name, contact_phone,
                            address, note, subtotal, delivery_fee, total, currency,
-                           commission_rate, commission_due, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-               now() + ($14 || ' hours')::interval)
+                           commission_rate, commission_due, delivery_slot, delivery_date, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+               now() + ($16 || ' hours')::interval)
        RETURNING id, order_number, status, expires_at`,
       [
         userId,
@@ -281,6 +281,11 @@ export async function createOrder(
         store.currency,
         commissionRate,
         money(total * commissionRate),
+        // Vaqt faqat delivery uchun; pickup'da NULL
+        input.deliveryType === 'delivery' ? (input.deliverySlot ?? null) : null,
+        input.deliveryType === 'delivery' && input.deliverySlot === 'scheduled'
+          ? (input.deliveryDate ?? null)
+          : null,
         String(env().ORDER_EXPIRY_HOURS),
       ],
     );
@@ -430,6 +435,8 @@ export async function findOrders(
 
 export interface OrderDetailRow extends OrderListRow {
   contact_name: string;
+  delivery_slot: string | null;
+  delivery_date: string | null;
   contact_phone: string;
   address: unknown;
   note: string | null;
@@ -460,6 +467,7 @@ export async function findOrderById(
             o.total, o.currency, o.contact_name, o.contact_phone, o.address, o.note,
             o.subtotal, o.delivery_fee, o.payment_method, o.payment_status,
             o.reject_reason, o.cancel_reason,
+            o.delivery_slot, o.delivery_date::text AS delivery_date,
             to_char(o.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.US') || '+00'
               AS created_at_key,
             s.id AS store_id, s.name AS store_name, s.logo_url AS store_logo,

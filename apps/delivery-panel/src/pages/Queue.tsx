@@ -303,6 +303,11 @@ function DeliveryDetail({
         {/* Manzil + mijoz */}
         <section className="card space-y-3 p-5">
           <h2 className="label">Yetkazish manzili</h2>
+          {o.deliveryWhen ? (
+            <p className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-brand">
+              🕒 {o.deliveryWhen}
+            </p>
+          ) : null}
           <p className="text-sm text-foreground">{addressText(o)}</p>
           {o.address?.landmark ? (
             <p className="text-xs text-dim">Mo`ljal: {o.address.landmark}</p>

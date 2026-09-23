@@ -7,6 +7,7 @@ import type { PoolClient } from 'pg';
 import { AI_TRYON_SLOTS } from '@looksave/validation';
 
 import { pool } from '../db/pool';
+import { deliveryWhenLabel } from '../orders/delivery-when';
 import { ApiError } from '../http/api-error';
 import { getAuth } from '../http/auth-middleware';
 
@@ -162,6 +163,8 @@ export interface StoreOrderRow {
   created_at_key: string;
   expires_at: Date;
   delivery_type: string;
+  delivery_slot: string | null;
+  delivery_date: string | null;
   contact_name: string;
   contact_phone: string;
   address: unknown;
@@ -204,6 +207,7 @@ export async function findStoreOrders(
   const { rows } = await pool.query<StoreOrderRow>(
     `SELECT o.id, o.order_number, o.status, o.created_at, o.expires_at, o.delivery_type,
             o.contact_name, o.contact_phone, o.address, o.note,
+            o.delivery_slot, o.delivery_date::text AS delivery_date,
             o.subtotal, o.delivery_fee, o.total, o.currency,
             o.payment_method, o.payment_status,
             to_char(o.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.US') || '+00'
@@ -240,6 +244,7 @@ export function toStoreOrderDto(row: StoreOrderRow) {
     minutesLeft: row.status === 'new' ? minutesLeft : null,
     customer: { name: row.contact_name, phone: row.contact_phone },
     deliveryType: row.delivery_type,
+    deliveryWhen: deliveryWhenLabel(row.delivery_slot, row.delivery_date),
     // ⚠️ MATN, OBYEKT EMAS. `orders.address` — JSONB {text,lat,lng,landmark}.
     // Ilova buni satr sifatida `<Text>` da ko'rsatadi; obyekt bersak
     // «Objects are not valid as a React child» bilan ekran qulaydi.

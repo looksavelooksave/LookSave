@@ -182,6 +182,9 @@ export default function Order(): JSX.Element {
         {data.deliveryType === 'delivery' && data.address?.text ? (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Manzil</Text>
+            {data.deliveryWhen ? (
+              <Text style={styles.itemMeta}>🕒 {data.deliveryWhen}</Text>
+            ) : null}
             <Text style={styles.itemMeta}>{data.address.text}</Text>
             {data.address.landmark ? (
               <Text style={styles.itemMeta}>Mo'ljal: {data.address.landmark}</Text>

@@ -343,6 +343,16 @@ export default function Product(): JSX.Element {
                   >
                     {item.size}
                   </Text>
+                  {/* Nechta borligi — sotilgan bo'lsa «sotilgan» */}
+                  <Text
+                    style={[
+                      styles.sizeCount,
+                      size === item.size && styles.sizeCountActive,
+                      !item.available && styles.sizeCountOut,
+                    ]}
+                  >
+                    {item.available ? `${item.stock} dona` : 'sotilgan'}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -526,6 +536,9 @@ const styles = StyleSheet.create({
   sizeChipDisabled: { opacity: 0.4 },
   sizeText: { ...text.bodyMed, color: colors.textMuted },
   sizeTextActive: { color: colors.text },
+  sizeCount: { ...text.tiny, color: colors.textDim, marginTop: 1 },
+  sizeCountActive: { color: colors.text },
+  sizeCountOut: { color: colors.danger },
 
   cartError: { ...text.small, color: colors.danger },
 

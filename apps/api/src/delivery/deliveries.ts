@@ -12,6 +12,7 @@
  */
 
 import { pool } from '../db/pool';
+import { deliveryWhenLabel } from '../orders/delivery-when';
 import { ApiError } from '../http/api-error';
 import { presignRead } from '../integrations/r2';
 import { logger } from '../logger';
@@ -45,6 +46,8 @@ interface DeliveryRow {
   contact_phone: string;
   address: unknown;
   note: string | null;
+  delivery_slot: string | null;
+  delivery_date: string | null;
   subtotal: string;
   delivery_fee: string;
   total: string;
@@ -85,6 +88,8 @@ export interface DeliveryDto {
     contactPhone: string;
     address: unknown;
     note: string | null;
+    /** Yetkazish vaqti — «Bugun» / «Ertaga kun davomida» / sana */
+    deliveryWhen: string | null;
     subtotal: string;
     deliveryFee: string;
     total: string;
@@ -107,6 +112,7 @@ const SELECT = `
          d.accepted_at, d.picked_up_at, d.delivered_at, d.fail_reason, d.created_at,
          o.id AS order_id, o.order_number, o.status AS order_status,
          o.contact_name, o.contact_phone, o.address, o.note,
+         o.delivery_slot, o.delivery_date::text AS delivery_date,
          o.subtotal::text, o.delivery_fee::text, o.total::text, o.currency,
          o.payment_method, o.payment_status,
          s.name AS store_name, s.phone AS store_phone,
@@ -152,6 +158,7 @@ async function toDto(row: DeliveryRow, items: ItemRow[]): Promise<DeliveryDto> {
       contactPhone: row.contact_phone,
       address: row.address,
       note: row.note,
+      deliveryWhen: deliveryWhenLabel(row.delivery_slot, row.delivery_date),
       subtotal: row.subtotal,
       deliveryFee: row.delivery_fee,
       total: row.total,

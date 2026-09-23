@@ -23,8 +23,25 @@ import { useAuthStore } from '../src/store/authStore';
 import { useI18n } from '../src/i18n';
 import { useLocationStore } from '../src/store/locationStore';
 import { money } from '../src/theme/format';
-import { colors, radius, spacing, text } from '../src/theme/tokens';
+import { colors, fonts, radius, spacing, text } from '../src/theme/tokens';
 import { goBack } from '../src/navigation/back';
+
+/** «Tanlangan kun» uchun kunlar — ertadan keyingi kundan 12 kun. */
+const UZ_MONTHS = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'];
+const UZ_WEEKDAYS = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan'];
+
+const SCHEDULE_DAYS = Array.from({ length: 12 }, (_, i) => {
+  const d = new Date();
+  d.setDate(d.getDate() + i + 2); // bugun/ertaga alohida — 2-kundan boshlaymiz
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return {
+    date: `${y}-${m}-${day}`,
+    day: `${d.getDate()} ${UZ_MONTHS[d.getMonth()]}`,
+    wd: UZ_WEEKDAYS[d.getDay()] ?? '',
+  };
+});
 
 /**
  * Server xatolari foydalanuvchi tushunadigan matnga o'giriladi (05-mobile §6.12).
@@ -64,6 +81,8 @@ export default function Checkout(): JSX.Element {
   const insets = useSafeAreaInsets();
 
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
+  const [deliverySlot, setDeliverySlot] = useState<'today' | 'tomorrow' | 'scheduled'>('today');
+  const [deliveryDate, setDeliveryDate] = useState<string | null>(null);
   const [contactName, setContactName] = useState(user?.fullName ?? '');
   const [addressText, setAddressText] = useState('');
   const [landmark, setLandmark] = useState('');
@@ -92,7 +111,12 @@ export default function Checkout(): JSX.Element {
       ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
     }).success;
 
-  const canSubmit = contactName.trim().length >= 2 && addressValid && group !== undefined;
+  // Yetkazishda vaqt slotini tanlash shart; «tanlangan kun» bo'lsa sana ham
+  const slotValid =
+    deliveryType === 'pickup' || (deliverySlot !== 'scheduled' || Boolean(deliveryDate));
+
+  const canSubmit =
+    contactName.trim().length >= 2 && addressValid && slotValid && group !== undefined;
 
   const submit = useMutation({
     mutationFn: () => {
@@ -111,6 +135,8 @@ export default function Checkout(): JSX.Element {
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(deliveryType === 'delivery'
           ? {
+              deliverySlot,
+              ...(deliverySlot === 'scheduled' && deliveryDate ? { deliveryDate } : {}),
               address: {
                 text: addressText.trim(),
                 lat: coords.lat,
@@ -239,6 +265,57 @@ export default function Checkout(): JSX.Element {
                   Joylashuv aniqlanmagan — koordinata Toshkent markazi bo'yicha yuboriladi. Do'kon
                   hududidan tashqarida chiqishi mumkin.
                 </Text>
+              ) : null}
+
+              {/* Yetkazish vaqti — 3 xil */}
+              <Text style={[styles.label, { marginTop: spacing.md }]}>Yetkazish vaqti</Text>
+              <View style={styles.slotRow}>
+                {(
+                  [
+                    { value: 'today', label: 'Bugun' },
+                    { value: 'tomorrow', label: 'Ertaga' },
+                    { value: 'scheduled', label: 'Tanlangan kun' },
+                  ] as Array<{ value: 'today' | 'tomorrow' | 'scheduled'; label: string }>
+                ).map((opt) => {
+                  const active = deliverySlot === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setDeliverySlot(opt.value)}
+                      style={[styles.slotChip, active && styles.slotChipActive]}
+                    >
+                      <Text style={[styles.slotChipText, active && styles.slotChipTextActive]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {deliverySlot === 'scheduled' ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.dayRow}
+                >
+                  {SCHEDULE_DAYS.map((d) => {
+                    const active = deliveryDate === d.date;
+                    return (
+                      <Pressable
+                        key={d.date}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        onPress={() => setDeliveryDate(d.date)}
+                        style={[styles.dayChip, active && styles.dayChipActive]}
+                      >
+                        <Text style={[styles.dayNum, active && styles.dayTextActive]}>{d.day}</Text>
+                        <Text style={[styles.dayWd, active && styles.dayTextActive]}>{d.wd}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
               ) : null}
             </>
           ) : (
@@ -384,6 +461,35 @@ const styles = StyleSheet.create({
   submitText: { ...text.bodyMed, color: colors.text, fontWeight: '700' },
 
   label: { ...text.label, color: colors.accent, marginBottom: spacing.sm },
+  slotRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  slotChip: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+  },
+  slotChipActive: { borderColor: colors.accent, backgroundColor: colors.primarySoft },
+  slotChipText: { ...text.small, color: colors.textDim, textAlign: 'center' },
+  slotChipTextActive: { color: colors.text, fontFamily: fonts.medium },
+  dayRow: { gap: spacing.sm, paddingVertical: spacing.xs, paddingRight: spacing.md },
+  dayChip: {
+    width: 64,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    gap: 2,
+  },
+  dayChipActive: { borderColor: colors.accent, backgroundColor: colors.primarySoft },
+  dayNum: { ...text.small, color: colors.text, fontFamily: fonts.medium },
+  dayWd: { ...text.tiny, color: colors.textDim },
+  dayTextActive: { color: colors.accent },
   // Ikki variant yonma-yon — ustma-ust bo'lganda ular ro'yxatga o'xshab
   // ketardi va tanlov ekanligi darrov ko'rinmasdi
   options: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
