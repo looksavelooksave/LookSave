@@ -315,7 +315,15 @@ export interface GarmentFilters {
 }
 
 export async function listGarments(filters: GarmentFilters) {
-  const { slots, gender = null, category = null, storeId = null, size = null, style = null, limit } = filters;
+  const {
+    slots,
+    gender = null,
+    category = null,
+    storeId = null,
+    size = null,
+    style = null,
+    limit,
+  } = filters;
 
   const { rows } = await pool.query<{
     variant_id: string;
@@ -662,9 +670,9 @@ export async function pollRender(userId: string, renderId: string): Promise<Rend
  */
 async function storeResult(renderId: string, buffer: Buffer): Promise<string> {
   const url = await uploadObject({
-    key: `tryon/${randomUUID()}.jpg`,
+    key: `tryon/${randomUUID()}.png`,
     body: buffer,
-    contentType: 'image/jpeg',
+    contentType: 'image/png',
   });
 
   /*

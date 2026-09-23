@@ -139,8 +139,12 @@ export function buildImageOptions(model: string): Record<string, string> {
      * Yuz aniqligi baribir sifatdan emas, KIRISH aniqligidan keladi.
      */
     quality: 'high',
-    output_format: 'jpeg',
-    output_compression: '92',
+    // ⚠️ PNG — so'rovga ko'ra. JPEG'dan bir necha barobar og'ir (ko'proq
+    // trafik), lekin yo'qotishsiz. R2 kaliti/turi ham `.png`/`image/png`
+    // bo'lishi SHART (render.ts storeResult, avatar.ts storeAvatar) —
+    // aks holda bayt bilan yorliq mos kelmaydi. `output_compression` PNG
+    // uchun yo'q, shuning uchun berilmaydi.
+    output_format: 'png',
     n: '1',
   };
 

@@ -301,9 +301,9 @@ async function runAvatar(userId: string, facePhotoUrl: string, prompt: string): 
  */
 async function storeAvatar(userId: string, buffer: Buffer): Promise<string> {
   const url = await uploadObject({
-    key: `avatar/${randomUUID()}.jpg`,
+    key: `avatar/${randomUUID()}.png`,
     body: buffer,
-    contentType: 'image/jpeg',
+    contentType: 'image/png',
   });
 
   await save(userId, { status: 'ready', url, error: null });
@@ -318,6 +318,30 @@ async function storeAvatar(userId: string, buffer: Buffer): Promise<string> {
 
   logger.info({ userId, cutout: Boolean(cutout) }, 'avatar tayyor');
   return url;
+}
+
+/**
+ * Eski avatarda kesim yo'q bo'lsa mavjud suratdan qayta tayyorlaydi.
+ * Avatar qayta generatsiya qilinmaydi va AI krediti sarflanmaydi.
+ */
+export async function ensureAvatarCutout(userId: string): Promise<AvatarDto> {
+  const row = await load(userId);
+  if (row.avatar_status !== 'ready' || !row.avatar_image_url) {
+    throw new ApiError('VALIDATION_ERROR', 'Avval avatar tayyor bo`lishi kerak');
+  }
+  if (row.avatar_cutout_url) return toDto(row);
+
+  const cutout = await makeCutout(row.avatar_image_url, 'avatar');
+  if (!cutout) {
+    throw new ApiError('SERVICE_UNAVAILABLE', 'Avatar fonini ajratib bo`lmadi');
+  }
+
+  await pool.query(
+    `UPDATE profiles SET avatar_cutout_url = $2
+      WHERE user_id = $1 AND avatar_image_url = $3`,
+    [userId, cutout, row.avatar_image_url],
+  );
+  return getAvatar(userId);
 }
 
 /** Profil qatori bo'lmasligi mumkin — shuning uchun `INSERT ... ON CONFLICT`. */
@@ -431,9 +455,9 @@ async function runAngle(
     const buffer = await generateAvatar(facePhotoUrl, prompt, angle);
 
     const url = await uploadObject({
-      key: `avatar/${randomUUID()}.jpg`,
+      key: `avatar/${randomUUID()}.png`,
       body: buffer,
-      contentType: 'image/jpeg',
+      contentType: 'image/png',
     });
 
     await pool.query(
