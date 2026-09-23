@@ -738,7 +738,8 @@ function FaceStep({
      */
     let stage = 'kamera';
     try {
-      const photo = await camera.current?.takePictureAsync({ quality: 0.7 });
+      // quality 0.5 — baribir keyin kichraytirib qayta siqiladi, tez olinsin
+      const photo = await camera.current?.takePictureAsync({ quality: 0.5 });
       if (!photo?.uri) throw new Error('takePictureAsync rasm qaytarmadi');
 
       /*
