@@ -28,8 +28,6 @@ import {
 } from '@looksave/validation';
 
 import {
-  ANGLE_LABEL,
-  ANGLE_ORDER,
   addFavorite,
   addToCart,
   getAvatar,
@@ -37,7 +35,6 @@ import {
   getFullProfile,
   getGarments,
   getRenders,
-  requestAvatarAngle,
   requestAvatarCutout,
   removeFavorite,
   requestRender,
@@ -176,7 +173,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    * bor (`products.tags`) va filtr serverda bajariladi.
    */
   const [styleFilter, setStyleFilter] = useState<GarmentStyle | null>(null);
-  const [angle, setAngle] = useState<AvatarAngle>('front');
+  // Burchak «front» da qoladi — aylantirish tugmasi olib tashlangan
+  const [angle] = useState<AvatarAngle>('front');
   const [notice, setNotice] = useState<string | null>(null);
   const [storeOpen, setStoreOpen] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
@@ -531,12 +529,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     setNotice(null);
   }, [tab]);
 
-  const rotate = useMutation({
-    mutationFn: requestAvatarAngle,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['avatar'] }),
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Aylantirib bo`lmadi'),
-  });
-
   const cart = useMutation({
     mutationFn: async (lines: Array<{ variantId: string; chosenSize: string }>) => {
       // Ketma-ket: savat endpointi bitta qator qabul qiladi
@@ -761,38 +753,11 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         </AvatarStage>
 
         <View style={styles.sideControls} pointerEvents="box-none">
-          <Control
-            icon="rotate"
-            label={ANGLE_LABEL[angle]}
-            busy={Boolean(avatar.data?.anglePending) || rotate.isPending}
-            onPress={() => {
-              const next =
-                ANGLE_ORDER[(ANGLE_ORDER.indexOf(angle) + 1) % ANGLE_ORDER.length] ?? 'front';
-              setAngle(next);
-              setNotice(null);
-
-              // Keshda bo'lmasa yasaymiz — bo'lsa bepul ko'rsatiladi
-              if (!angles[next]) rotate.mutate(next);
-            }}
-          />
+          {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
           <Control
             icon="zoom"
             label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
             onPress={() => setZoomed((value) => !value)}
-          />
-          <Control
-            icon="reset"
-            label="Yechish"
-            onPress={() => {
-              /*
-               * ⚠️ BUTUN KOMPLEKTNI EMAS, JORIY TURKUMNI. Hammasini
-               * yechish tugmasi ham bor edi, lekin u ko'proq tasodifan
-               * bosilardi va o'nlab kredit bilan yig'ilgan komplektni
-               * bir zumda yo'q qilardi. Turkumni yechish esa qaytarib
-               * bo'ladigan amal — kiyim tasmada turibdi.
-               */
-              remove(tab);
-            }}
           />
         </View>
 
