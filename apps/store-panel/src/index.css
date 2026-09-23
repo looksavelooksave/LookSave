@@ -17,6 +17,11 @@
 
   body {
     font-family: theme('fontFamily.sans');
+    background:
+      radial-gradient(circle at 18% 8%, hsl(var(--primary) / 0.16), transparent 30rem),
+      radial-gradient(circle at 82% 14%, hsl(var(--chart-3) / 0.12), transparent 28rem),
+      hsl(var(--panel));
+    color: hsl(var(--foreground));
   }
 
   /* Klaviatura bilan yurish ko'rinib tursin */
@@ -56,7 +61,33 @@
    * ketsa panel ikki xil ko'rinishga bo'linadi.
    */
   .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+    @apply rounded-2xl border border-border/80 bg-card/80 text-card-foreground shadow-[0_18px_50px_hsl(var(--background)/0.24)] backdrop-blur-xl;
+  }
+
+  .premium-panel {
+    @apply rounded-3xl border border-border/80 bg-card/75 shadow-[0_24px_80px_hsl(var(--background)/0.28)] backdrop-blur-xl;
+  }
+
+  .metric-card {
+    @apply relative overflow-hidden rounded-2xl border border-border/80 bg-card/80 text-card-foreground shadow-[0_18px_50px_hsl(var(--background)/0.22)] backdrop-blur-xl transition duration-200;
+  }
+
+  .metric-card::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent;
+  }
+
+  .metric-card::after {
+    content: '';
+    @apply pointer-events-none absolute -right-14 -top-16 size-36 rounded-full bg-primary/10 blur-3xl transition-opacity duration-200;
+  }
+
+  .metric-card:hover {
+    @apply -translate-y-0.5 border-borderStrong/80 shadow-[0_24px_70px_hsl(var(--background)/0.34)];
+  }
+
+  .metric-card:hover::after {
+    @apply opacity-80;
   }
 
   /*
@@ -69,7 +100,7 @@
    * harfda u qatorga sig'may ketadi.
    */
   .thead {
-    @apply border-b border-border bg-surface2/50 text-left text-xs text-dim;
+    @apply border-b border-border bg-surface2/60 text-left text-xs text-dim;
   }
 
   .thead th {
@@ -81,6 +112,10 @@
            shadow-sm transition-colors placeholder:text-muted-foreground
            focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
            disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .premium-table-row {
+    @apply transition-colors hover:bg-surface2/60;
   }
 }
 

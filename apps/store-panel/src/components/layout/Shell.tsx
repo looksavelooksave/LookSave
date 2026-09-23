@@ -1,6 +1,7 @@
 import {
   BadgeDollarSign,
   BarChart3,
+  Bell,
   LayoutDashboard,
   LogOut,
   Package,
@@ -81,14 +82,19 @@ export function Shell(): JSX.Element {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r border-border">
-        <SidebarHeader className="gap-0 px-4 py-4">
-          <span className="text-xs font-semibold uppercase tracking-wordmark text-brand">
-            LookSave
-          </span>
-          <span className="mt-1 text-xs text-dim group-data-[collapsible=icon]:hidden">
-            Do'kon kabineti
-          </span>
+      <Sidebar collapsible="icon" className="border-r border-border/80 bg-card/70 backdrop-blur-xl">
+        <SidebarHeader className="gap-0 px-5 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
+              <ShoppingBag className="size-5" />
+            </span>
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-semibold uppercase tracking-wordmark text-brand">
+                LookSave
+              </span>
+              <span className="mt-1 block text-xs text-dim">Do'kon kabineti</span>
+            </div>
+          </div>
         </SidebarHeader>
 
         <SidebarContent>
@@ -123,11 +129,11 @@ export function Shell(): JSX.Element {
         <SidebarFooter className="gap-3">
           <p
             className={cn(
-              'flex items-center gap-2 px-2 text-xs group-data-[collapsible=icon]:hidden',
+              'flex items-center gap-2 rounded-2xl border border-border/70 bg-surface2/50 px-3 py-2 text-xs font-medium group-data-[collapsible=icon]:hidden',
               status.className,
             )}
           >
-            <span className={cn('size-1.5 rounded-full', status.dot)} />
+            <span className={cn('size-2 rounded-full shadow-[0_0_18px_currentColor]', status.dot)} />
             {status.text}
           </p>
 
@@ -155,17 +161,34 @@ export function Shell(): JSX.Element {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className="bg-background">
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
+      <SidebarInset className="bg-transparent">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b border-border/70 bg-background/75 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
           <Badge variant="outline" className={cn('gap-1.5 border-border', status.className)}>
             <span className={cn('size-1.5 rounded-full', status.dot)} />
             {status.text}
           </Badge>
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              type="button"
+              className="flex size-10 items-center justify-center rounded-2xl border border-border/80 bg-card/70 text-dim transition hover:border-borderStrong hover:text-foreground"
+              aria-label="Bildirishnomalar"
+            >
+              <Bell className="size-4" />
+            </button>
+            <div className="hidden items-center gap-3 rounded-2xl border border-border/80 bg-card/70 px-3 py-2 sm:flex">
+              <Avatar className="size-7">
+                <AvatarFallback className="bg-surface2 text-[11px] text-brand">
+                  {name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="max-w-40 truncate text-sm font-medium text-foreground">{name}</span>
+            </div>
+          </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="flex-1 px-4 py-7 sm:px-6 lg:px-8">
           <Outlet />
         </main>
       </SidebarInset>

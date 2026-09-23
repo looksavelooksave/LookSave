@@ -44,7 +44,7 @@ export function DashboardPage(): JSX.Element {
   const confirmPercent = data.confirmRate === null ? null : Math.round(data.confirmRate * 100);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         title="Bosh sahifa"
         subtitle="Do'koningiz faoliyati haqida umumiy ma'lumot"
@@ -57,7 +57,45 @@ export function DashboardPage(): JSX.Element {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="premium-panel relative overflow-hidden p-5 sm:p-6">
+        <div className="absolute -right-24 -top-28 size-72 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute bottom-0 right-10 h-28 w-72 rounded-full bg-chart-3/10 blur-3xl" />
+        <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+          <div>
+            <p className="label">Bugungi nazorat markazi</p>
+            <h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Buyurtma, javob tezligi va daromad bir joyda.
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-dim">
+              Yangi buyurtmalarni tez ushlang, tasdiqlash sifatini ko'ring va eng ko'p
+              ishlayotgan mahsulotlarni bir qarashda ajrating.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-surface2/55 p-4">
+              <p className="text-xs text-dim">Yangi</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                {data.newOrders}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-surface2/55 p-4">
+              <p className="text-xs text-dim">Tasdiq</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                {confirmPercent === null ? '—' : `${confirmPercent}%`}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-surface2/55 p-4">
+              <p className="text-xs text-dim">Daromad</p>
+              <p className="mt-1 break-words text-2xl font-bold tabular-nums text-foreground">
+                {money(data.revenueMonth, data.currency)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           icon={ShoppingBag}
           tone="violet"
@@ -95,40 +133,40 @@ export function DashboardPage(): JSX.Element {
         mazmun bor. `IconBadge` umumiy — ko'rinish plitkalar bilan bir xil
         bo'lib qoladi.
       */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="card flex items-start gap-3 p-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="card flex items-start gap-4 p-5">
           <IconBadge icon={Zap} tone="violet" />
           <div className="min-w-0 flex-1">
             <p className="label">Javob tezligi</p>
-            <p className="mt-1 text-2xl font-bold leading-tight tabular-nums text-foreground">
+            <p className="mt-2 text-3xl font-bold leading-none tabular-nums text-foreground">
               {data.avgResponseMin === null ? '—' : `${data.avgResponseMin} daqiqa`}
             </p>
-            <p className={`mt-0.5 text-xs font-medium ${grade.className}`}>{grade.text}</p>
-            <p className="mt-2 text-xs text-dim">
+            <p className={`mt-2 text-xs font-semibold ${grade.className}`}>{grade.text}</p>
+            <p className="mt-3 text-sm text-dim">
               Tez javob bergan do'kon qidiruvda yuqoriroq chiqadi.
             </p>
           </div>
         </div>
 
-        <div className="card flex items-start gap-3 p-4">
+        <div className="card flex items-start gap-4 p-5">
           <IconBadge icon={ShieldCheck} tone="blue" />
           <div className="min-w-0 flex-1">
             <p className="label">Tasdiqlash foizi</p>
-            <p className="mt-1 text-2xl font-bold leading-tight tabular-nums text-foreground">
+            <p className="mt-2 text-3xl font-bold leading-none tabular-nums text-foreground">
               {confirmPercent === null ? '—' : `${confirmPercent}%`}
             </p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface3">
+            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-surface3">
               <div
-                className="h-full rounded-full bg-primary transition-all"
+                className="h-full rounded-full bg-gradient-to-r from-primary to-brand shadow-[0_0_22px_hsl(var(--primary)/0.45)] transition-all"
                 style={{ width: `${confirmPercent ?? 0}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-dim">So'nggi 30 kun</p>
+            <p className="mt-3 text-sm text-dim">So'nggi 30 kun</p>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <StatTile
           icon={Package}
           tone="violet"
@@ -165,7 +203,7 @@ export function DashboardPage(): JSX.Element {
               </thead>
               <tbody className="divide-y divide-border">
                 {data.topProducts.map((product) => (
-                  <tr key={product.id} className="transition-colors hover:bg-surface2/40">
+                  <tr key={product.id} className="premium-table-row">
                     <td className="px-4 py-3">
                       <Link
                         to={`/products/${product.id}`}

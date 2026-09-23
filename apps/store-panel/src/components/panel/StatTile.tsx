@@ -33,10 +33,10 @@ export function StatTile({
   chart?: ReactNode;
 }): JSX.Element {
   return (
-    <div className="card flex items-start gap-3 p-4">
+    <div className="metric-card flex min-h-[118px] items-start gap-3 p-5">
       <IconBadge icon={Icon} tone={tone} />
 
-      <div className="min-w-0 flex-1">
+      <div className="relative z-10 min-w-0 flex-1">
         <p className="label">{label}</p>
         {/*
           ⚠️ `truncate` EMAS, `break-words`. Plitkada pul summasi ham
@@ -45,13 +45,13 @@ export function StatTile({
           Ikkinchi qatorga o'tgani yaxshiroq.
         */}
         <p
-          className={`mt-1 break-words text-2xl font-bold leading-tight tabular-nums ${
+          className={`mt-2 break-words text-3xl font-bold leading-none tabular-nums ${
             alert ? 'text-warning' : 'text-foreground'
           }`}
         >
           {value}
         </p>
-        {hint ? <p className="mt-0.5 text-xs text-dim">{hint}</p> : null}
+        {hint ? <p className="mt-2 text-sm text-dim">{hint}</p> : null}
         {chart ? <div className="mt-2">{chart}</div> : null}
       </div>
     </div>
