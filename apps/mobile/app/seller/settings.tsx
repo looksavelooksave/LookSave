@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,7 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getStoreProfile, updateStoreProfile } from '../../src/api/endpoints';
+import { getStoreProfile, updateStoreProfile, uploadStoreImage } from '../../src/api/endpoints';
 import { ApiError } from '../../src/api/client';
 import { Icon } from '../../src/components/Icon';
 import { Button, ErrorView, Field, Loading, Screen } from '../../src/components/ui';
@@ -43,9 +47,11 @@ export default function StoreSettings(): JSX.Element {
     address: '',
     landmark: '',
     description: '',
+    logoUrl: null as string | null,
   });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Serverdagi qiymatlar kelgach formani to'ldiramiz
   useEffect(() => {
@@ -56,8 +62,37 @@ export default function StoreSettings(): JSX.Element {
       address: profile.data.address,
       landmark: profile.data.landmark ?? '',
       description: profile.data.description ?? '',
+      logoUrl: profile.data.logoUrl,
     });
   }, [profile.data]);
+
+  // Logo tanlash — galereyadan olib, omborga yuklab, formaga yozamiz
+  const pickLogo = async (): Promise<void> => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Ruxsat kerak', 'Logo tanlash uchun galereyaga ruxsat bering.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploading(true);
+    setError(null);
+    try {
+      const url = await uploadStoreImage(result.assets[0].uri);
+      setForm((prev) => ({ ...prev, logoUrl: url }));
+      setSaved(false);
+    } catch {
+      setError('Logo yuklanmadi — qaytadan urinib ko`ring');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const save = useMutation({
     mutationFn: updateStoreProfile,
@@ -109,6 +144,43 @@ export default function StoreSettings(): JSX.Element {
             </Text>
           </View>
 
+          {/* Do'kon logosi — katalogda va TOP BRANDS'da ko'rinadi */}
+          <Text style={styles.fieldLabel}>DO`KON LOGOSI</Text>
+          <View style={styles.logoRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Logo tanlash"
+              onPress={() => void pickLogo()}
+              disabled={uploading}
+              style={styles.logoBox}
+            >
+              {uploading ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : form.logoUrl ? (
+                <Image source={{ uri: form.logoUrl }} style={styles.logoImage} resizeMode="cover" />
+              ) : (
+                <Icon name="shop" size={26} color={colors.textDim} />
+              )}
+            </Pressable>
+            <View style={styles.logoActions}>
+              <Button
+                title={form.logoUrl ? 'Logoni o`zgartirish' : 'Logo tanlash'}
+                variant="ghost"
+                loading={uploading}
+                onPress={() => void pickLogo()}
+              />
+              {form.logoUrl ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setForm((prev) => ({ ...prev, logoUrl: null }))}
+                  hitSlop={8}
+                >
+                  <Text style={styles.logoRemove}>Olib tashlash</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
           <Field label="Do`kon nomi" value={form.name} onChangeText={set('name')} />
           <Field
             label="Telefon"
@@ -138,6 +210,7 @@ export default function StoreSettings(): JSX.Element {
                 address: form.address.trim(),
                 landmark: form.landmark.trim() || null,
                 description: form.description.trim() || null,
+                logoUrl: form.logoUrl,
               })
             }
           />
@@ -169,6 +242,28 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   statusLabel: { ...text.tiny, color: colors.textDim },
+  fieldLabel: {
+    ...text.tiny,
+    color: colors.textDim,
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  logoBox: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logoImage: { width: '100%', height: '100%' },
+  logoActions: { flex: 1, gap: spacing.xs },
+  logoRemove: { ...text.small, color: colors.danger, paddingVertical: spacing.xs },
   statusValue: { ...text.bodyMed, color: colors.success, marginTop: 2 },
 
   error: { ...text.small, color: colors.danger, marginBottom: spacing.sm },
