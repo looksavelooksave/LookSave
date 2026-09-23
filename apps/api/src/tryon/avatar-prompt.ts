@@ -46,9 +46,31 @@ export type AvatarAngle = 'front' | 'side' | 'back';
  * urinmaydi.
  */
 const ANGLE_TEXT: Record<AvatarAngle, string> = {
-  front: 'Facing the camera directly, front view.',
-  side: 'Turned 90 degrees to the left, full side profile view.',
-  back: 'Turned away from the camera, back view, face not visible.',
+  /*
+   * ⚠️ BURCHAK 45 DAN 10–15 GA TUSHIRILDI (2026-09-23).
+   *
+   * Ilgari bu yerda «45 daraja» va «do not make the body face straight
+   * forward» turardi. Natijada avatar yonboshlab turardi va kiyim
+   * kiydirilganda uning old tomoni — naqsh, yoqa, tugmalar — qiyshiq
+   * ko'rinardi. Mijoz esa kiyimni aynan oldindan ko'rishi kerak.
+   *
+   * ⚠️ IKKALA QO'L HAM CHO'NTAKDA QOLADI: yeng va yon chok toza
+   * ko'rinadi, qo'l tanaga yopishmaydi.
+   */
+  front:
+    'Standing upright with the torso turned about 40 degrees to the LEFT into a dynamic ' +
+    'three-quarter pose — the left shoulder is closer to the camera and the right shoulder ' +
+    'further back — while the FACE turns directly toward the camera with a calm, confident ' +
+    'expression and clear eye contact. Both hands rest casually inside the trouser pockets, ' +
+    'elbows relaxed and slightly away from the body. The feet are shoulder-width apart, ' +
+    'planted flat. Keep the body axis upright, with relaxed shoulders, an elegant confident ' +
+    'stance, realistic anatomy and no exaggerated curve or lean.',
+  side:
+    'Turned 90 degrees to the left, full side profile view. Standing straight, arms relaxed ' +
+    'at the sides and slightly away from the body, feet shoulder-width apart.',
+  back:
+    'Turned away from the camera, back view, face not visible. Standing straight, arms relaxed ' +
+    'at the sides and slightly away from the body, feet shoulder-width apart.',
 };
 
 /**
@@ -155,9 +177,8 @@ export function buildAvatarPrompt(
    * turishi kerak, aks holda "aylanish" emas, sakrash bo'lib ko'rinadi.
    */
   parts.push(
-    `${ANGLE_TEXT[angle]} Standing straight, arms relaxed at the sides and slightly away ` +
-      'from the body, feet shoulder-width apart. The entire body is visible from head to feet, ' +
-      'nothing is cropped. Same distance and framing in every view.',
+    `${ANGLE_TEXT[angle]} The entire body is visible from head to feet, nothing is cropped. ` +
+      'Same distance and framing in every view.',
   );
 
   // 3-jumla: kiyim — yangisi ustiga qo'yiladi

@@ -51,9 +51,31 @@ describe('avatar tavsifi', () => {
     expect(prompt).toContain('nothing is cropped');
   });
 
-  it('poza talabini yo`qotmaydi', () => {
+  /*
+   * ⚠️ POZA 2026-09-23 DA O'ZGARDI: 45 daraja burilish o'rniga deyarli
+   * to'g'ri turish. Sabab — yonboshlagan gavdada kiyimning OLD tomoni
+   * (naqsh, yoqa, tugmalar) qiyshiq ko'rinardi, mijoz esa mahsulotni
+   * aynan oldindan ko'rishi kerak.
+   */
+  it('asosiy avatarni chapga uch-chorak, ikkala qo`li cho`ntakda pozada yasaydi', () => {
     const prompt = buildAvatarPrompt('female', { height: 168, weight: 60 });
-    expect(prompt).toContain('arms relaxed at the sides');
+    expect(prompt).toContain('turned about 40 degrees to the LEFT');
+    expect(prompt).toContain('three-quarter pose');
+    expect(prompt).toContain('FACE turns directly toward the camera');
+    expect(prompt).toContain('Both hands rest casually inside the trouser pockets');
+    expect(prompt).toContain('feet are shoulder-width apart');
+    expect(prompt).toContain('body axis upright');
+
+    /* Eski yo'riq qaytib kelmasin — u yangisi bilan to'g'ridan-to'g'ri ziddiyatda */
+    expect(prompt).not.toContain('do not make the body face straight forward');
+  });
+
+  it('yon va orqa rakurslarda qo`llarni gavdadan ajratib turadi', () => {
+    for (const angle of ['side', 'back'] as const) {
+      expect(buildAvatarPrompt('male', { height: 175, weight: 70 }, angle)).toContain(
+        'arms relaxed at the sides and slightly away from the body',
+      );
+    }
   });
 
   it('sodda fon talabini yo`qotmaydi', () => {
