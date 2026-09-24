@@ -129,6 +129,7 @@ function AppShell(): JSX.Element {
           <Stack.Screen name="stores" options={{ title: t.tabs.stores }} />
           {/* O'lchamlar ekranida o'z sarlavhasi bor */}
           <Stack.Screen name="settings/measurements" options={{ headerShown: false }} />
+          <Stack.Screen name="settings/profile" options={{ title: t.profile.editProfile }} />
           <Stack.Screen
             name="settings/delete-account"
             options={{ title: t.profile.deleteAccount }}

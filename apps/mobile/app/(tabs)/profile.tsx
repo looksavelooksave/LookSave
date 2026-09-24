@@ -193,13 +193,18 @@ export default function Profile(): JSX.Element {
               </View>
             </View>
 
+            {/*
+              ⚠️ ILGARI BU TUGMA O'LCHAMLARGA OLIB BORARDI — yorlig'i esa
+              «Tahrirlash» edi va o'lchamlar menyuda allaqachon bor. Endi
+              u haqiqiy profil tahrirlash ekranini ochadi (ism, jins, surat).
+            */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t.profile.editName}
-              onPress={() => router.push('/settings/measurements')}
+              accessibilityLabel={t.profile.editProfile}
+              onPress={() => router.push('/settings/profile')}
               style={styles.editButton}
             >
-              <Icon name="settings" size={18} color={colors.textMuted} />
+              <Icon name="edit" size={18} color={colors.textMuted} />
             </Pressable>
           </View>
 

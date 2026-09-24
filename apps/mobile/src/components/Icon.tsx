@@ -1,5 +1,8 @@
 import {
   BadgeCheck,
+  Check,
+  Lock,
+  SquarePen,
   Camera,
   Clock,
   Eye,
@@ -101,6 +104,9 @@ const LUCIDE = {
   grid: LayoutGrid,
   list: LayoutList,
   settings: Settings,
+  edit: SquarePen,
+  lock: Lock,
+  check: Check,
   language: Globe,
   logout: LogOut,
   trash: Trash2,
