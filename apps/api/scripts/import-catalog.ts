@@ -6,6 +6,7 @@
  *   2. JSON'dagi do'konni prod'da slug/nom bo'yicha topadi.
  *   3. Har mahsulotni `createProduct` orqali qo'shadi (slot, valyuta,
  *      variant_stock — hammasi panel yaratganidek to'g'ri chiqadi).
+ *   4. `--apply` da tashqi rasmlarni R2'ga ko'chiradi (`mirrorImage`).
  *
  * ⚠️ `createProduct` ISHLATILADI, SQL EMAS. To'g'ridan-to'g'ri INSERT
  * `slot`ni kategoriyadan ko'chirishni, `variant_stock`ni va tekshiruvlarni
@@ -27,11 +28,13 @@
  *                   (slug noma'lum bo'lganda; --store dan ustun turadi)
  */
 
+import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 import type { CreateProductInput } from '@looksave/validation';
 
 import { pool } from '../src/db/pool';
+import { isOwnCdnUrl, uploadObject } from '../src/integrations/r2';
 import { createProduct } from '../src/store/products';
 
 interface CatalogFile {
@@ -70,6 +73,48 @@ function arg(name: string): string | undefined {
   return hit ? hit.slice(name.length + 3) : undefined;
 }
 const APPLY = process.argv.includes('--apply');
+
+const IMAGE_EXT: Record<string, string> = {
+  'image/webp': 'webp',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+};
+const mirrored = new Map<string, string>();
+
+/**
+ * Tashqi rasmni o'zimizning CDN'ga ko'chiradi.
+ *
+ * ⚠️ NEGA: `createProduct` faqat `CDN_BASE_URL` dagi rasmni qabul qiladi
+ * (`assertOwnImages`). Tashqi havola esa baribir ishonchsiz — manba
+ * o'chsa katalog bo'sh kvadratlarga aylanardi. Kalit `presignUpload`
+ * bilan bir xil shaklda, ya'ni panel yuklaganidan farq qilmaydi.
+ */
+async function mirrorImage(url: string): Promise<string> {
+  if (isOwnCdnUrl(url)) return url;
+  const cached = mirrored.get(url);
+  if (cached) return cached;
+
+  // Ba'zi CDN'lar (dummyjson) standart Node User-Agent'ini 403 bilan qaytaradi
+  const res = await fetch(url, { headers: { 'User-Agent': 'curl/8' } });
+  if (!res.ok) throw new Error(`Rasm yuklab olinmadi (${res.status}): ${url}`);
+  const contentType = (res.headers.get('content-type') ?? '').split(';')[0]!.trim();
+  const ext = IMAGE_EXT[contentType];
+  if (!ext) throw new Error(`Rasm turi qo'llanmaydi (${contentType || 'noma`lum'}): ${url}`);
+
+  const cdnUrl = await uploadObject({
+    key: `product/${randomUUID()}.${ext}`,
+    body: Buffer.from(await res.arrayBuffer()),
+    contentType,
+  });
+  mirrored.set(url, cdnUrl);
+  return cdnUrl;
+}
+
+async function mirrorAll(urls: string[]): Promise<string[]> {
+  const out: string[] = [];
+  for (const url of urls) out.push(await mirrorImage(url));
+  return out;
+}
 
 async function main(): Promise<void> {
   const file = arg('file');
@@ -195,10 +240,18 @@ async function main(): Promise<void> {
       })),
     };
 
+    const foreign = [...p.images, ...p.variants.flatMap((v) => v.images)].filter(
+      (url) => !isOwnCdnUrl(url),
+    ).length;
     console.log(
-      `   ${APPLY ? '＋' : '·'} "${p.title}" [${p.categorySlug}] ${p.variants.length} variant`,
+      `   ${APPLY ? '＋' : '·'} "${p.title}" [${p.categorySlug}] ${p.variants.length} variant` +
+        (foreign > 0 ? `, ${foreign} rasm CDN'ga ko'chiriladi` : ''),
     );
     if (APPLY) {
+      input.images = await mirrorAll(p.images);
+      for (const [i, v] of p.variants.entries()) {
+        input.variants[i]!.images = await mirrorAll(v.images);
+      }
       await createProduct(store.id, input);
       added += 1;
     }
