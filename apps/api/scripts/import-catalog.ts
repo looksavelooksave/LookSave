@@ -23,6 +23,8 @@
  *   --file=<fayl>   kirish JSON (majburiy)
  *   --apply         haqiqatan yozadi (aks holda faqat rejani ko'rsatadi)
  *   --store=<slug>  JSON'dagi do'kon o'rniga prod'da boshqa do'konga yozish
+ *   --owner-phone=<+998...>  do'konni EGASINING telefoni bo'yicha topish
+ *                   (slug noma'lum bo'lganda; --store dan ustun turadi)
  */
 
 import { readFileSync } from 'node:fs';
@@ -76,17 +78,42 @@ async function main(): Promise<void> {
   const data = JSON.parse(readFileSync(file, 'utf8')) as CatalogFile;
 
   // ── Do'kon ──
+  const ownerPhone = arg('owner-phone');
   const storeSlug = arg('store') ?? data.store.slug;
-  const storeRes = await pool.query<{ id: string; name: string; status: string }>(
-    `SELECT id, name, status FROM stores
-      WHERE slug = $1 OR name ILIKE '%' || $2 || '%'
-      ORDER BY (slug = $1) DESC LIMIT 1`,
-    [storeSlug, data.store.name],
-  );
+  // Bo'sh slug + bo'sh nom bilan `ILIKE '%%'` ISTALGAN do'konga mos kelardi
+  if (!ownerPhone && (!storeSlug || !data.store.name)) {
+    throw new Error(
+      'JSON`da do`kon ko`rsatilmagan — --owner-phone=<+998...> yoki --store=<slug> bering',
+    );
+  }
+  // ⚠️ Egasida bir nechta do'kon bo'lsa eng eskisi olinadi — natija
+  // pastda nomi bilan chiqariladi, --apply dan oldin ko'z bilan tekshiring.
+  const storeRes = ownerPhone
+    ? await pool.query<{ id: string; name: string; status: string }>(
+        `SELECT s.id, s.name, s.status FROM stores s
+           JOIN users u ON u.id = s.owner_id
+          WHERE u.phone = $1
+          ORDER BY s.created_at LIMIT 1`,
+        [ownerPhone],
+      )
+    : await pool.query<{ id: string; name: string; status: string }>(
+        `SELECT id, name, status FROM stores
+          WHERE slug = $1 OR name ILIKE '%' || $2 || '%'
+          ORDER BY (slug = $1) DESC LIMIT 1`,
+        [storeSlug, data.store.name],
+      );
   const store = storeRes.rows[0];
-  if (!store) throw new Error(`Prod'da "${storeSlug}" do'koni topilmadi — avval do'konni yarating`);
+  if (!store) {
+    throw new Error(
+      ownerPhone
+        ? `Prod'da ${ownerPhone} egasiga tegishli do'kon topilmadi — avval do'konni yarating`
+        : `Prod'da "${storeSlug}" do'koni topilmadi — avval do'konni yarating`,
+    );
+  }
   if (store.status !== 'active') {
-    throw new Error(`"${store.name}" do'koni faol emas (${store.status}) — createProduct faol do'kon talab qiladi`);
+    throw new Error(
+      `"${store.name}" do'koni faol emas (${store.status}) — createProduct faol do'kon talab qiladi`,
+    );
   }
   console.log(`🏬 Do'kon: ${store.name} (${store.id})`);
 
@@ -138,7 +165,9 @@ async function main(): Promise<void> {
     const categoryId = catBySlug.get(p.categorySlug);
     if (!categoryId) {
       missingCats.add(p.categorySlug);
-      console.log(`   ⚠  "${p.title}" — "${p.categorySlug}" kategoriyasi prod'da yo'q, tashlab ketildi`);
+      console.log(
+        `   ⚠  "${p.title}" — "${p.categorySlug}" kategoriyasi prod'da yo'q, tashlab ketildi`,
+      );
       skipped += 1;
       continue;
     }
@@ -158,21 +187,26 @@ async function main(): Promise<void> {
       status: 'pending', // createProduct uni darhol 'active' qiladi
       variants: p.variants.map((v) => ({
         colorHex: v.colorHex ?? undefined,
-        colorName: (v.colorName as CreateProductInput['variants'][number]['colorName']) ?? undefined,
+        colorName:
+          (v.colorName as CreateProductInput['variants'][number]['colorName']) ?? undefined,
         images: v.images,
         priceDelta: v.priceDelta,
         sizes: v.sizes,
       })),
     };
 
-    console.log(`   ${APPLY ? '＋' : '·'} "${p.title}" [${p.categorySlug}] ${p.variants.length} variant`);
+    console.log(
+      `   ${APPLY ? '＋' : '·'} "${p.title}" [${p.categorySlug}] ${p.variants.length} variant`,
+    );
     if (APPLY) {
       await createProduct(store.id, input);
       added += 1;
     }
   }
 
-  console.log(`\n${APPLY ? '✅ Yozildi' : '🔎 Quruq yurish'}: +${added} qo'shildi, ${skipped} tashlab ketildi`);
+  console.log(
+    `\n${APPLY ? '✅ Yozildi' : '🔎 Quruq yurish'}: +${added} qo'shildi, ${skipped} tashlab ketildi`,
+  );
   if (missingCats.size > 0) {
     console.log(`⚠  Prod'da yo'q kategoriyalar: ${[...missingCats].join(', ')}`);
   }

@@ -1,0 +1,1300 @@
+{
+  "_source": "Rasmlar: dummyjson.com (cdn.dummyjson.com). Generator: sessiya skripti, brend nomlari ataylab olib tashlangan.",
+  "store": {
+    "slug": "",
+    "name": "",
+    "currency": "UZS"
+  },
+  "brands": [],
+  "products": [
+    {
+      "title": "Ko'k-qora katak ko'ylak",
+      "description": "Paxtali, uzun yengli katak ko'ylak. Kundalik va ofis uchun.",
+      "categorySlug": "shirt",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "219000.00",
+      "oldPrice": "269000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/4.webp"
+      ],
+      "tags": ["casual", "classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#1f3a68",
+          "colorName": {
+            "uz": "Ko'k",
+            "ru": "Синий",
+            "en": "Blue"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 4
+            },
+            {
+              "size": "M",
+              "stock": 9
+            },
+            {
+              "size": "L",
+              "stock": 7
+            },
+            {
+              "size": "XL",
+              "stock": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qora printli futbolka",
+      "description": "Yumshoq paxta futbolka, old tomonida grafik print.",
+      "categorySlug": "tshirt",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "129000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/4.webp"
+      ],
+      "tags": ["streetwear", "casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 6
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 10
+            },
+            {
+              "size": "XL",
+              "stock": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qizil katak ko'ylak",
+      "description": "Flanel katak ko'ylak, erkin bichim.",
+      "categorySlug": "shirt",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "199000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/4.webp"
+      ],
+      "tags": ["casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#9b1c1c",
+          "colorName": {
+            "uz": "Qizil",
+            "ru": "Красный",
+            "en": "Red"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 3
+            },
+            {
+              "size": "M",
+              "stock": 8
+            },
+            {
+              "size": "L",
+              "stock": 8
+            },
+            {
+              "size": "XL",
+              "stock": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Kalta yengli yozgi ko'ylak",
+      "description": "Yengil matodan kalta yengli ko'ylak, issiq kunlar uchun.",
+      "categorySlug": "shirt",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "159000.00",
+      "oldPrice": "189000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/4.webp"
+      ],
+      "tags": ["casual", "minimal"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#e8e4da",
+          "colorName": {
+            "uz": "Och bej",
+            "ru": "Светло-бежевый",
+            "en": "Light beige"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 5
+            },
+            {
+              "size": "M",
+              "stock": 10
+            },
+            {
+              "size": "L",
+              "stock": 6
+            },
+            {
+              "size": "XL",
+              "stock": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Klassik katak ko'ylak",
+      "description": "Klassik bichimdagi katak ko'ylak, tugmali yoqa.",
+      "categorySlug": "shirt",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "209000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/4.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#3d5a80",
+          "colorName": {
+            "uz": "Ko'k",
+            "ru": "Синий",
+            "en": "Blue"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 2
+            },
+            {
+              "size": "M",
+              "stock": 7
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qizil-qora baland krossovka",
+      "description": "Baland qo'njli charm krossovka, qizil-qora rangda.",
+      "categorySlug": "sneakers",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "689000.00",
+      "oldPrice": "790000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/4.webp"
+      ],
+      "tags": ["streetwear", "sport"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#b91c1c",
+          "colorName": {
+            "uz": "Qizil-qora",
+            "ru": "Красно-чёрный",
+            "en": "Red-black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 2
+            },
+            {
+              "size": "41",
+              "stock": 5
+            },
+            {
+              "size": "42",
+              "stock": 6
+            },
+            {
+              "size": "43",
+              "stock": 3
+            },
+            {
+              "size": "44",
+              "stock": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Shipli sport poyabzali",
+      "description": "Maydon sporti uchun shipli poyabzal, mustahkam taglik.",
+      "categorySlug": "sneakers",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "459000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/4.webp"
+      ],
+      "tags": ["sport"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#f5f5f5",
+          "colorName": {
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 1
+            },
+            {
+              "size": "41",
+              "stock": 3
+            },
+            {
+              "size": "42",
+              "stock": 4
+            },
+            {
+              "size": "43",
+              "stock": 2
+            },
+            {
+              "size": "44",
+              "stock": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Retro yugurish krossovkasi",
+      "description": "Yengil retro uslubdagi krossovka, yumshoq taglik.",
+      "categorySlug": "sneakers",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "529000.00",
+      "oldPrice": "599000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/4.webp"
+      ],
+      "tags": ["sport", "casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#2b4c7e",
+          "colorName": {
+            "uz": "Ko'k",
+            "ru": "Синий",
+            "en": "Blue"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 3
+            },
+            {
+              "size": "41",
+              "stock": 6
+            },
+            {
+              "size": "42",
+              "stock": 7
+            },
+            {
+              "size": "43",
+              "stock": 4
+            },
+            {
+              "size": "44",
+              "stock": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Oq-qizil sport krossovka",
+      "description": "Kundalik sport krossovkasi, nafas oladigan to'r mato.",
+      "categorySlug": "sneakers",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "389000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/4.webp"
+      ],
+      "tags": ["sport"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#f3efe6",
+          "colorName": {
+            "uz": "Oq-qizil",
+            "ru": "Бело-красный",
+            "en": "White-red"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 2
+            },
+            {
+              "size": "41",
+              "stock": 6
+            },
+            {
+              "size": "42",
+              "stock": 5
+            },
+            {
+              "size": "43",
+              "stock": 3
+            },
+            {
+              "size": "44",
+              "stock": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Oq krossovka qizil detallar bilan",
+      "description": "Minimal oq krossovka, qizil bezakli.",
+      "categorySlug": "sneakers",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "369000.00",
+      "oldPrice": "429000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/3.webp",
+        "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/4.webp"
+      ],
+      "tags": ["minimal", "casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#fafafa",
+          "colorName": {
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 4
+            },
+            {
+              "size": "41",
+              "stock": 7
+            },
+            {
+              "size": "42",
+              "stock": 6
+            },
+            {
+              "size": "43",
+              "stock": 2
+            },
+            {
+              "size": "44",
+              "stock": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qora-jigarrang shippak",
+      "description": "Yumshoq ichki qoplamali uy va yozgi shippak.",
+      "categorySlug": "sandals",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "149000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/3.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/4.webp"
+      ],
+      "tags": ["casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#3b2a1e",
+          "colorName": {
+            "uz": "Jigarrang",
+            "ru": "Коричневый",
+            "en": "Brown"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "36",
+              "stock": 3
+            },
+            {
+              "size": "37",
+              "stock": 6
+            },
+            {
+              "size": "38",
+              "stock": 7
+            },
+            {
+              "size": "39",
+              "stock": 5
+            },
+            {
+              "size": "40",
+              "stock": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Baland poshnali tufli",
+      "description": "Nafis baland poshnali tufli, bayram va kechalar uchun.",
+      "categorySlug": "dress-shoes",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "549000.00",
+      "oldPrice": "649000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/3.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/4.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#141414",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "36",
+              "stock": 2
+            },
+            {
+              "size": "37",
+              "stock": 4
+            },
+            {
+              "size": "38",
+              "stock": 5
+            },
+            {
+              "size": "39",
+              "stock": 3
+            },
+            {
+              "size": "40",
+              "stock": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Oltin rangli tufli",
+      "description": "Yaltiroq oltin rangli tufli, kechki libosga mos.",
+      "categorySlug": "dress-shoes",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "489000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/3.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/4.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#c9a227",
+          "colorName": {
+            "uz": "Oltin",
+            "ru": "Золотой",
+            "en": "Gold"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "36",
+              "stock": 1
+            },
+            {
+              "size": "37",
+              "stock": 3
+            },
+            {
+              "size": "38",
+              "stock": 4
+            },
+            {
+              "size": "39",
+              "stock": 2
+            },
+            {
+              "size": "40",
+              "stock": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Ochiq burunli yozgi tufli",
+      "description": "Qulay past poshnali yozgi tufli.",
+      "categorySlug": "sandals",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "259000.00",
+      "oldPrice": "299000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/3.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/4.webp"
+      ],
+      "tags": ["casual", "minimal"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#d8c3a5",
+          "colorName": {
+            "uz": "Bej",
+            "ru": "Бежевый",
+            "en": "Beige"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "36",
+              "stock": 2
+            },
+            {
+              "size": "37",
+              "stock": 5
+            },
+            {
+              "size": "38",
+              "stock": 6
+            },
+            {
+              "size": "39",
+              "stock": 4
+            },
+            {
+              "size": "40",
+              "stock": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qizil tufli",
+      "description": "Klassik qizil tufli, o'rtacha poshna.",
+      "categorySlug": "dress-shoes",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "429000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/3.webp",
+        "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/4.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#b3121f",
+          "colorName": {
+            "uz": "Qizil",
+            "ru": "Красный",
+            "en": "Red"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "36",
+              "stock": 2
+            },
+            {
+              "size": "37",
+              "stock": 4
+            },
+            {
+              "size": "38",
+              "stock": 5
+            },
+            {
+              "size": "39",
+              "stock": 2
+            },
+            {
+              "size": "40",
+              "stock": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Ko'k ayollar sumkasi",
+      "description": "O'rtacha hajmli qo'l sumkasi, ichki cho'ntaklari bor.",
+      "categorySlug": "bag",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "339000.00",
+      "oldPrice": "399000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/3.webp"
+      ],
+      "tags": ["casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#1e40af",
+          "colorName": {
+            "uz": "Ko'k",
+            "ru": "Синий",
+            "en": "Blue"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Jigarrang charm sumka",
+      "description": "Tabiiy charmdan yelka sumkasi.",
+      "categorySlug": "bag",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "649000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-bags/heshe-women's-leather-bag/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/heshe-women's-leather-bag/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/heshe-women's-leather-bag/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#7c4a2d",
+          "colorName": {
+            "uz": "Jigarrang",
+            "ru": "Коричневый",
+            "en": "Brown"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qora klassik sumka",
+      "description": "Qattiq shaklli klassik qo'l sumkasi.",
+      "categorySlug": "bag",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "789000.00",
+      "oldPrice": "890000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-bags/prada-women-bag/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/prada-women-bag/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/prada-women-bag/3.webp"
+      ],
+      "tags": ["classic", "minimal"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#0f0f0f",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Oq ryukzak",
+      "description": "Sun'iy charmdan ixcham oq ryukzak.",
+      "categorySlug": "bag",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "299000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-bags/white-faux-leather-backpack/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/white-faux-leather-backpack/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/white-faux-leather-backpack/3.webp"
+      ],
+      "tags": ["casual", "minimal"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#f4f4f4",
+          "colorName": {
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qora qo'l sumkasi",
+      "description": "Kundalik foydalanish uchun keng qo'l sumkasi.",
+      "categorySlug": "bag",
+      "brandSlug": null,
+      "gender": "female",
+      "basePrice": "319000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/womens-bags/women-handbag-black/1.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/women-handbag-black/2.webp",
+        "https://cdn.dummyjson.com/product-images/womens-bags/women-handbag-black/3.webp"
+      ],
+      "tags": ["casual"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#1a1a1a",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qora quyosh ko'zoynagi",
+      "description": "UV400 himoyali klassik quyosh ko'zoynagi.",
+      "categorySlug": "glasses",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "119000.00",
+      "oldPrice": "149000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/sunglasses/black-sun-glasses/1.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/black-sun-glasses/2.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/black-sun-glasses/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 15
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Klassik ko'zoynak",
+      "description": "Metall ramkali klassik quyosh ko'zoynagi.",
+      "categorySlug": "glasses",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "139000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/sunglasses/classic-sun-glasses/1.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/classic-sun-glasses/2.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/classic-sun-glasses/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#8a6d3b",
+          "colorName": {
+            "uz": "Oltin ramka",
+            "ru": "Золотая оправа",
+            "en": "Gold frame"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Yashil-qora ko'zoynak",
+      "description": "Yashil linzali zamonaviy quyosh ko'zoynagi.",
+      "categorySlug": "glasses",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "129000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/sunglasses/green-and-black-glasses/1.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/green-and-black-glasses/2.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/green-and-black-glasses/3.webp"
+      ],
+      "tags": ["streetwear"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#1f4d3a",
+          "colorName": {
+            "uz": "Yashil",
+            "ru": "Зелёный",
+            "en": "Green"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Rangli ko'zoynak",
+      "description": "Yorqin ramkali bayramona ko'zoynak.",
+      "categorySlug": "glasses",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "79000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/sunglasses/party-glasses/1.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/party-glasses/2.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/party-glasses/3.webp"
+      ],
+      "tags": ["streetwear"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#e11d74",
+          "colorName": {
+            "uz": "Pushti",
+            "ru": "Розовый",
+            "en": "Pink"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Sport quyosh ko'zoynagi",
+      "description": "Yengil ramkali sport ko'zoynagi.",
+      "categorySlug": "glasses",
+      "brandSlug": null,
+      "gender": "unisex",
+      "basePrice": "109000.00",
+      "oldPrice": "129000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/1.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/2.webp",
+        "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/3.webp"
+      ],
+      "tags": ["sport"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#2d2d2d",
+          "colorName": {
+            "uz": "To'q kulrang",
+            "ru": "Тёмно-серый",
+            "en": "Dark gray"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 14
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Charm tasmali soat",
+      "description": "Jigarrang charm tasmali klassik qo'l soati.",
+      "categorySlug": "watch",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "359000.00",
+      "oldPrice": "429000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#6b4226",
+          "colorName": {
+            "uz": "Jigarrang",
+            "ru": "Коричневый",
+            "en": "Brown"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Kumush klassik soat",
+      "description": "Kumush rangli korpus, charm tasma.",
+      "categorySlug": "watch",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "1290000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-watches/longines-master-collection/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/longines-master-collection/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/longines-master-collection/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#c0c0c0",
+          "colorName": {
+            "uz": "Kumush",
+            "ru": "Серебристый",
+            "en": "Silver"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Qora siferblatli soat",
+      "description": "Qora siferblatli nafis qo'l soati.",
+      "categorySlug": "watch",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "990000.00",
+      "oldPrice": "1150000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-date-black-dial/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-date-black-dial/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-date-black-dial/3.webp"
+      ],
+      "tags": ["classic", "minimal"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#101010",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Oy fazali soat",
+      "description": "Oy fazasi ko'rsatkichli klassik soat.",
+      "categorySlug": "watch",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "1190000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-moonphase/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-moonphase/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-moonphase/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#1c2c4c",
+          "colorName": {
+            "uz": "To'q ko'k",
+            "ru": "Тёмно-синий",
+            "en": "Navy"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Kumush-oltin soat",
+      "description": "Metall bilaguzukli ikki rangli soat.",
+      "categorySlug": "watch",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "1090000.00",
+      "oldPrice": null,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/3.webp"
+      ],
+      "tags": ["classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#b8a26a",
+          "colorName": {
+            "uz": "Kumush-oltin",
+            "ru": "Серебристо-золотой",
+            "en": "Silver-gold"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Sport metall soat",
+      "description": "Suvga chidamli metall bilaguzukli sport soat.",
+      "categorySlug": "watch",
+      "brandSlug": null,
+      "gender": "male",
+      "basePrice": "1250000.00",
+      "oldPrice": "1390000.00",
+      "images": [
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-submariner-watch/1.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-submariner-watch/2.webp",
+        "https://cdn.dummyjson.com/product-images/mens-watches/rolex-submariner-watch/3.webp"
+      ],
+      "tags": ["sport", "classic"],
+      "isLimited": false,
+      "variants": [
+        {
+          "colorHex": "#0b3d2e",
+          "colorName": {
+            "uz": "Yashil",
+            "ru": "Зелёный",
+            "en": "Green"
+          },
+          "images": [],
+          "priceDelta": "0.00",
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
