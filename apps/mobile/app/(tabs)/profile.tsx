@@ -299,13 +299,19 @@ export default function Profile(): JSX.Element {
 
         <View style={{ flex: 1 }} />
 
-        <Button title={t.profile.signOut} variant="ghost" onPress={() => void signOut()} />
+        <Button
+          title={t.profile.signOut}
+          variant="ghost"
+          icon="logout"
+          onPress={() => void signOut()}
+        />
 
         {/* App Store Guideline 5.1.1(v): akkauntni o'chirish ilova ichida
             bo'lishi shart, qo'llab-quvvatlashga yozish yetarli emas */}
         <Button
           title={t.profile.deleteAccount}
           variant="danger"
+          icon="trash"
           onPress={() => router.push('/settings/delete-account')}
         />
       </Animated.ScrollView>

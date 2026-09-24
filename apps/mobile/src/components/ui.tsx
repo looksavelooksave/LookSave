@@ -163,17 +163,10 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     }).start();
   };
 
-  const label = (
-    <Text
-      style={[
-        styles.buttonText,
-        variant === 'ghost' && { color: colors.text },
-        variant === 'danger' && { color: colors.danger },
-      ]}
-    >
-      {title}
-    </Text>
-  );
+  // Ikonka yozuv bilan bir rangda — qizil tugmada oq ikonka begona ko'rinardi
+  const contentColor = variant === 'danger' ? colors.danger : colors.text;
+
+  const label = <Text style={[styles.buttonText, { color: contentColor }]}>{title}</Text>;
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -211,9 +204,9 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           <ActivityIndicator color={colors.text} />
         ) : (
           <View style={styles.buttonRow}>
-            {icon ? <Icon name={icon} size={20} color={colors.text} /> : null}
+            {icon ? <Icon name={icon} size={20} color={contentColor} /> : null}
             {label}
-            {trailingIcon ? <Icon name={trailingIcon} size={19} color={colors.text} /> : null}
+            {trailingIcon ? <Icon name={trailingIcon} size={19} color={contentColor} /> : null}
           </View>
         )}
       </Pressable>
@@ -338,7 +331,12 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   buttonGhost: { borderWidth: 1, borderColor: colors.borderStrong },
-  buttonDanger: { borderWidth: 1, borderColor: colors.danger },
+  // Och qizil fon — bo'sh ramka emas, «xavfli amal» ekani bir qarashda ko'rinsin
+  buttonDanger: {
+    borderWidth: 1,
+    borderColor: colors.danger,
+    backgroundColor: 'rgba(239,68,68,0.08)',
+  },
   buttonText: { ...text.bodyMed, color: colors.text, flexShrink: 1, textAlign: 'center' },
 
   field: { marginBottom: spacing.md },
