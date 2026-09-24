@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getFullProfile, updateProfile } from '../../src/api/endpoints';
+import { Flag } from '../../src/components/Flag';
 import { Icon, type IconName } from '../../src/components/Icon';
 import { AvatarPicker } from '../../src/components/profile/AvatarPicker';
 import { ScrollFade } from '../../src/components/ScrollFade';
@@ -15,11 +17,15 @@ import { useAuthStore } from '../../src/store/authStore';
 import { phone as formatPhone } from '../../src/theme/format';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 
+/*
+ * ⚠️ ARABCHA — BAA BAYROG'I. Ilova ikki mamlakatda ishlaydi (UZ va AE,
+ * `countrySchema`), arab tili aynan BAA foydalanuvchilari uchun.
+ */
 const LOCALES = [
-  { value: 'uz', label: "O'zbekcha" },
-  { value: 'ru', label: 'Русский' },
-  { value: 'en', label: 'English' },
-  { value: 'ar', label: 'العربية' },
+  { value: 'uz', label: "O'zbekcha", flag: 'uz' },
+  { value: 'ru', label: 'Русский', flag: 'ru' },
+  { value: 'en', label: 'English', flag: 'gb' },
+  { value: 'ar', label: 'العربية', flag: 'ae' },
 ] as const;
 
 function Row({
@@ -282,19 +288,46 @@ export default function Profile(): JSX.Element {
         <View style={styles.group}>
           <Text style={styles.groupTitle}>{t.profile.language}</Text>
           <View style={[styles.locales, rtlStyles.row(isRTL)]}>
-            {LOCALES.map((option) => (
-              <Pressable
-                key={option.value}
-                onPress={() => setLocale(option.value)}
-                style={[styles.locale, locale === option.value && styles.localeActive]}
-              >
-                <Text
-                  style={[styles.localeText, locale === option.value && { color: colors.text }]}
+            {LOCALES.map((option) => {
+              const active = locale === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={option.label}
+                  onPress={() => setLocale(option.value)}
+                  style={({ pressed }) => [
+                    styles.locale,
+                    active && styles.localeActive,
+                    pressed && !active && styles.localePressed,
+                  ]}
                 >
-                  {option.label}
-                </Text>
-              </Pressable>
-            ))}
+                  {active ? (
+                    <LinearGradient
+                      colors={['rgba(139,92,246,0.22)', 'rgba(139,92,246,0.04)']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  ) : null}
+                  <View style={[styles.flag, active && styles.flagActive]}>
+                    <Flag code={option.flag} size={28} />
+                  </View>
+                  <Text
+                    style={[styles.localeText, active && styles.localeTextActive]}
+                    numberOfLines={1}
+                  >
+                    {option.label}
+                  </Text>
+                  {active ? (
+                    <View style={styles.localeCheck}>
+                      <Icon name="check" size={12} color={colors.text} />
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
@@ -440,15 +473,49 @@ const styles = StyleSheet.create({
   },
   rowLabel: { ...text.body, color: colors.text },
   rowHint: { ...text.small, color: colors.textDim, marginTop: 2 },
-  locales: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, padding: spacing.md },
+  // 2×2 to'r: to'rtta til bir qatorga sig'masdi va chiplar siqilib qolardi
+  locales: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.sm,
+    padding: spacing.md,
+  },
   locale: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    width: '48.5%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
+    overflow: 'hidden',
+  },
+  localeActive: { borderColor: colors.primary, backgroundColor: colors.surface },
+  localePressed: { backgroundColor: colors.surface3 },
+  flag: {
+    width: 34,
+    height: 34,
     borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  localeActive: { borderColor: colors.primary, backgroundColor: colors.surface2 },
-  localeText: { ...text.small, color: colors.textMuted },
+  flagActive: { borderColor: 'rgba(139,92,246,0.55)' },
+  localeText: { ...text.bodyMed, color: colors.textMuted, flex: 1 },
+  localeTextActive: { color: colors.text },
+  localeCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
   restricted: { ...text.small, color: colors.warning },
 });
