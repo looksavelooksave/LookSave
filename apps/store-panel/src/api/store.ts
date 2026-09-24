@@ -168,6 +168,8 @@ export interface StoreProfile {
   id: string;
   name: string;
   slug: string;
+  /** Egasining username'i — panelga kirish nomi va do'konning @handle'i */
+  username: string | null;
   description: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
@@ -211,6 +213,10 @@ export const getStoreProfile = (): Promise<StoreProfile> => api<StoreProfile>('/
 
 export const updateStoreProfile = (body: UpdateStoreBody): Promise<StoreProfile> =>
   api<StoreProfile>('/store/profile', { method: 'PATCH', body });
+
+/** Faqat do'kon egasi o'zgartira oladi — xodimga server 403 qaytaradi */
+export const setStoreUsername = (username: string): Promise<{ username: string }> =>
+  api<{ username: string }>('/store/username', { method: 'PATCH', body: { username } });
 
 // ── Do'kon arizasi ──
 

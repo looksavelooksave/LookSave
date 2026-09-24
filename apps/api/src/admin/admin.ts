@@ -7,6 +7,7 @@ import type {
   AssetUpdateInput,
 } from '@looksave/validation';
 
+import { setUsername } from '../auth/users';
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
 
@@ -84,6 +85,7 @@ interface AdminStoreRow {
   created_at: Date;
   created_at_key: string;
   owner_name: string | null;
+  owner_username: string | null;
   owner_phone: string;
   reject_reason: string | null;
   product_count: string;
@@ -107,7 +109,8 @@ export async function findStores(
   if (query.q !== undefined) {
     params.push(query.q);
     conditions.push(
-      `($${params.length} <% s.name OR s.phone LIKE '%' || $${params.length} || '%')`,
+      `($${params.length} <% s.name OR s.phone LIKE '%' || $${params.length} || '%'
+        OR u.username = lower(ltrim($${params.length}, '@')))`,
     );
   }
 
@@ -129,7 +132,7 @@ export async function findStores(
             ST_X(s.location::geometry) AS lng,
             to_char(s.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.US') || '+00'
               AS created_at_key,
-            u.full_name AS owner_name, u.phone AS owner_phone,
+            u.full_name AS owner_name, u.phone AS owner_phone, u.username AS owner_username,
             (SELECT COUNT(*) FROM products p WHERE p.store_id = s.id AND p.status = 'active')
               AS product_count,
             (SELECT COUNT(*) FROM orders o WHERE o.store_id = s.id) AS order_count
@@ -142,6 +145,24 @@ export async function findStores(
   );
 
   return rows;
+}
+
+/**
+ * Do'kon egasiga username qo'yadi (admin boshlang'ich username beradi,
+ * sotuvchi keyin store panelda o'zgartira oladi).
+ */
+export async function setStoreOwnerUsername(
+  storeId: string,
+  username: string,
+): Promise<{ username: string }> {
+  const { rows } = await pool.query<{ owner_id: string }>(
+    `SELECT owner_id FROM stores WHERE id = $1`,
+    [storeId],
+  );
+  const store = rows[0];
+  if (!store) throw ApiError.notFound('Do`kon topilmadi');
+  await setUsername(store.owner_id, username);
+  return { username };
 }
 
 export function toAdminStoreDto(row: AdminStoreRow) {
@@ -159,7 +180,7 @@ export function toAdminStoreDto(row: AdminStoreRow) {
     location: { lat: row.lat, lng: row.lng },
     createdAt: row.created_at.toISOString(),
     createdAtKey: row.created_at_key,
-    owner: { name: row.owner_name, phone: row.owner_phone },
+    owner: { name: row.owner_name, phone: row.owner_phone, username: row.owner_username },
     rejectReason: row.reject_reason,
     productCount: Number(row.product_count),
     orderCount: Number(row.order_count),

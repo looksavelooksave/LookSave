@@ -45,10 +45,24 @@ export const registerSchema = deviceSchema.extend({
   locale: z.enum(['uz', 'ru', 'en', 'ar']).optional(),
 });
 
-export const loginSchema = deviceSchema.extend({
-  phone: e164PhoneSchema,
-  password: z.string().min(1, 'Parol kiritilmagan').max(128),
-});
+/**
+ * Kirish — telefon YOKI username bilan (sotuvchilar uchun, `username.ts`).
+ *
+ * ⚠️ Username bu yerda faqat shakli bo'yicha yumshoq tekshiriladi, to'liq
+ * `usernameSchema` bilan emas: band so'zlar ro'yxati o'zgarsa, eski
+ * username egasi kira olmay qolmasligi kerak. Topilmasa baribir
+ * "noto'g'ri" javobi qaytadi.
+ */
+export const loginSchema = deviceSchema
+  .extend({
+    phone: e164PhoneSchema.optional(),
+    username: z.string().trim().toLowerCase().min(1).max(30).optional(),
+    password: z.string().min(1, 'Parol kiritilmagan').max(128),
+  })
+  .refine((value) => (value.phone === undefined) !== (value.username === undefined), {
+    path: ['phone'],
+    message: 'Telefon raqami yoki username kiriting',
+  });
 
 export const refreshSchema = z.object({
   refreshToken: z.string().min(20).max(2048),

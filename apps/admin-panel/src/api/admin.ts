@@ -22,7 +22,7 @@ export interface AdminStore {
   coverUrl: string | null;
   location: { lat: number; lng: number };
   createdAt: string;
-  owner: { name: string | null; phone: string };
+  owner: { name: string | null; phone: string; username: string | null };
   rejectReason: string | null;
   productCount: number;
   orderCount: number;
@@ -113,6 +113,10 @@ export const rejectStore = (id: string, reason: string): Promise<unknown> =>
 
 export const suspendStore = (id: string, reason: string): Promise<unknown> =>
   api(`/admin/stores/${id}/suspend`, { method: 'POST', body: { reason } });
+
+/** Do'kon egasining username'i — login va do'konning @handle'i */
+export const setStoreOwnerUsername = (id: string, username: string): Promise<unknown> =>
+  api(`/admin/stores/${id}/username`, { method: 'PATCH', body: { username } });
 
 export const getModerationProducts = (
   status: 'pending' | 'rejected' | 'active',

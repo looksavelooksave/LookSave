@@ -42,6 +42,7 @@ export default function Store(): JSX.Element {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.name}>{data.name}</Text>
+            {data.username ? <Text style={styles.handle}>@{data.username}</Text> : null}
             <Text style={[styles.status, { color: data.isOpen ? colors.success : colors.textDim }]}>
               {data.isOpen
                 ? data.closesAt
@@ -118,6 +119,7 @@ const styles = StyleSheet.create({
   list: { padding: spacing.md, gap: spacing.sm },
   header: { gap: spacing.xs, marginBottom: spacing.md },
   name: { ...text.h2, color: colors.text },
+  handle: { ...text.small, color: colors.accent },
   status: { ...text.small },
   address: { ...text.body, color: colors.textMuted, marginTop: spacing.xs },
   landmark: { ...text.small, color: colors.textDim },

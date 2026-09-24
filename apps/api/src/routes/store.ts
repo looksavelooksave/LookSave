@@ -13,6 +13,7 @@ import {
   storeProductsQuerySchema,
   updateMemberSchema,
   updateProductSchema,
+  setUsernameSchema,
   updateStoreSchema,
   variantInputSchema,
   supportsAiTryon,
@@ -26,7 +27,7 @@ import { env } from '../config/env';
 import { openStoreStream } from '../integrations/events';
 import { getAnalytics, getInvoices, type Period } from '../store/analytics';
 import { prepareGarmentImage } from '../store/garment-image';
-import { getStoreProfile, updateStoreProfile } from '../store/profile';
+import { getStoreProfile, setStoreUsername, updateStoreProfile } from '../store/profile';
 import {
   addMember,
   ensureOwnerMembership,
@@ -213,6 +214,14 @@ storePanelRouter.patch(
   '/store/profile',
   route({ body: updateStoreSchema }, async (input, req, res) => {
     sendData(res, await updateStoreProfile(storeOf(req, res), input.body));
+  }),
+);
+
+/** PATCH /v1/store/username — egasining username'i (faqat ega o'zgartiradi) */
+storePanelRouter.patch(
+  '/store/username',
+  route({ body: setUsernameSchema }, async (input, req, res) => {
+    sendData(res, await setStoreUsername(storeOf(req, res), getAuth(res), input.body.username));
   }),
 );
 

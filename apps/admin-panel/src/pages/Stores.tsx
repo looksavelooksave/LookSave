@@ -1,16 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CircleCheck, CirclePause, CircleX, ClipboardList, Clock3, Grid2X2, Store } from 'lucide-react';
+import {
+  CircleCheck,
+  CirclePause,
+  CircleX,
+  ClipboardList,
+  Clock3,
+  Grid2X2,
+  Store,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import {
   approveStore,
   getStores,
   rejectStore,
+  setStoreOwnerUsername,
   suspendStore,
   type AdminStore,
   type StoreStatus,
 } from '../api/admin';
+import { ApiClientError } from '../api/client';
 import { ReasonModal } from '../components/ReasonModal';
+import { UsernameModal } from '../components/UsernameModal';
 import { ErrorState, Spinner } from '../components/Spinner';
 import { phone as formatPhone } from '../lib/format';
 import { Button } from '@/components/ui/button';
@@ -24,7 +35,13 @@ const TABS: Array<{ value: StoreStatus; label: string }> = [
   { value: 'all', label: 'Barchasi' },
 ];
 
-const TAB_ICONS = { pending: Clock3, active: CircleCheck, suspended: CirclePause, rejected: CircleX, all: Grid2X2 } as const;
+const TAB_ICONS = {
+  pending: Clock3,
+  active: CircleCheck,
+  suspended: CirclePause,
+  rejected: CircleX,
+  all: Grid2X2,
+} as const;
 
 /** Javob tezligi — ilova sifatining asosiy ko'rsatkichi (07-web-panels §5.5). */
 function responseTone(minutes: number | null): string {
@@ -40,12 +57,14 @@ function StoreCard({
   onApprove,
   onReject,
   onSuspend,
+  onUsername,
 }: {
   store: AdminStore;
   busy: boolean;
   onApprove: () => void;
   onReject: () => void;
   onSuspend: () => void;
+  onUsername: () => void;
 }): JSX.Element {
   return (
     <article className="card p-4 sm:p-5">
@@ -79,6 +98,18 @@ function StoreCard({
             <a href={`tel:${store.owner.phone}`} className="text-brand hover:underline">
               {formatPhone(store.owner.phone)}
             </a>
+          </dd>
+          <dd className="mt-1 flex items-center gap-2">
+            <span className={store.owner.username ? 'text-foreground' : 'text-dim'}>
+              {store.owner.username ? `@${store.owner.username}` : 'username yo`q'}
+            </span>
+            <button
+              type="button"
+              className="text-xs text-brand hover:underline"
+              onClick={onUsername}
+            >
+              {store.owner.username ? "o'zgartirish" : 'berish'}
+            </button>
           </dd>
         </div>
         <div>
@@ -141,6 +172,7 @@ export function StoresPage(): JSX.Element {
   const [modal, setModal] = useState<{ store: AdminStore; action: 'reject' | 'suspend' } | null>(
     null,
   );
+  const [usernameFor, setUsernameFor] = useState<AdminStore | null>(null);
   const queryClient = useQueryClient();
 
   const stores = useQuery({ queryKey: ['admin', 'stores', tab], queryFn: () => getStores(tab) });
@@ -149,6 +181,15 @@ export function StoresPage(): JSX.Element {
     mutationFn: (task: () => Promise<unknown>) => task(),
     onSuccess: () => {
       setModal(null);
+      void queryClient.invalidateQueries({ queryKey: ['admin'] });
+    },
+  });
+
+  const saveUsername = useMutation({
+    mutationFn: ({ id, username }: { id: string; username: string }) =>
+      setStoreOwnerUsername(id, username),
+    onSuccess: () => {
+      setUsernameFor(null);
       void queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
   });
@@ -168,15 +209,16 @@ export function StoresPage(): JSX.Element {
           {TABS.map((item) => {
             const TabIcon = TAB_ICONS[item.value];
             return (
-            <TabsTrigger
-              key={item.value}
-              value={item.value}
-              className="min-h-[58px] min-w-[180px] flex-1 gap-3 whitespace-nowrap rounded-2xl px-5 py-3 text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand data-[state=active]:to-primary data-[state=active]:text-white data-[state=active]:shadow-[0_10px_32px_rgba(124,58,237,.3)]"
-            >
-              <TabIcon className="h-5 w-5" />
-              {item.label}
-            </TabsTrigger>
-          )})}
+              <TabsTrigger
+                key={item.value}
+                value={item.value}
+                className="min-h-[58px] min-w-[180px] flex-1 gap-3 whitespace-nowrap rounded-2xl px-5 py-3 text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand data-[state=active]:to-primary data-[state=active]:text-white data-[state=active]:shadow-[0_10px_32px_rgba(124,58,237,.3)]"
+              >
+                <TabIcon className="h-5 w-5" />
+                {item.label}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
       </Tabs>
 
@@ -195,7 +237,9 @@ export function StoresPage(): JSX.Element {
           <div className="relative mb-7 flex h-36 w-48 items-center justify-center">
             <span className="absolute h-32 w-44 rounded-[42%] bg-primary/10 blur-sm" />
             <Store className="relative h-24 w-24 text-brand/70" strokeWidth={1.4} />
-            <span className="absolute bottom-2 right-5 flex h-14 w-14 items-center justify-center rounded-xl border-2 border-brand/60 bg-surface text-brand"><ClipboardList className="h-8 w-8" /></span>
+            <span className="absolute bottom-2 right-5 flex h-14 w-14 items-center justify-center rounded-xl border-2 border-brand/60 bg-surface text-brand">
+              <ClipboardList className="h-8 w-8" />
+            </span>
           </div>
           <h2 className="text-2xl font-bold text-foreground">Bu ro'yxat bo'sh</h2>
           <p className="mt-3 text-base text-dim">Yangi ariza kelganda shu yerda ko'rinadi.</p>
@@ -211,6 +255,10 @@ export function StoresPage(): JSX.Element {
             onApprove={() => act.mutate(() => approveStore(store.id))}
             onReject={() => setModal({ store, action: 'reject' })}
             onSuspend={() => setModal({ store, action: 'suspend' })}
+            onUsername={() => {
+              saveUsername.reset();
+              setUsernameFor(store);
+            }}
           />
         ))}
       </div>
@@ -233,6 +281,23 @@ export function StoresPage(): JSX.Element {
                 : suspendStore(modal.store.id, reason),
             )
           }
+        />
+      ) : null}
+
+      {usernameFor ? (
+        <UsernameModal
+          storeName={usernameFor.name}
+          current={usernameFor.owner.username}
+          busy={saveUsername.isPending}
+          error={
+            saveUsername.error
+              ? saveUsername.error instanceof ApiClientError
+                ? saveUsername.error.message
+                : 'Saqlab bo`lmadi'
+              : null
+          }
+          onCancel={() => setUsernameFor(null)}
+          onSubmit={(username) => saveUsername.mutate({ id: usernameFor.id, username })}
         />
       ) : null}
     </div>

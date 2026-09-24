@@ -10,6 +10,7 @@ import {
   brandUpdateSchema,
   idParamSchema,
   rejectReasonSchema,
+  setUsernameSchema,
 } from '@looksave/validation';
 import { Router } from 'express';
 
@@ -25,6 +26,7 @@ import {
   getOverview,
   removeBlock,
   setProductStatus,
+  setStoreOwnerUsername,
   setStoreStatus,
   toAdminStoreDto,
   toAssetDto,
@@ -83,6 +85,14 @@ adminRouter.post(
   '/admin/stores/:id/suspend',
   route({ params: idParamSchema, body: rejectReasonSchema }, async (input, _req, res) => {
     sendData(res, await setStoreStatus(input.params.id, 'suspend', input.body.reason));
+  }),
+);
+
+/** PATCH /v1/admin/stores/:id/username — do'kon egasining username'i */
+adminRouter.patch(
+  '/admin/stores/:id/username',
+  route({ params: idParamSchema, body: setUsernameSchema }, async (input, _req, res) => {
+    sendData(res, await setStoreOwnerUsername(input.params.id, input.body.username));
   }),
 );
 

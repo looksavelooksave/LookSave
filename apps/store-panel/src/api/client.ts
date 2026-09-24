@@ -160,11 +160,28 @@ export interface LoginResult {
   user: AuthUser;
 }
 
-export async function login(phoneNumber: string, password: string): Promise<AuthUser> {
+/**
+ * Login maydonidagi matnni telefon yoki username'ga ajratadi.
+ *
+ * Username harf bilan boshlanadi (`@looksave/validation` → username.ts),
+ * telefon esa `+` yoki raqam bilan — ya'ni ular hech qachon aralashmaydi.
+ * Telefon qulaylik uchun to'ldiriladi: "90 123 45 67" → "+998901234567".
+ */
+export function toLoginIdentity(input: string): { phone: string } | { username: string } {
+  const value = input.trim();
+  if (!/^[+\d(]/.test(value)) return { username: value.replace(/^@/, '').toLowerCase() };
+
+  const digits = value.replace(/\D/g, '');
+  if (value.startsWith('+')) return { phone: `+${digits}` };
+  if (digits.length === 9) return { phone: `+998${digits}` };
+  return { phone: `+${digits}` };
+}
+
+export async function login(identity: string, password: string): Promise<AuthUser> {
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: phoneNumber, password, platform: 'web' }),
+    body: JSON.stringify({ ...toLoginIdentity(identity), password, platform: 'web' }),
   });
 
   const payload = (await response.json()) as ApiSuccess<LoginResult> | ApiFailure;

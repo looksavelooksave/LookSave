@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, ImageIcon, MapPin, Store, Truck } from 'lucide-react';
+import { AtSign, Clock, ImageIcon, MapPin, Store, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { ApiClientError } from '../api/client';
 import {
   getStoreProfile,
+  setStoreUsername,
   updateStoreProfile,
   type StoreProfile,
   type WorkingHour,
@@ -28,6 +29,92 @@ const DAYS = [
   { day: 6, label: 'Shanba' },
   { day: 7, label: 'Yakshanba' },
 ];
+
+/**
+ * Username — alohida blok va alohida saqlash tugmasi.
+ *
+ * ⚠️ NEGA ASOSIY FORMADAN ALOHIDA: username do'konga emas, egasining
+ * AKKAUNTIGA tegishli (u bilan panelga kiriladi) va boshqa endpoint'ga
+ * ketadi. Umumiy "Saqlash" bilan birga yuborilsa, band username tufayli
+ * ish vaqti va manzil ham saqlanmay qolardi.
+ */
+function UsernameCard({ current }: { current: string | null }): JSX.Element {
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState(current ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => setValue(current ?? ''), [current]);
+
+  const save = useMutation({
+    mutationFn: () => setStoreUsername(value),
+    onSuccess: () => {
+      setError(null);
+      setSaved(true);
+      void queryClient.invalidateQueries({ queryKey: ['store'] });
+    },
+    onError: (err) => {
+      setSaved(false);
+      setError(err instanceof ApiClientError ? err.message : 'Saqlab bo`lmadi');
+    },
+  });
+
+  const normalized = value.trim().replace(/^@/, '').toLowerCase();
+  const unchanged = normalized === (current ?? '');
+
+  return (
+    <SectionCard
+      icon={AtSign}
+      title="Username"
+      description="Panelga telefon o'rniga shu nom bilan kirasiz. Xaridorlar do'koningizni @username bilan ko'radi."
+    >
+      <form
+        className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setSaved(false);
+          save.mutate();
+        }}
+      >
+        <label className="block flex-1">
+          <span className="label">Username</span>
+          <div className="relative mt-2">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-dim">
+              @
+            </span>
+            <Input
+              className="pl-7"
+              value={value}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={31}
+              placeholder="chilonzor_moda"
+              onChange={(event) => {
+                setSaved(false);
+                setValue(event.target.value);
+              }}
+            />
+          </div>
+          <span className="mt-1.5 block text-xs text-dim">
+            3–30 belgi: lotin harfi bilan boshlanadi, faqat harf, raqam, _ va .
+          </span>
+        </label>
+        <Button type="submit" disabled={save.isPending || unchanged || normalized.length < 3}>
+          {save.isPending ? 'Saqlanmoqda…' : 'Saqlash'}
+        </Button>
+      </form>
+      {error ? (
+        <p role="alert" className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+      {saved ? (
+        <p className="mt-3 text-sm text-success">Saqlandi: @{current ?? normalized}</p>
+      ) : null}
+    </SectionCard>
+  );
+}
 
 function toMap(hours: WorkingHour[]): Record<number, WorkingHour> {
   return Object.fromEntries(hours.map((hour) => [hour.day, hour]));
@@ -135,6 +222,8 @@ export function SettingsPage(): JSX.Element {
           </span>
         }
       />
+
+      <UsernameCard current={store.data.username} />
 
       <SectionCard icon={Store} title="Asosiy ma'lumot">
         <div className="space-y-4">

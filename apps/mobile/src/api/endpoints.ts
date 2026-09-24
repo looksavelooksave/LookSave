@@ -14,11 +14,10 @@ import { api, apiList, saveTokens } from './client';
  */
 async function shrinkForUpload(uri: string, maxWidth = 1280): Promise<string> {
   try {
-    const out = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: maxWidth } }],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
-    );
+    const out = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: maxWidth } }], {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
     return out.uri;
   } catch {
     return uri;
@@ -164,9 +163,7 @@ export interface MarketplaceBanner {
 }
 
 /** Market kolleksiyasida har 6 mahsulotdan keyin ko'rsatiladigan bannerlar. */
-export const getMarketplaceBanners = (
-  audience: BannerAudience,
-): Promise<MarketplaceBanner[]> =>
+export const getMarketplaceBanners = (audience: BannerAudience): Promise<MarketplaceBanner[]> =>
   api<MarketplaceBanner[]>(`/marketplace/banners?audience=${audience}`);
 
 // ── Savat ──
@@ -322,6 +319,8 @@ export const getOrder = (id: string): Promise<OrderDetail> => api<OrderDetail>(`
 export interface StoreDetail {
   id: string;
   name: string;
+  /** Do'konning @handle'i; qo'yilmagan bo'lsa `null` */
+  username: string | null;
   description: string | null;
   logoUrl: string | null;
   address: string;
