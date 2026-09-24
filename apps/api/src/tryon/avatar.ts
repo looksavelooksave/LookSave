@@ -10,6 +10,7 @@ import { makeCutout } from '../store/cutout';
 import { logger } from '../logger';
 import {
   buildAvatarPrompt,
+  buildAvatarSheetPrompt,
   missingForAvatar,
   type AvatarAngle,
   type AvatarGender,
@@ -232,7 +233,13 @@ export async function requestAvatar(
      */
     const task = await enqueueTask('avatar', userId, userId, {
       faceUrl: row.face_texture_url,
-      prompt,
+      /*
+       * ⚠️ OPERATORGA UCH BURCHAKLI VARAQ PROMPTI. Operator bitta rasm
+       * oladi (old · yon · orqa), natija topshirilganda server uni uchga
+       * bo'ladi (`developer-ai/tasks.ts` → `storeAvatarSheet`). Avtomatik
+       * rejim hozircha bitta old ko'rinish yasaydi — `prompt` o'sha uchun.
+       */
+      prompt: buildAvatarSheetPrompt(row.gender, row.measurements ?? {}),
       gender: row.gender,
       measurements: row.measurements ?? {},
       storeId,
