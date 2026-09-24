@@ -6,6 +6,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { requireOptionalNativeModule } from 'expo';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -14,11 +15,25 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnimatedSplash } from '../src/components/AnimatedSplash';
+import type { VideoSplash as VideoSplashComponent } from '../src/components/VideoSplash';
 import { usePushRegistration } from '../src/hooks/usePush';
 import { useI18n } from '../src/i18n';
 import { useAiFlowStore } from '../src/store/aiFlowStore';
 import { useAuthStore } from '../src/store/authStore';
 import { colors } from '../src/theme/tokens';
+
+/*
+ * Brend videosi faqat `expo-video` native moduli bor build'da.
+ *
+ * ⚠️ `import` EMAS, SHARTLI `require`. `expo-video` yuklanishi bilan
+ * native modulni talab qiladi va u bo'lmasa DARHOL yiqiladi. Modul yo'q
+ * build'ga (masalan, eski ilovaga OTA update tushganda) splash videosiz,
+ * eski animatsiya bilan ochiladi.
+ */
+const VideoSplash = requireOptionalNativeModule('ExpoVideo')
+  ? (require('../src/components/VideoSplash') as { VideoSplash: typeof VideoSplashComponent })
+      .VideoSplash
+  : null;
 
 // Native splash o'zi yashirinmasin — uni `AnimatedSplash` chizilgach o'zimiz
 // yashiramiz, aks holda ikkisi orasida bo'sh kadr ko'rinib qoladi.
@@ -120,7 +135,9 @@ function AppShell(): JSX.Element {
           />
         </Stack>
       ) : null}
-      {splashDone ? null : (
+      {splashDone ? null : VideoSplash ? (
+        <VideoSplash appReady={appReady} onFinish={handleSplashFinish} />
+      ) : (
         <AnimatedSplash
           fontsLoaded={fontsLoaded}
           appReady={appReady}

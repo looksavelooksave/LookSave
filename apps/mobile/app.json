@@ -70,7 +70,7 @@
     "splash": {
       "image": "./assets/logo-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0F"
+      "backgroundColor": "#000000"
     },
     "runtimeVersion": {
       "policy": "appVersion"
