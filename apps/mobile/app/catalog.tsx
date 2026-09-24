@@ -13,7 +13,7 @@ import {
 } from '../src/components/catalog/FilterSheet';
 import { Icon, type IconName } from '../src/components/Icon';
 import { Empty, ErrorView, Field, Screen } from '../src/components/ui';
-import { SkeletonGrid } from '../src/components/Skeleton';
+import { CARD_PADDING, CARD_TEXT_INSET, SkeletonGrid } from '../src/components/Skeleton';
 import { useI18n } from '../src/i18n';
 import { useAuthStore } from '../src/store/authStore';
 import { useLocationStore } from '../src/store/locationStore';
@@ -510,15 +510,32 @@ const styles = StyleSheet.create({
   viewButtonActive: { backgroundColor: colors.surface2 },
 
   list: { padding: spacing.md, gap: spacing.sm },
-  card: { flex: 1, maxWidth: '48.5%', gap: 2, marginBottom: spacing.md },
+  /*
+   * ⚠️ KARTA — BITTA YAXLIT QUTI. Ilgari fon faqat rasmda edi, sarlavha va
+   * narx esa uning ostida «osilib» turardi: ichki chekka yo'q, matn karta
+   * chetiga yopishib, qo'shni karta bilan chegarasi ko'rinmasdi. Endi
+   * rasm, sarlavha va narx bir fon va chegara ichida. Skeleton
+   * (`SkeletonCard`) aynan shu o'lchamlarni takrorlaydi.
+   */
+  card: {
+    flex: 1,
+    maxWidth: '48.5%',
+    gap: 2,
+    marginBottom: spacing.sm,
+    padding: CARD_PADDING,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   // Bitta ustunda `maxWidth` cheklovi olib tashlanadi
   cardWide: { maxWidth: '100%' },
   imageWrap: { position: 'relative' },
   image: {
     width: '100%',
     aspectRatio: 3 / 4,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface2,
   },
   placeholder: { borderWidth: 1, borderColor: colors.border },
   badgeTryon: {
@@ -557,13 +574,19 @@ const styles = StyleSheet.create({
   },
   storeTagText: { ...text.tiny, color: colors.text, flexShrink: 1 },
 
-  title: { ...text.bodyMed, color: colors.text, marginTop: spacing.sm },
+  title: {
+    ...text.bodyMed,
+    color: colors.text,
+    marginTop: spacing.sm,
+    paddingHorizontal: CARD_TEXT_INSET,
+  },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
     marginTop: 2,
+    paddingLeft: CARD_TEXT_INSET,
   },
   price: { ...text.price, color: colors.accent, fontSize: 15, lineHeight: 20, flexShrink: 1 },
   cartButton: {

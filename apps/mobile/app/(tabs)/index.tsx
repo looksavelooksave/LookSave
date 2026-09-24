@@ -22,6 +22,7 @@ import { ErrorView, Screen } from '../../src/components/ui';
 import { rtlStyles, useI18n } from '../../src/i18n';
 import { useLocationStore } from '../../src/store/locationStore';
 import { useSplashLanding } from '../../src/store/splashTargetStore';
+import { CARD_PADDING, CARD_TEXT_INSET } from '../../src/components/Skeleton';
 import { money } from '../../src/theme/format';
 import { images } from '../../src/theme/images';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
@@ -330,13 +331,23 @@ const styles = StyleSheet.create({
   section: { marginTop: spacing.sm },
 
   // `maxWidth` — toq sondagi oxirgi karta butun qatorni egallab ketmasligi uchun
-  card: { flex: 1, maxWidth: '48.5%', gap: 2 },
+  // Katalog kartasi bilan bir xil yaxlit quti (`catalog.tsx` → styles.card)
+  card: {
+    flex: 1,
+    maxWidth: '48.5%',
+    gap: 2,
+    padding: CARD_PADDING,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   imageWrap: { position: 'relative' },
   image: {
     width: '100%',
     aspectRatio: 3 / 4,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface2,
   },
   imagePlaceholder: { borderWidth: 1, borderColor: colors.border },
   footerLoading: { paddingVertical: spacing.lg, alignItems: 'center' },
@@ -363,8 +374,20 @@ const styles = StyleSheet.create({
     borderColor: colors.borderAccent,
   },
   badgeTryonText: { ...text.tiny, color: colors.accent },
-  cardTitle: { ...text.small, color: colors.text, marginTop: spacing.sm },
-  price: { ...text.price, color: colors.text, fontSize: 15, lineHeight: 20 },
+  cardTitle: {
+    ...text.small,
+    color: colors.text,
+    marginTop: spacing.sm,
+    paddingHorizontal: CARD_TEXT_INSET,
+  },
+  price: {
+    ...text.price,
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 20,
+    paddingHorizontal: CARD_TEXT_INSET,
+    paddingBottom: 2,
+  },
 
   empty: { paddingVertical: spacing.xl, gap: spacing.sm },
   emptyTitle: { ...text.h3, color: colors.text, textAlign: 'center' },

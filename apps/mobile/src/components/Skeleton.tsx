@@ -103,15 +103,29 @@ export function SkeletonText({ lines = 2 }: { lines?: number }): JSX.Element {
   );
 }
 
-/** Mahsulot kartasi — katalog va bosh sahifadagi to'r uchun. */
+/** Mahsulot kartasining ichki chekkasi — haqiqiy karta shu qiymatdan oladi. */
+export const CARD_PADDING = spacing.sm;
+/** Sarlavha va narxning rasm chetidan qo'shimcha siljishi. */
+export const CARD_TEXT_INSET = spacing.xs;
+
+/**
+ * Mahsulot kartasi — katalog va bosh sahifadagi to'r uchun.
+ *
+ * ⚠️ HAQIQIY KARTANING NUSXASI: bir xil quti (fon, chegara, chekka), 3:4
+ * rasm, sarlavha qatori va narx + savat tugmasi qatori. Ilgari skeleton
+ * uch qator matndan iborat edi, karta esa ikki qator va tugmadan — ma'lumot
+ * kelganda to'r balandligi o'zgarib, ekran sakrardi.
+ */
 export function SkeletonCard(): JSX.Element {
   return (
     <View style={styles.card}>
       <Skeleton aspectRatio={3 / 4} radius={radius.md} />
       <View style={styles.cardText}>
-        <Skeleton height={13} width="85%" />
-        <Skeleton height={11} width="55%" />
-        <Skeleton height={14} width="42%" style={{ marginTop: spacing.xs }} />
+        <Skeleton height={14} width="80%" />
+        <View style={styles.cardPriceRow}>
+          <Skeleton height={16} width="48%" />
+          <Skeleton width={36} height={36} radius={radius.md} />
+        </View>
       </View>
     </View>
   );
@@ -172,12 +186,28 @@ const styles = StyleSheet.create({
    * (`(tabs)/index.tsx`). Skeleton kontentning shaklini takrorlashi kerak,
    * aks holda ma'lumot kelganda joylashuv sakraydi.
    */
-  card: { flex: 1, maxWidth: '48.5%', gap: spacing.sm },
-  cardText: { gap: spacing.xs },
+  card: {
+    flex: 1,
+    maxWidth: '48.5%',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  cardText: { gap: spacing.sm, paddingHorizontal: spacing.xs },
+  cardPriceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowText: { flex: 1, gap: spacing.xs },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.md },
+  /*
+   * ⚠️ `padding` YO'Q, `gap` — karta to'ri bilan bir xil (`spacing.sm`).
+   * Skeleton ro'yxat sarlavhasi ichida turadi, ro'yxatning o'zida esa
+   * allaqachon `padding: spacing.md` bor — ikkinchi chekka skeletonni
+   * haqiqiy kartalardan torroq va ichkariroq qilib qo'yardi.
+   */
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   list: { gap: spacing.md, padding: spacing.md },
 });
