@@ -713,136 +713,115 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         </Pressable>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.page}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+        {/* ── Avatar maydoni ── */}
+        <View style={styles.stage}>
+          <AvatarStage
+            zoomed={zoomed}
+            imageUrl={preparingCutout ? null : (worn?.imageUrl ?? baseImage)}
+            cutoutUrl={worn?.cutoutUrl ?? baseCutout}
+            dimmed={!worn && currentWorking}
+            showRings
+          >
+            {deck.length > 0 ? (
+              <PhotoSwipe
+                photos={deck}
+                index={deckIndex}
+                onIndexChange={(next) => {
+                  const item = items[next];
+                  if (!item) return;
 
-      {/* ── Avatar maydoni ── */}
-      <View style={styles.stage}>
-        <AvatarStage
-          zoomed={zoomed}
-          imageUrl={preparingCutout ? null : worn?.imageUrl ?? baseImage}
-          cutoutUrl={worn?.cutoutUrl ?? baseCutout}
-          dimmed={!worn && currentWorking}
-          showRings
-        >
-          {deck.length > 0 ? (
-            <PhotoSwipe
-              photos={deck}
-              index={deckIndex}
-              onIndexChange={(next) => {
-                const item = items[next];
-                if (!item) return;
+                  /*
+                   * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
+                   * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
+                   * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
+                   */
+                  putOn(tab, item.variantId);
 
-                /*
-                 * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
-                 * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
-                 * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
-                 */
-                putOn(tab, item.variantId);
+                  stripRef.current?.scrollToIndex({
+                    index: next,
+                    animated: true,
+                    viewPosition: 0.5,
+                  });
+                }}
+              />
+            ) : null}
+          </AvatarStage>
 
-                stripRef.current?.scrollToIndex({
-                  index: next,
-                  animated: true,
-                  viewPosition: 0.5,
-                });
-              }}
-            />
+          {/* «5 daqiqada tayyor» — kiyim operatorda kiydirilayotgan payt */}
+          {currentWorking && !worn ? (
+            <View style={styles.workingOverlay} pointerEvents="none">
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={styles.workingTitle}>5 daqiqada tayyor bo`ladi</Text>
+              <Text style={styles.workingHint}>
+                Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring
+              </Text>
+            </View>
           ) : null}
-        </AvatarStage>
 
-        {/* «5 daqiqada tayyor» — kiyim operatorda kiydirilayotgan payt */}
-        {currentWorking && !worn ? (
-          <View style={styles.workingOverlay} pointerEvents="none">
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.workingTitle}>5 daqiqada tayyor bo`ladi</Text>
-            <Text style={styles.workingHint}>
-              Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring
-            </Text>
+          <View style={styles.sideControls} pointerEvents="box-none">
+            {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
+            <Control
+              icon="zoom"
+              label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
+              onPress={() => setZoomed((value) => !value)}
+            />
           </View>
-        ) : null}
 
-        <View style={styles.sideControls} pointerEvents="box-none">
-          {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
-          <Control
-            icon="zoom"
-            label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
-            onPress={() => setZoomed((value) => !value)}
-          />
+          {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
+          {resolved.length > 0 ? (
+            <View style={styles.layerRail} pointerEvents="none">
+              {resolved.map((layer) => (
+                <View
+                  key={layer.category}
+                  style={[
+                    styles.layerDot,
+                    layer.render?.status === 'ready' && styles.layerDotReady,
+                    layer.category === tab && styles.layerDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          {currentWorking ? (
+            <View style={styles.overlay} pointerEvents="none">
+              <ActivityIndicator color={colors.accent} />
+              <Text style={styles.overlayText}>AI kiyintirmoqda…</Text>
+              <Text style={styles.overlayHint}>
+                {stripBase.ready
+                  ? 'Har qatlam 10–20 soniya'
+                  : 'Avval ostidagi qatlam tayyorlanmoqda'}
+              </Text>
+            </View>
+          ) : null}
+
+          {preparingCutout ? (
+            <View style={styles.overlay} pointerEvents="none">
+              <ActivityIndicator color={colors.accent} />
+              <Text style={styles.overlayText}>Avatar sahnaga tayyorlanmoqda…</Text>
+              <Text style={styles.overlayHint}>Fon bir marta ajratiladi</Text>
+            </View>
+          ) : null}
+
+          {failed && !currentWorking ? (
+            <View style={styles.overlay} pointerEvents="none">
+              <Icon name="close" size={26} color={colors.danger} />
+              <Text style={styles.overlayText}>Kiyintirib bo`lmadi</Text>
+              <Text style={styles.overlayHint} numberOfLines={2}>
+                {failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring'}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
-        {/*
-          ── Sizga mos uslub ──
-
-          ⚠️ BU YERDA KOMPLEKT YASALMAYDI. Tayyor komplekt bir necha
-          qatlamni birdan chizishni talab qiladi, ya'ni bir bosishda bir
-          necha kredit ketardi. Shuning uchun karta mavjud AI Designer
-          ekraniga olib boradi — komplekt o'sha yerda ko'riladi va
-          foydalanuvchi nimani kiyintirishni o'zi tanlaydi.
-        */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Sizga mos uslub"
-          onPress={() => router.push('/ai/look')}
-          style={styles.suggestCard}
+        {/* Barcha turkumlar bitta gorizontal qatorda, qolganlari surib ko'riladi. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabsWrap}
+          contentContainerStyle={styles.tabs}
         >
-          <Icon name="looks" size={22} color={colors.accent} />
-          <Text style={styles.suggestText}>Sizga{'\n'}mos uslub</Text>
-        </Pressable>
-
-        {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
-        {resolved.length > 0 ? (
-          <View style={styles.layerRail} pointerEvents="none">
-            {resolved.map((layer) => (
-              <View
-                key={layer.category}
-                style={[
-                  styles.layerDot,
-                  layer.render?.status === 'ready' && styles.layerDotReady,
-                  layer.category === tab && styles.layerDotActive,
-                ]}
-              />
-            ))}
-          </View>
-        ) : null}
-
-        {currentWorking ? (
-          <View style={styles.overlay} pointerEvents="none">
-            <ActivityIndicator color={colors.accent} />
-            <Text style={styles.overlayText}>AI kiyintirmoqda…</Text>
-            <Text style={styles.overlayHint}>
-              {stripBase.ready ? 'Har qatlam 10–20 soniya' : 'Avval ostidagi qatlam tayyorlanmoqda'}
-            </Text>
-          </View>
-        ) : null}
-
-        {preparingCutout ? (
-          <View style={styles.overlay} pointerEvents="none">
-            <ActivityIndicator color={colors.accent} />
-            <Text style={styles.overlayText}>Avatar sahnaga tayyorlanmoqda…</Text>
-            <Text style={styles.overlayHint}>Fon bir marta ajratiladi</Text>
-          </View>
-        ) : null}
-
-        {failed && !currentWorking ? (
-          <View style={styles.overlay} pointerEvents="none">
-            <Icon name="close" size={26} color={colors.danger} />
-            <Text style={styles.overlayText}>Kiyintirib bo`lmadi</Text>
-            <Text style={styles.overlayHint} numberOfLines={2}>
-              {failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring'}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Barcha turkumlar bitta gorizontal qatorda, qolganlari surib ko'riladi. */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabsWrap}
-        contentContainerStyle={styles.tabs}
-      >
           {TABS.map((item) => {
             const active = tab === item.category;
             const dressed = outfit.some((layer) => layer.category === item.category);
@@ -871,10 +850,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                     color={active ? colors.accent : colors.textMuted}
                   />
                 </View>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.tabText, active && styles.tabTextActive]}
-                >
+                <Text numberOfLines={1} style={[styles.tabText, active && styles.tabTextActive]}>
                   {item.label}
                 </Text>
                 {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
@@ -882,9 +858,9 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               </Pressable>
             );
           })}
-      </ScrollView>
+        </ScrollView>
 
-      {/*
+        {/*
         ── Uslub chiplari ──
 
         ⚠️ TANLANGAN KIYIMDAN TASHQARIDA TURADI. Ilgari o'lcham va rang
@@ -895,144 +871,144 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         Filtr serverda bajariladi: chip `queryKey` ni o'zgartiradi va
         ro'yxat qaytadan so'raladi. Qayta bosilsa — bekor bo'ladi.
       */}
-      <View style={styles.styleRowWrap}>
-        <View style={styles.styleRow}>
-          {GARMENT_STYLES.map((item) => {
-            const active = styleFilter === item;
+        <View style={styles.styleRowWrap}>
+          <View style={styles.styleRow}>
+            {GARMENT_STYLES.map((item) => {
+              const active = styleFilter === item;
 
-            return (
-              <Pressable
-                key={item}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
-                onPress={() => setStyleFilter((value) => (value === item ? null : item))}
-                style={[styles.styleChip, active && styles.styleChipActive]}
-              >
-                <Text style={[styles.styleChipText, active && { color: colors.text }]}>
-                  {STYLE_LABEL[item]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.bottom}>
-        {limitReached ? (
-          <View style={styles.banner}>
-            <Icon name="clock" size={14} color={colors.warning} />
-            <Text style={styles.bannerText}>
-              Kunlik AI chegarasi tugadi. Tayyor suratlar qoladi, yangilari ertaga.
-            </Text>
+              return (
+                <Pressable
+                  key={item}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
+                  onPress={() => setStyleFilter((value) => (value === item ? null : item))}
+                  style={[styles.styleChip, active && styles.styleChipActive]}
+                >
+                  <Text style={[styles.styleChipText, active && { color: colors.text }]}>
+                    {STYLE_LABEL[item]}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        ) : null}
+        </View>
 
-        {/* ── Kiyim tasmasi ── */}
-        {garments.isLoading ? (
-          <ActivityIndicator color={colors.accent} style={styles.stripLoader} />
-        ) : items.length === 0 ? (
-          /*
+        <View style={styles.bottom}>
+          {limitReached ? (
+            <View style={styles.banner}>
+              <Icon name="clock" size={14} color={colors.warning} />
+              <Text style={styles.bannerText}>
+                Kunlik AI chegarasi tugadi. Tayyor suratlar qoladi, yangilari ertaga.
+              </Text>
+            </View>
+          ) : null}
+
+          {/* ── Kiyim tasmasi ── */}
+          {garments.isLoading ? (
+            <ActivityIndicator color={colors.accent} style={styles.stripLoader} />
+          ) : items.length === 0 ? (
+            /*
             ⚠️ BO'SH RO'YXAT — BOSHI BERK KO'CHA EMAS. Ikkala chiqish
             yo'li ham shu yerda: filtrni bo'shatish yoki do'konni
             almashtirish. Ilgari faqat «kiyim yo'q» yozuvi turardi.
           */
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyStrip}>
-              {styleFilter
-                ? `${STYLE_LABEL[styleFilter]} uslubidagi ${activeTab?.label.toLowerCase()} topilmadi`
-                : sizeFilter
-                  ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
-                  : 'Bu turkumda hozircha kiyim yo`q'}
-            </Text>
-            <View style={styles.emptyActions}>
-              {/* Uslub filtri bo'sh qilgan bo'lsa — birinchi chiqish yo'li shu */}
-              {styleFilter ? (
-                <Button
-                  title="Uslub filtrini olib tashlash"
-                  variant="ghost"
-                  onPress={() => setStyleFilter(null)}
-                />
-              ) : null}
-              {sizeFilter ? (
-                <Button
-                  title="Barcha o`lchamlarni ko`rsat"
-                  variant="ghost"
-                  onPress={() => setOnlyMySize(false)}
-                />
-              ) : null}
-              <Button title="Boshqa do`kon tanlash" onPress={() => setStoreOpen(true)} />
-            </View>
-          </View>
-        ) : (
-          <FlatList
-            ref={stripRef}
-            data={items}
-            keyExtractor={(item) => item.variantId}
-            getItemLayout={(_data, index) => ({
-              length: STRIP_ITEM,
-              offset: STRIP_ITEM * index,
-              index,
-            })}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.strip}
-            removeClippedSubviews
-            renderItem={({ item }) => {
-              const selected = item.variantId === current?.variantId;
-              const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
-              const isReady = render?.status === 'ready';
-              const busy = render?.status === 'pending' || render?.status === 'processing';
-
-              /*
-               * ⚠️ KARTOCHKADA ODAMNING O'ZI — MAKETDAGI ASOSIY FIKR.
-               * Har kartochka kiyimning yassi suratini emas, MODELNI
-               * o'sha kiyimda ko'rsatadi. Endi bu deyarli hamma
-               * kartochkada bor: tasma oldindan tayyorlanadi.
-               */
-              const preview = isReady ? (render.cutoutUrl ?? render.imageUrl) : item.image;
-
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={item.title}
-                  onPress={() => {
-                    /*
-                     * ⚠️ BOSISH = KIYINTIRISH. Ilgari bosish faqat
-                     * tanlardi va pastda alohida «Kiyintirish» tugmasi
-                     * bor edi — ya'ni natijani ko'rish uchun ikki
-                     * bosish kerak edi.
-                     */
-                    putOn(tab, item.variantId);
-                  }}
-                  style={[styles.thumbWrap, selected && styles.thumbSelected]}
-                >
-                  <Image
-                    source={{ uri: preview ?? undefined }}
-                    style={[styles.thumb, isReady && styles.thumbWorn]}
-                    resizeMode={isReady ? 'contain' : 'cover'}
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyStrip}>
+                {styleFilter
+                  ? `${STYLE_LABEL[styleFilter]} uslubidagi ${activeTab?.label.toLowerCase()} topilmadi`
+                  : sizeFilter
+                    ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
+                    : 'Bu turkumda hozircha kiyim yo`q'}
+              </Text>
+              <View style={styles.emptyActions}>
+                {/* Uslub filtri bo'sh qilgan bo'lsa — birinchi chiqish yo'li shu */}
+                {styleFilter ? (
+                  <Button
+                    title="Uslub filtrini olib tashlash"
+                    variant="ghost"
+                    onPress={() => setStyleFilter(null)}
                   />
+                ) : null}
+                {sizeFilter ? (
+                  <Button
+                    title="Barcha o`lchamlarni ko`rsat"
+                    variant="ghost"
+                    onPress={() => setOnlyMySize(false)}
+                  />
+                ) : null}
+                <Button title="Boshqa do`kon tanlash" onPress={() => setStoreOpen(true)} />
+              </View>
+            </View>
+          ) : (
+            <FlatList
+              ref={stripRef}
+              data={items}
+              keyExtractor={(item) => item.variantId}
+              getItemLayout={(_data, index) => ({
+                length: STRIP_ITEM,
+                offset: STRIP_ITEM * index,
+                index,
+              })}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.strip}
+              removeClippedSubviews
+              renderItem={({ item }) => {
+                const selected = item.variantId === current?.variantId;
+                const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
+                const isReady = render?.status === 'ready';
+                const busy = render?.status === 'pending' || render?.status === 'processing';
 
-                  {busy ? (
-                    <View style={styles.thumbBusy}>
-                      <ActivityIndicator size="small" color={colors.accent} />
-                    </View>
-                  ) : null}
+                /*
+                 * ⚠️ KARTOCHKADA ODAMNING O'ZI — MAKETDAGI ASOSIY FIKR.
+                 * Har kartochka kiyimning yassi suratini emas, MODELNI
+                 * o'sha kiyimda ko'rsatadi. Endi bu deyarli hamma
+                 * kartochkada bor: tasma oldindan tayyorlanadi.
+                 */
+                const preview = isReady ? (render.cutoutUrl ?? render.imageUrl) : item.image;
 
-                  {isReady ? (
-                    <View style={styles.readyBadge}>
-                      <Icon name="authentic" size={10} color={colors.bg} />
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            }}
-          />
-        )}
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={item.title}
+                    onPress={() => {
+                      /*
+                       * ⚠️ BOSISH = KIYINTIRISH. Ilgari bosish faqat
+                       * tanlardi va pastda alohida «Kiyintirish» tugmasi
+                       * bor edi — ya'ni natijani ko'rish uchun ikki
+                       * bosish kerak edi.
+                       */
+                      putOn(tab, item.variantId);
+                    }}
+                    style={[styles.thumbWrap, selected && styles.thumbSelected]}
+                  >
+                    <Image
+                      source={{ uri: preview ?? undefined }}
+                      style={[styles.thumb, isReady && styles.thumbWorn]}
+                      resizeMode={isReady ? 'contain' : 'cover'}
+                    />
 
-        {current ? (
-          <View style={styles.details}>
-            {/*
+                    {busy ? (
+                      <View style={styles.thumbBusy}>
+                        <ActivityIndicator size="small" color={colors.accent} />
+                      </View>
+                    ) : null}
+
+                    {isReady ? (
+                      <View style={styles.readyBadge}>
+                        <Icon name="authentic" size={10} color={colors.bg} />
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              }}
+            />
+          )}
+
+          {current ? (
+            <View style={styles.details}>
+              {/*
               ── Mahsulot sarlavhasi ──
 
               Chapda nom, do'kon va NARX; o'ngda sevimli va ulashish.
@@ -1042,142 +1018,142 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               qo'yib, pastgacha tushmaguncha narxini bilmasdi. Endi u
               tanlov bilan birga ko'rinadi.
             */}
-            <View style={styles.detailsHead}>
-              <View style={styles.detailsText}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {current.title}
-                </Text>
-                <Text style={styles.store} numberOfLines={1}>
-                  {current.store.name}
-                </Text>
-                <Text style={styles.price}>{money(current.price, current.currency)}</Text>
-              </View>
+              <View style={styles.detailsHead}>
+                <View style={styles.detailsText}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {current.title}
+                  </Text>
+                  <Text style={styles.store} numberOfLines={1}>
+                    {current.store.name}
+                  </Text>
+                  <Text style={styles.price}>{money(current.price, current.currency)}</Text>
+                </View>
 
-              <View style={styles.detailsActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    favoriteIds.has(current.productId)
-                      ? 'Sevimlilardan olib tashlash'
-                      : 'Sevimlilarga qo`shish'
-                  }
-                  accessibilityState={{ selected: favoriteIds.has(current.productId) }}
-                  hitSlop={6}
-                  disabled={favorite.isPending}
-                  onPress={() =>
-                    favorite.mutate({
-                      productId: current.productId,
-                      on: !favoriteIds.has(current.productId),
-                    })
-                  }
-                  style={styles.roundButton}
-                >
-                  <Icon
-                    name={favoriteIds.has(current.productId) ? 'favoriteOn' : 'favorite'}
-                    size={17}
-                    color={favoriteIds.has(current.productId) ? colors.accent : colors.text}
-                  />
-                </Pressable>
+                <View style={styles.detailsActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      favoriteIds.has(current.productId)
+                        ? 'Sevimlilardan olib tashlash'
+                        : 'Sevimlilarga qo`shish'
+                    }
+                    accessibilityState={{ selected: favoriteIds.has(current.productId) }}
+                    hitSlop={6}
+                    disabled={favorite.isPending}
+                    onPress={() =>
+                      favorite.mutate({
+                        productId: current.productId,
+                        on: !favoriteIds.has(current.productId),
+                      })
+                    }
+                    style={styles.roundButton}
+                  >
+                    <Icon
+                      name={favoriteIds.has(current.productId) ? 'favoriteOn' : 'favorite'}
+                      size={17}
+                      color={favoriteIds.has(current.productId) ? colors.accent : colors.text}
+                    />
+                  </Pressable>
 
-                {/*
+                  {/*
                   ⚠️ HAVOLA EMAS, MATN. Mahsulotning veb sahifasi hali
                   yo'q, shuning uchun soxta manzil yubormaymiz — nom,
                   do'kon va narx yuboriladi. Sahifa paydo bo'lganda shu
                   yerga havola qo'shiladi.
                 */}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Ulashish"
-                  hitSlop={6}
-                  onPress={() => {
-                    void Share.share({
-                      message: `${current.title} — ${current.store.name}\n${money(
-                        current.price,
-                        current.currency,
-                      )}\n\nLookSave'da ko'rdim`,
-                    });
-                  }}
-                  style={styles.roundButton}
-                >
-                  <Icon name="share" size={17} color={colors.text} />
-                </Pressable>
-              </View>
-            </View>
-
-            {colorOptions.length > 1 ? (
-              <>
-                <Text style={styles.label}>Rang</Text>
-                <View style={styles.colors}>
-                  {colorOptions.map((option) => (
-                    <Pressable
-                      key={option.variantId}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Rang: ${option.colorHex ?? 'variant'}`}
-                      onPress={() => {
-                        putOn(tab, option.variantId);
-                      }}
-                      style={[
-                        styles.color,
-                        option.variantId === current.variantId && styles.colorActive,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.colorDot,
-                          { backgroundColor: option.colorHex ?? colors.surface2 },
-                        ]}
-                      />
-                    </Pressable>
-                  ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Ulashish"
+                    hitSlop={6}
+                    onPress={() => {
+                      void Share.share({
+                        message: `${current.title} — ${current.store.name}\n${money(
+                          current.price,
+                          current.currency,
+                        )}\n\nLookSave'da ko'rdim`,
+                      });
+                    }}
+                    style={styles.roundButton}
+                  >
+                    <Icon name="share" size={17} color={colors.text} />
+                  </Pressable>
                 </View>
-              </>
-            ) : null}
+              </View>
 
-            {sizes.length > 0 ? (
-              <>
-                <View style={styles.sizeHead}>
-                  <Text style={styles.label}>
-                    O`lcham
-                    {fitSize ? <Text style={styles.recommend}> · sizga {fitSize}</Text> : null}
-                  </Text>
-                  {/*
+              {colorOptions.length > 1 ? (
+                <>
+                  <Text style={styles.label}>Rang</Text>
+                  <View style={styles.colors}>
+                    {colorOptions.map((option) => (
+                      <Pressable
+                        key={option.variantId}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Rang: ${option.colorHex ?? 'variant'}`}
+                        onPress={() => {
+                          putOn(tab, option.variantId);
+                        }}
+                        style={[
+                          styles.color,
+                          option.variantId === current.variantId && styles.colorActive,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.colorDot,
+                            { backgroundColor: option.colorHex ?? colors.surface2 },
+                          ]}
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
+              {sizes.length > 0 ? (
+                <>
+                  <View style={styles.sizeHead}>
+                    <Text style={styles.label}>
+                      O`lcham
+                      {fitSize ? <Text style={styles.recommend}> · sizga {fitSize}</Text> : null}
+                    </Text>
+                    {/*
                     Filtr holati ko'rinib tursin: foydalanuvchi ro'yxat
                     nega qisqa ekanini bilishi kerak
                   */}
-                  {fitSize ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => setOnlyMySize((value) => !value)}
-                      hitSlop={8}
-                      style={[styles.filterPill, onlyMySize && styles.filterPillActive]}
-                    >
-                      <Icon
-                        name="filter"
-                        size={12}
-                        color={onlyMySize ? colors.accent : colors.textDim}
-                      />
-                      <Text style={[styles.filterText, onlyMySize && { color: colors.accent }]}>
-                        Faqat mening o`lchamim
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </View>
+                    {fitSize ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setOnlyMySize((value) => !value)}
+                        hitSlop={8}
+                        style={[styles.filterPill, onlyMySize && styles.filterPillActive]}
+                      >
+                        <Icon
+                          name="filter"
+                          size={12}
+                          color={onlyMySize ? colors.accent : colors.textDim}
+                        />
+                        <Text style={[styles.filterText, onlyMySize && { color: colors.accent }]}>
+                          Faqat mening o`lchamim
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
 
-                <View style={styles.sizes}>
-                  {sizes.map((item) => (
-                    <Pressable
-                      key={item}
-                      accessibilityRole="button"
-                      onPress={() => setSize(item)}
-                      style={[styles.size, picked === item && styles.sizeActive]}
-                    >
-                      <Text style={[styles.sizeText, picked === item && { color: colors.text }]}>
-                        {item}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  <View style={styles.sizes}>
+                    {sizes.map((item) => (
+                      <Pressable
+                        key={item}
+                        accessibilityRole="button"
+                        onPress={() => setSize(item)}
+                        style={[styles.size, picked === item && styles.sizeActive]}
+                      >
+                        <Text style={[styles.sizeText, picked === item && { color: colors.text }]}>
+                          {item}
+                        </Text>
+                      </Pressable>
+                    ))}
 
-                  {/*
+                    {/*
                     ⚠️ TUGAGANLARI HAM KO'RSATILADI — bosib bo'lmaydi.
 
                     Ilgari ular ro'yxatdan shunchaki tushib qolardi va
@@ -1185,25 +1161,25 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                     Ko'rsatilsa, u kutishi yoki boshqa do'konni ochishi
                     mumkin — qaror uniki bo'ladi.
                   */}
-                  {soldOutSizes.map((item) => (
-                    <View
-                      key={`sold-${item}`}
-                      accessible
-                      accessibilityLabel={`${item} — tugagan`}
-                      style={[styles.size, styles.sizeSoldOut]}
-                    >
-                      <Text style={styles.sizeSoldOutText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            ) : (
-              <Text style={styles.soldOut}>Bu mahsulot omborda tugagan</Text>
-            )}
+                    {soldOutSizes.map((item) => (
+                      <View
+                        key={`sold-${item}`}
+                        accessible
+                        accessibilityLabel={`${item} — tugagan`}
+                        style={[styles.size, styles.sizeSoldOut]}
+                      >
+                        <Text style={styles.sizeSoldOutText}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.soldOut}>Bu mahsulot omborda tugagan</Text>
+              )}
 
-            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+              {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-            {/*
+              {/*
               ── Komplekt ──
 
               ⚠️ ILGARI BU YERDA «Uslub» QATORI TURARDI. U tanlovni
@@ -1212,58 +1188,58 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               Uning o'rnida endi komplektning o'zi: nima kiyilgan,
               qancha turadi va bir bosishda savatga.
             */}
-            {outfitItems.length > 0 ? (
-              <View style={styles.outfitCard}>
-                <View style={styles.outfitHead}>
-                  <Text style={styles.outfitTitle}>Komplekt · {outfitItems.length} ta</Text>
-                  <Text style={styles.outfitTotal}>
-                    {money(String(outfitTotal), outfitCurrency)}
-                  </Text>
+              {outfitItems.length > 0 ? (
+                <View style={styles.outfitCard}>
+                  <View style={styles.outfitHead}>
+                    <Text style={styles.outfitTitle}>Komplekt · {outfitItems.length} ta</Text>
+                    <Text style={styles.outfitTotal}>
+                      {money(String(outfitTotal), outfitCurrency)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.outfitRow}>
+                    {resolved.map((layer) => {
+                      const item = seen[layer.variantId];
+                      if (!item) return null;
+
+                      return (
+                        <Pressable
+                          key={layer.category}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${item.title} — yechish`}
+                          onPress={() => remove(layer.category)}
+                          style={styles.outfitItem}
+                        >
+                          <Image source={{ uri: item.image }} style={styles.outfitThumb} />
+                          <View style={styles.outfitRemove}>
+                            <Icon name="close" size={9} color={colors.text} />
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
+              ) : null}
 
-                <View style={styles.outfitRow}>
-                  {resolved.map((layer) => {
-                    const item = seen[layer.variantId];
-                    if (!item) return null;
-
-                    return (
-                      <Pressable
-                        key={layer.category}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${item.title} — yechish`}
-                        onPress={() => remove(layer.category)}
-                        style={styles.outfitItem}
-                      >
-                        <Image source={{ uri: item.image }} style={styles.outfitThumb} />
-                        <View style={styles.outfitRemove}>
-                          <Icon name="close" size={9} color={colors.text} />
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-
-            <View style={styles.actions}>
-              {/*
+              <View style={styles.actions}>
+                {/*
                 ⚠️ NARX ENDI TUGMADA EMAS. U yuqorida, nom ostida turadi —
                 maketdagidek. Tugmada takrorlash faqat joy egallardi va
                 uzun narxda yozuv ikki qatorga tushardi.
               */}
-              <Button
-                title={picked ? 'Savatga qo`shish' : 'O`lcham tanlang'}
-                icon="tryon"
-                trailingIcon={picked ? 'next' : undefined}
-                pill
-                disabled={!picked || cart.isPending}
-                loading={cart.isPending}
-                onPress={() =>
-                  picked && cart.mutate([{ variantId: current.variantId, chosenSize: picked }])
-                }
-              />
+                <Button
+                  title={picked ? 'Savatga qo`shish' : 'O`lcham tanlang'}
+                  icon="tryon"
+                  trailingIcon={picked ? 'next' : undefined}
+                  pill
+                  disabled={!picked || cart.isPending}
+                  loading={cart.isPending}
+                  onPress={() =>
+                    picked && cart.mutate([{ variantId: current.variantId, chosenSize: picked }])
+                  }
+                />
 
-              {/*
+                {/*
                 Butun komplektni savatga — bir bosishda.
 
                 ⚠️ FAQAT BIRDAN KO'P BO'LSA. Bitta kiyimda u yuqoridagi
@@ -1275,36 +1251,36 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                 bel) — birini ikkinchisiga qo'llasak, shim noto'g'ri
                 o'lchamda savatga tushardi.
               */}
-              {outfitItems.length > 1 ? (
-                <Button
-                  title={`Butun komplektni savatga · ${money(String(outfitTotal), outfitCurrency)}`}
-                  variant="ghost"
-                  disabled={cart.isPending}
-                  onPress={() => {
-                    const lines = outfitItems
-                      .map((item) => {
-                        const fit = measurements ? recommendSize(item.slot, measurements) : null;
-                        const chosenSize =
-                          fit && item.sizes.includes(fit) ? fit : (item.sizes[0] ?? null);
-                        return chosenSize ? { variantId: item.variantId, chosenSize } : null;
-                      })
-                      .filter((line): line is { variantId: string; chosenSize: string } =>
-                        Boolean(line),
-                      );
+                {outfitItems.length > 1 ? (
+                  <Button
+                    title={`Butun komplektni savatga · ${money(String(outfitTotal), outfitCurrency)}`}
+                    variant="ghost"
+                    disabled={cart.isPending}
+                    onPress={() => {
+                      const lines = outfitItems
+                        .map((item) => {
+                          const fit = measurements ? recommendSize(item.slot, measurements) : null;
+                          const chosenSize =
+                            fit && item.sizes.includes(fit) ? fit : (item.sizes[0] ?? null);
+                          return chosenSize ? { variantId: item.variantId, chosenSize } : null;
+                        })
+                        .filter((line): line is { variantId: string; chosenSize: string } =>
+                          Boolean(line),
+                        );
 
-                    if (lines.length === 0) {
-                      setNotice('Komplektdagi mahsulotlar omborda tugagan');
-                      return;
-                    }
+                      if (lines.length === 0) {
+                        setNotice('Komplektdagi mahsulotlar omborda tugagan');
+                        return;
+                      }
 
-                    cart.mutate(lines);
-                  }}
-                />
-              ) : null}
+                      cart.mutate(lines);
+                    }}
+                  />
+                ) : null}
+              </View>
             </View>
-          </View>
-        ) : null}
-      </View>
+          ) : null}
+        </View>
       </ScrollView>
 
       <StorePicker
@@ -1448,23 +1424,6 @@ const styles = StyleSheet.create({
    * va ularni sanashdan ko'ra ko'rish tez: to'lgan nuqta — tayyor
    * qatlam, bo'shi — kelayotgani.
    */
-  /* Maketdagi o'ng-past burchakdagi karta */
-  suggestCard: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
-    width: 76,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 6,
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(28,25,40,0.85)',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    gap: 6,
-  },
-  suggestText: { ...text.tiny, fontSize: 10, lineHeight: 13, color: colors.text, textAlign: 'center' },
-
   layerRail: {
     position: 'absolute',
     right: spacing.sm,
