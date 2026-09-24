@@ -15,6 +15,7 @@
     "seed:catalog": "tsx --env-file=.env scripts/seed-catalog.ts",
     "export:catalog": "tsx --env-file=.env scripts/export-catalog.ts",
     "import:catalog": "tsx --env-file=.env scripts/import-catalog.ts",
+    "fix:catalog": "tsx --env-file=.env scripts/fix-catalog.ts",
     "bench:pairs": "tsx --env-file=.env scripts/make-bench-pairs.ts",
     "bench:pairs:local": "tsx --env-file=.env scripts/make-bench-pairs-local.ts",
     "r2:cors": "tsx --env-file=.env scripts/r2-cors.ts",

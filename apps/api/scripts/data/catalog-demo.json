@@ -8,8 +8,8 @@
   "brands": [],
   "products": [
     {
-      "title": "Ko'k-qora katak ko'ylak",
-      "description": "Paxtali, uzun yengli katak ko'ylak. Kundalik va ofis uchun.",
+      "title": "Ko'k-oq katak ko'ylak",
+      "description": "Paxtali, uzun yengli ko'k-oq katak ko'ylak. Kundalik va ofis uchun.",
       "categorySlug": "shirt",
       "brandSlug": null,
       "gender": "male",
@@ -25,11 +25,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#1f3a68",
+          "colorHex": "#4a6fa5",
           "colorName": {
-            "uz": "Ko'k",
-            "ru": "Синий",
-            "en": "Blue"
+            "uz": "Ko'k-oq",
+            "ru": "Сине-белый",
+            "en": "Blue-white"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -55,8 +55,8 @@
       ]
     },
     {
-      "title": "Qora printli futbolka",
-      "description": "Yumshoq paxta futbolka, old tomonida grafik print.",
+      "title": "Oq printli futbolka",
+      "description": "Yumshoq paxta oq futbolka, old tomonida grafik print.",
       "categorySlug": "tshirt",
       "brandSlug": null,
       "gender": "male",
@@ -72,11 +72,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#111111",
+          "colorHex": "#f5f5f5",
           "colorName": {
-            "uz": "Qora",
-            "ru": "Чёрный",
-            "en": "Black"
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -149,8 +149,8 @@
       ]
     },
     {
-      "title": "Kalta yengli yozgi ko'ylak",
-      "description": "Yengil matodan kalta yengli ko'ylak, issiq kunlar uchun.",
+      "title": "Ko'k gulli yozgi ko'ylak",
+      "description": "Yengil matodan kalta yengli gulli ko'ylak, issiq kunlar uchun.",
       "categorySlug": "shirt",
       "brandSlug": null,
       "gender": "male",
@@ -166,11 +166,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#e8e4da",
+          "colorHex": "#2f5aa8",
           "colorName": {
-            "uz": "Och bej",
-            "ru": "Светло-бежевый",
-            "en": "Light beige"
+            "uz": "Ko'k gulli",
+            "ru": "Синий с цветами",
+            "en": "Blue floral"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -196,8 +196,8 @@
       ]
     },
     {
-      "title": "Klassik katak ko'ylak",
-      "description": "Klassik bichimdagi katak ko'ylak, tugmali yoqa.",
+      "title": "Yashil katak ko'ylak",
+      "description": "Klassik bichimdagi yashil katak ko'ylak, tugmali yoqa.",
       "categorySlug": "shirt",
       "brandSlug": null,
       "gender": "male",
@@ -213,11 +213,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#3d5a80",
+          "colorHex": "#5b7a5a",
           "colorName": {
-            "uz": "Ko'k",
-            "ru": "Синий",
-            "en": "Blue"
+            "uz": "Yashil",
+            "ru": "Зелёный",
+            "en": "Green"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -498,9 +498,9 @@
       ]
     },
     {
-      "title": "Qora-jigarrang shippak",
-      "description": "Yumshoq ichki qoplamali uy va yozgi shippak.",
-      "categorySlug": "sandals",
+      "title": "Qora poshnali tufli",
+      "description": "O'tkir burunli qora charm tufli, ichi jigarrang. Baland poshna.",
+      "categorySlug": "dress-shoes",
       "brandSlug": null,
       "gender": "female",
       "basePrice": "149000.00",
@@ -511,15 +511,15 @@
         "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/3.webp",
         "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/4.webp"
       ],
-      "tags": ["casual"],
+      "tags": ["classic"],
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#3b2a1e",
+          "colorHex": "#141414",
           "colorName": {
-            "uz": "Jigarrang",
-            "ru": "Коричневый",
-            "en": "Brown"
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -549,9 +549,9 @@
       ]
     },
     {
-      "title": "Baland poshnali tufli",
-      "description": "Nafis baland poshnali tufli, bayram va kechalar uchun.",
-      "categorySlug": "dress-shoes",
+      "title": "Qora tasmali sandal",
+      "description": "Keng tasmali, ochiq burunli qora sandal. Yoz va kechalar uchun.",
+      "categorySlug": "sandals",
       "brandSlug": null,
       "gender": "female",
       "basePrice": "549000.00",
@@ -562,7 +562,7 @@
         "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/3.webp",
         "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/4.webp"
       ],
-      "tags": ["classic"],
+      "tags": ["classic", "minimal"],
       "isLimited": false,
       "variants": [
         {
@@ -651,9 +651,9 @@
       ]
     },
     {
-      "title": "Ochiq burunli yozgi tufli",
-      "description": "Qulay past poshnali yozgi tufli.",
-      "categorySlug": "sandals",
+      "title": "Qora klassik tufli",
+      "description": "Klassik o'tkir burunli qora tufli, ichi och bej. Ofis va bayram uchun.",
+      "categorySlug": "dress-shoes",
       "brandSlug": null,
       "gender": "female",
       "basePrice": "259000.00",
@@ -664,15 +664,15 @@
         "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/3.webp",
         "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/4.webp"
       ],
-      "tags": ["casual", "minimal"],
+      "tags": ["classic"],
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#d8c3a5",
+          "colorHex": "#111111",
           "colorName": {
-            "uz": "Bej",
-            "ru": "Бежевый",
-            "en": "Beige"
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -821,8 +821,8 @@
       ]
     },
     {
-      "title": "Qora klassik sumka",
-      "description": "Qattiq shaklli klassik qo'l sumkasi.",
+      "title": "Havorang klassik sumka",
+      "description": "Qattiq shaklli havorang qo'l sumkasi.",
       "categorySlug": "bag",
       "brandSlug": null,
       "gender": "female",
@@ -837,11 +837,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#0f0f0f",
+          "colorHex": "#9fd3e6",
           "colorName": {
-            "uz": "Qora",
-            "ru": "Чёрный",
-            "en": "Black"
+            "uz": "Havorang",
+            "ru": "Голубой",
+            "en": "Light blue"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -1059,8 +1059,8 @@
       ]
     },
     {
-      "title": "Sport quyosh ko'zoynagi",
-      "description": "Yengil ramkali sport ko'zoynagi.",
+      "title": "Oq ramkali ko'zoynak",
+      "description": "Shaffof-oq keng ramkali zamonaviy quyosh ko'zoynagi.",
       "categorySlug": "glasses",
       "brandSlug": null,
       "gender": "unisex",
@@ -1071,15 +1071,15 @@
         "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/2.webp",
         "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/3.webp"
       ],
-      "tags": ["sport"],
+      "tags": ["streetwear", "minimal"],
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#2d2d2d",
+          "colorHex": "#e8e8e8",
           "colorName": {
-            "uz": "To'q kulrang",
-            "ru": "Тёмно-серый",
-            "en": "Dark gray"
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -1128,7 +1128,7 @@
     },
     {
       "title": "Kumush klassik soat",
-      "description": "Kumush rangli korpus, charm tasma.",
+      "description": "Kumush rangli korpus va metall bilaguzuk, qora siferblat.",
       "categorySlug": "watch",
       "brandSlug": null,
       "gender": "male",
@@ -1196,7 +1196,7 @@
     },
     {
       "title": "Oy fazali soat",
-      "description": "Oy fazasi ko'rsatkichli klassik soat.",
+      "description": "Oy fazasi ko'rsatkichli, jigarrang charm tasmali klassik soat.",
       "categorySlug": "watch",
       "brandSlug": null,
       "gender": "male",
@@ -1211,11 +1211,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#1c2c4c",
+          "colorHex": "#5a3a2a",
           "colorName": {
-            "uz": "To'q ko'k",
-            "ru": "Тёмно-синий",
-            "en": "Navy"
+            "uz": "Jigarrang",
+            "ru": "Коричневый",
+            "en": "Brown"
           },
           "images": [],
           "priceDelta": "0.00",
@@ -1264,7 +1264,7 @@
     },
     {
       "title": "Sport metall soat",
-      "description": "Suvga chidamli metall bilaguzukli sport soat.",
+      "description": "Qora siferblatli, suvga chidamli metall bilaguzukli sport soat.",
       "categorySlug": "watch",
       "brandSlug": null,
       "gender": "male",
@@ -1279,11 +1279,11 @@
       "isLimited": false,
       "variants": [
         {
-          "colorHex": "#0b3d2e",
+          "colorHex": "#1a1a1a",
           "colorName": {
-            "uz": "Yashil",
-            "ru": "Зелёный",
-            "en": "Green"
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
           },
           "images": [],
           "priceDelta": "0.00",
