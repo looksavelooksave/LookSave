@@ -1,5 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '../Icon';
@@ -120,6 +130,34 @@ export function FilterSheet({
     setMaxText(value.priceMax?.toString() ?? '');
   }, [visible, value]);
 
+  /*
+   * ⚠️ `animationType="slide"` EMAS. U butun Modal'ni — qora fonni ham —
+   * pastdan surib chiqarardi: fon panel bilan birga «ko'tarilib» kelardi.
+   * Bu yerda fon joyida eriydi, panel esa eriy turib yumshoq ko'tariladi.
+   *
+   * Modal `visible=false` bo'lganda darhol yo'qoladi, ya'ni yopilish
+   * animatsiyasi ko'rinmasdi. Shuning uchun u `mounted` bilan animatsiya
+   * tugaguncha ochiq ushlab turiladi.
+   */
+  const [mounted, setMounted] = useState(visible);
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) setMounted(true);
+    const anim = Animated.timing(progress, {
+      toValue: visible ? 1 : 0,
+      duration: visible ? 260 : 200,
+      easing: visible ? Easing.out(Easing.cubic) : Easing.in(Easing.quad),
+      useNativeDriver: true,
+    });
+    anim.start(({ finished }) => {
+      if (finished && !visible) setMounted(false);
+    });
+    return () => anim.stop();
+  }, [progress, visible]);
+
+  const sheetShift = progress.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
+
   const apply = (): void => {
     onApply({ ...draft, priceMin: toNumber(minText), priceMax: toNumber(maxText) });
     onClose();
@@ -132,11 +170,22 @@ export function FilterSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
       {/* Fon bosilsa yopiladi — panel ichidagi bosish o'tmaydi */}
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Animated.View style={[styles.backdrop, { opacity: progress }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+      <Animated.View
+        style={[
+          styles.sheet,
+          {
+            paddingBottom: insets.bottom + spacing.md,
+            opacity: progress,
+            transform: [{ translateY: sheetShift }],
+          },
+        ]}
+      >
         <View style={styles.grabber} />
 
         <View style={styles.head}>
@@ -219,7 +268,7 @@ export function FilterSheet({
             <Button title={t.catalog.apply} onPress={apply} />
           </View>
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
