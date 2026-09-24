@@ -65,12 +65,19 @@ const ANGLE_TEXT: Record<AvatarAngle, string> = {
     'elbows relaxed and slightly away from the body. The feet are shoulder-width apart, ' +
     'planted flat. Keep the body axis upright, with relaxed shoulders, an elegant confident ' +
     'stance, realistic anatomy and no exaggerated curve or lean.',
+  /*
+   * ⚠️ YON VA ORQA MATNI VARAQ BILAN BIR XIL (`buildAvatarSheetPrompt`).
+   * Ikki joyda ikki xil tavsif bo'lsa, avtomatik va operator rejimidagi
+   * avatarlar turli tomonga qarab chiqardi.
+   */
   side:
-    'Turned 90 degrees to the left, full side profile view. Standing straight, arms relaxed ' +
-    'at the sides and slightly away from the body, feet shoulder-width apart.',
+    'The whole body turned 90 degrees so we see a clean full side profile, facing the LEFT ' +
+    'edge of the image. Standing straight, arms relaxed at the sides and slightly away from ' +
+    'the body, feet slightly apart. The face is seen in profile.',
   back:
-    'Turned away from the camera, back view, face not visible. Standing straight, arms relaxed ' +
-    'at the sides and slightly away from the body, feet shoulder-width apart.',
+    'Seen directly from behind — the back of the head and the back of the clothing face the ' +
+    'camera, the face is NOT visible. Standing straight, arms relaxed at the sides and ' +
+    'slightly away from the body, feet shoulder-width apart.',
 };
 
 /**
@@ -238,20 +245,24 @@ export function buildAvatarSheetPrompt(
 
     `PANEL 1 (left third) — FRONT VIEW: ${ANGLE_TEXT.front}`,
 
-    'PANEL 2 (middle third) — SIDE VIEW: the whole body turned 90 degrees so we see a clean full ' +
-      'side profile, facing the LEFT edge of the image. Standing straight, arms relaxed at the ' +
-      'sides and slightly away from the body, feet slightly apart. The face is seen in profile.',
+    `PANEL 2 (middle third) — SIDE VIEW: ${ANGLE_TEXT.side}`,
 
-    'PANEL 3 (right third) — BACK VIEW: seen directly from behind, the back of the head and the ' +
-      'back of the clothing face the camera, the face is NOT visible. Standing straight, arms ' +
-      'relaxed at the sides and slightly away from the body, feet shoulder-width apart.',
+    `PANEL 3 (right third) — BACK VIEW: ${ANGLE_TEXT.back}`,
 
-    'CONSISTENCY (very important): identical person, body proportions, hairstyle and clothing ' +
-      'in all three panels. Same camera distance and the same scale — the top of the head and ' +
-      'the soles of the feet are at the same height in every panel. Each figure is centered ' +
-      'horizontally inside its own panel with empty space on both sides; no part of any figure ' +
-      '(hands, elbows, feet) crosses into a neighbouring panel. The entire body is visible from ' +
-      'head to feet in every panel — nothing is cropped.',
+    'EXACTLY THREE FIGURES of the same single person — never four, never two people in one ' +
+      'panel, no mirror images, no extra poses, no close-ups or inset portraits.',
+
+    'CONSISTENCY (very important): identical person, face, body proportions, hairstyle and ' +
+      'clothing in all three panels, lit from the same direction. Same camera distance, eye-level ' +
+      'camera and the same scale — the top of the head and the soles of the feet are at the same ' +
+      'height in every panel.',
+
+    'FRAMING FOR CUTTING (the image will be cut into three equal vertical strips): each figure ' +
+      'is centered horizontally in its own third and fills about 85–90% of the image height, ' +
+      'with a small empty margin above the head and below the feet. Leave clear empty space — ' +
+      'at least 8% of the image width — between neighbouring figures, so no hand, elbow, foot or ' +
+      'hair ever touches or crosses the invisible line between panels. The entire body is ' +
+      'visible from head to feet in every panel — nothing is cropped.',
 
     `CLOTHING: ${baseLayer(gender)}, the same in all three views.`,
 

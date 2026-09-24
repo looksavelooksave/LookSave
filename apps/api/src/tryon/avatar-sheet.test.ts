@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
-import { buildAvatarSheetPrompt } from './avatar-prompt';
+import { buildAvatarPrompt, buildAvatarSheetPrompt } from './avatar-prompt';
 import { isAvatarSheet, splitAvatarSheet } from './avatar-sheet';
 
 /** Uch rangli sinov varag'i: chap — qizil, o'rta — yashil, o'ng — ko'k. */
@@ -95,6 +95,20 @@ describe('varaq prompti', () => {
   it('fon har doim shaffof PNG', () => {
     expect(prompt).toMatch(/TRANSPARENT PNG with an alpha channel/);
     expect(prompt).toMatch(/no divider lines/);
+  });
+
+  it('aynan uch figura va kesish uchun chekka talab qilinadi', () => {
+    expect(prompt).toMatch(/EXACTLY THREE FIGURES/);
+    expect(prompt).toMatch(/at least 8% of the image width/);
+    expect(prompt).toMatch(/85–90% of the image height/);
+  });
+
+  it('yon va orqa matni avtomatik rejim bilan bir xil', () => {
+    expect(prompt).toContain(
+      buildAvatarPrompt('male', { height: 180, weight: 80 }, 'side')
+        .split(' The entire body')[0]!
+        .split('build. ')[1]!,
+    );
   });
 
   it('bo`y va gavda tavsifi bor', () => {
