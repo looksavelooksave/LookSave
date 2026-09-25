@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -423,6 +423,21 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const asked = useRef(new Set<string>());
 
+  /*
+   * Sahnani serverdan qayta olish (o'ng-yuqoridagi «Yangilash» tugmasi).
+   * Natija tayyor bo'lsa-yu ilova eski holatda qotib qolsa yoki tarmoq
+   * uzilib-ulangan bo'lsa qo'l bilan yangilash uchun. Yangi generatsiya
+   * BOSHLAMAYDI — faqat mavjud ma'lumotni qayta so'raydi.
+   */
+  const refreshScene = useCallback(() => {
+    asked.current.clear();
+    setNotice(null);
+    void queryClient.invalidateQueries({ queryKey: ['renders'] });
+    void queryClient.invalidateQueries({ queryKey: ['garments'] });
+    void queryClient.invalidateQueries({ queryKey: ['avatar'] });
+    void queryClient.invalidateQueries({ queryKey: ['profile'] });
+  }, [queryClient]);
+
   const single = useMutation({
     mutationFn: (input: { variantId: string; base: string | null }) =>
       requestRender(input.variantId, angle, input.base),
@@ -552,7 +567,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    * kelmaydi. Bunday holda foydalanuvchi tepadagi bannerni o'qiydi va
    * kiyimning oddiy suratini ko'radi.
    */
+  /*
+   * ⚠️ SPINNER FAQAT OLD KO'RINISHDA (2026-09-25). Generatsiya faqat oldda
+   * bo'ladi; yon va orqa varaqdan kesib olinadi (server). Shuning uchun
+   * yon/orqada «AI kiyintirmoqda» ko'rsatilmaydi — tayyor bo'lak bo'lsa
+   * o'sha, bo'lmasa avatarning o'sha tomoni chiqadi, spinner emas.
+   */
   const currentWorking = Boolean(
+    angle === 'front' &&
     current &&
     !(limitReached && !shown) &&
     (!stripBase.ready || !shown || shown.status === 'pending' || shown.status === 'processing'),
@@ -731,12 +753,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           </AvatarStage>
 
           <View style={styles.sideControls} pointerEvents="box-none">
-            {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
             <Control
               icon="zoom"
               label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
               onPress={() => setZoomed((value) => !value)}
             />
+
+            {/* Yangilash — natija/ro'yxatni serverdan qayta oladi (qulaylik uchun) */}
+            <Control icon="reset" label="Yangilash" onPress={refreshScene} />
 
             {/* Burchak — bosilganda sahna darhol o'sha ko'rinishga almashadi */}
             <View style={styles.angleSwitch} accessibilityRole="radiogroup">
