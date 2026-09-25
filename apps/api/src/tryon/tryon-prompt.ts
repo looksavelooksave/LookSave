@@ -30,12 +30,15 @@ const REST_OF_OUTFIT: Record<string, string> = {
 };
 
 const SHEET_FRONT =
+  // ⚠️ AYNAN avatar old pozasi bilan bir xil (avatar-prompt.ts ANGLE_TEXT.front) —
+  // kiyim natijasi avatarning o'sha pozasida chiqsin.
   'Standing upright with the torso turned about 40 degrees to the LEFT into a dynamic ' +
   'three-quarter pose — the left shoulder is closer to the camera and the right shoulder ' +
   'further back — while the FACE turns directly toward the camera with a calm, confident ' +
   'expression and clear eye contact. Both hands rest casually inside the trouser pockets, ' +
-  'elbows relaxed and slightly away from the body. The feet are shoulder-width apart, planted ' +
-  'flat. Body axis upright, realistic anatomy, no exaggerated curve or lean.';
+  'elbows relaxed and slightly away from the body. The feet are shoulder-width apart, ' +
+  'planted flat. Keep the body axis upright, with relaxed shoulders, an elegant confident ' +
+  'stance, realistic anatomy and no exaggerated curve or lean.';
 const SHEET_SIDE =
   'The whole body turned 90 degrees so we see a clean full side profile, facing the LEFT edge ' +
   'of the image. Standing straight, arms relaxed at the sides and slightly away from the body, ' +
