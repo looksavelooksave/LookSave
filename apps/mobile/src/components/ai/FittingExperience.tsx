@@ -432,14 +432,25 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   useEffect(() => {
     if (!ready) return;
+    /* URL keshga tushgach, o'sha kiyimning yuqori qatlami suratini
+       RN kesh'iga BAYT bilan solamiz — svaypda tarmoq umuman kutilmaydi. */
+    const warm = (renders: TryonRender[] | undefined): void => {
+      const top = topReady(resolveOutfit(outfit, indexRenders(renders ?? [])));
+      if (top?.cutoutUrl) void Image.prefetch(top.cutoutUrl);
+      if (top?.imageUrl) void Image.prefetch(top.imageUrl);
+    };
+
     for (const other of ['front', 'side', 'back'] as const) {
       if (other === angle) continue;
       if (outfitIds.length > 0) {
-        void queryClient.prefetchQuery({
-          queryKey: ['renders', 'outfit', other, outfitIds.join(',')],
-          queryFn: () => getRenders(outfitIds, other, null, 'all'),
-          staleTime: 30_000,
-        });
+        const key = ['renders', 'outfit', other, outfitIds.join(',')];
+        void queryClient
+          .prefetchQuery({
+            queryKey: key,
+            queryFn: () => getRenders(outfitIds, other, null, 'all'),
+            staleTime: 30_000,
+          })
+          .then(() => warm(queryClient.getQueryData<TryonRender[]>(key)));
       }
       if (stripIds.length > 0 && stripBase.ready) {
         void queryClient.prefetchQuery({
@@ -449,7 +460,22 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         });
       }
     }
-  }, [ready, angle, outfitIds, stripIds, stripBase.ready, stripBase.baseRenderId, queryClient]);
+  }, [ready, angle, outfitIds, stripIds, stripBase.ready, stripBase.baseRenderId, outfit, queryClient]);
+
+  /*
+   * ⚠️ JORIY BURCHAK SURATINI OLDINDAN YUKLASH. Varaq generatsiya
+   * tugashi bilan (yoki keshdan) URL kelganda RN suratni ko'rsatishdan
+   * OLDIN baytlarni yuklab qo'yamiz — shunda ekranga darhol chiqadi,
+   * "sekin kelyabdi" holati yo'qoladi. Yon/orqa uchun old zaxira ham.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    const top = topReady(resolveOutfit(outfit, indexRenders(outfitRenders.data ?? [])));
+    if (top?.cutoutUrl) void Image.prefetch(top.cutoutUrl);
+    if (top?.imageUrl) void Image.prefetch(top.imageUrl);
+    const ff = topReady(resolveOutfit(outfit, indexRenders(frontFallback.data ?? [])));
+    if (ff?.imageUrl) void Image.prefetch(ff.imageUrl);
+  }, [ready, outfit, outfitRenders.data, frontFallback.data]);
 
   /**
    * Ikkala ro'yxat bitta jadvalga qo'shiladi.
