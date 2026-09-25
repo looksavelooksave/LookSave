@@ -448,8 +448,21 @@ async function makeAvatar(task: Task, tabId: number, adapter: AdapterId): Promis
 async function firstTop(taskId: string): Promise<DressGarment | null> {
   try {
     const board = await dressBoard(taskId);
-    const queue = ordered(board.garments);
-    return queue.find((garment) => garment.slot === 'top') ?? queue[0] ?? null;
+    /*
+     * ⚠️ `done` GA QARALMAYDI (2026-09-25). `ordered` allaqachon
+     * kiyintirilgan (`done`) kiyimlarni tashlaydi — u kiyintirish
+     * NAVBATI uchun to'g'ri. Lekin avatar uchun BIRINCHI mahsulotni
+     * har doim olishimiz kerak: aks holda do'konda kiyim bo'lsa ham
+     * avatar kulrang asosda chiqib qolardi. Faqat rasmi borlaridan,
+     * ustki kiyim (`top`/`outer`) birinchi bo'lib tanlanadi.
+     */
+    const withImage = board.garments.filter((garment) => garment.garmentImage);
+    if (withImage.length === 0) return null;
+    const sorted = withImage.sort((a, b) => {
+      const rank = SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot);
+      return rank !== 0 ? rank : a.title.localeCompare(b.title);
+    });
+    return sorted.find((garment) => garment.slot === 'top' || garment.slot === 'outer') ?? sorted[0] ?? null;
   } catch {
     /* Taxta o'qilmasa avatar kiyimsiz yasalaveradi — bu to'xtatuvchi xato emas */
     return null;
