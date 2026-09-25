@@ -52,7 +52,7 @@ import { Button, Screen } from '../../components/ui';
 import { useAiFlowStore } from '../../store/aiFlowStore';
 import { useAuthStore } from '../../store/authStore';
 import { money } from '../../theme/format';
-import { colors, radius, spacing, text } from '../../theme/tokens';
+import { colors, fonts, radius, spacing, text } from '../../theme/tokens';
 import { PhotoSwipe } from './PhotoSwipe';
 import { StorePicker } from './StorePicker';
 import { goBack } from '../../navigation/back';
@@ -174,7 +174,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const [styleFilter, setStyleFilter] = useState<GarmentStyle | null>(null);
   // Burchak «front» da qoladi — aylantirish tugmasi olib tashlangan
-  const [angle] = useState<AvatarAngle>('front');
+  /*
+   * Ko'rish burchagi — «Yaqinlashtir» ostidagi Old/Yon/Orqa tugmalari.
+   * Kiyim natijalari uch panelli varaqdan bo'linib har burchakda
+   * saqlanadi (`submitDress`), ya'ni almashtirish darhol — qayta so'rovsiz.
+   */
+  const [angle, setAngle] = useState<AvatarAngle>('front');
   const [notice, setNotice] = useState<string | null>(null);
   const [storeOpen, setStoreOpen] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
@@ -450,6 +455,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   useEffect(() => {
     if (!ready || limitReached) return;
+    /*
+     * ⚠️ YON/ORQA AI'NI ISHGA TUSHIRMAYDI. Burchak tugmasi — faqat ko'rish:
+     * tayyor natija bo'lsa o'sha, bo'lmasa avatarning o'sha burchagi.
+     * Aks holda har bosishda yangi kiyintirish ishi (kredit) ketardi.
+     */
+    if (angle !== 'front') return;
 
     const pending = nextPending(resolved);
     if (!pending) return;
@@ -724,6 +735,27 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
               onPress={() => setZoomed((value) => !value)}
             />
+
+            {/* Burchak — bosilganda sahna darhol o'sha ko'rinishga almashadi */}
+            <View style={styles.angleSwitch} accessibilityRole="radiogroup">
+              {ANGLE_OPTIONS.map((option) => {
+                const active = angle === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={option.label}
+                    onPress={() => setAngle(option.value)}
+                    style={[styles.angleButton, active && styles.angleButtonActive]}
+                  >
+                    <Text style={[styles.angleText, active && styles.angleTextActive]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
           {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
@@ -1264,6 +1296,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 }
 
 /** Avatar yonidagi dumaloq tugma — maketdagi uslubda. */
+const ANGLE_OPTIONS: Array<{ value: AvatarAngle; label: string }> = [
+  { value: 'front', label: 'Old' },
+  { value: 'side', label: 'Yon' },
+  { value: 'back', label: 'Orqa' },
+];
+
 function Control({
   icon,
   label,
@@ -1309,6 +1347,25 @@ function Control({
 }
 
 const styles = StyleSheet.create({
+  angleSwitch: {
+    gap: 6,
+    padding: 4,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(10,10,15,0.7)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'stretch',
+  },
+  angleButton: {
+    minWidth: 52,
+    paddingVertical: 7,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  angleButtonActive: { backgroundColor: colors.primary },
+  angleText: { ...text.tiny, color: colors.textMuted, fontFamily: fonts.semibold },
+  angleTextActive: { color: colors.text },
   fallbackNote: {
     ...text.small,
     color: colors.warning,
