@@ -20,7 +20,7 @@
         "NSLocationWhenInUseUsageDescription": "Yaqin atrofdagi do'konlarni ko'rsatish uchun",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "12"
+      "buildNumber": "13"
     },
     "android": {
       "package": "com.looksave.looksave",
