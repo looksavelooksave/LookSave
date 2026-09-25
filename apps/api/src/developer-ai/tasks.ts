@@ -385,12 +385,40 @@ async function applyResult(
     return;
   }
 
-  await client.query(
+  /*
+   * ⚠️ VARAQ BO'LSA: asosiy yozuvga O'Z burchagidagi bo'lak, qolgan
+   * burchaklar esa o'sha kiyim/asos/xesh bilan alohida yozuv bo'lib
+   * qo'shiladi — mijoz Old/Yon/Orqa ni qayta so'ramasdan ko'radi.
+   */
+  const { rows } = await client.query<{
+    user_id: string;
+    variant_id: string;
+    angle: string;
+    source_hash: string;
+    base_render_id: string | null;
+  }>(
     `UPDATE tryon_renders
-        SET result_url = $2, status = 'ready', error = NULL, completed_at = now()
-      WHERE id = $1`,
-    [row.ref_id, resultUrl],
+        SET result_url = COALESCE(($3::jsonb ->> angle), $2),
+            status = 'ready', error = NULL, completed_at = now()
+      WHERE id = $1
+      RETURNING user_id, variant_id, angle, source_hash, base_render_id`,
+    [row.ref_id, resultUrl, JSON.stringify(angles ?? {})],
   );
+  const main = rows[0];
+  if (!main || !angles) return;
+
+  for (const [angle, url] of Object.entries(angles)) {
+    if (angle === main.angle) continue;
+    await client.query(
+      `INSERT INTO tryon_renders (user_id, variant_id, angle, source_hash, base_render_id,
+                                  status, provider, result_url, completed_at)
+       VALUES ($1, $2, $3, $4, $5, 'ready', 'manual', $6, now())
+       ON CONFLICT (user_id, variant_id, angle, source_hash)
+         DO UPDATE SET result_url = EXCLUDED.result_url, cutout_url = NULL,
+                       status = 'ready', error = NULL, completed_at = now()`,
+      [main.user_id, main.variant_id, angle, main.source_hash, main.base_render_id, url],
+    );
+  }
 }
 
 async function applyFailure(client: PoolClient, row: TaskRow, reason: string): Promise<void> {
@@ -469,8 +497,8 @@ export async function completeTask(
    * Faqat avatar ishida: kiyintirish natijasi har doim bitta surat.
    */
   const pending = await findTask(taskId);
-  const angles =
-    pending?.kind === 'avatar' ? await storeAvatarSheet(resultUrl).catch(sheetError) : null;
+  // Kiyintirish ham endi uch panelli varaq bo'lib kelishi mumkin (2026-09-25)
+  const angles = pending ? await storeAvatarSheet(resultUrl).catch(sheetError) : null;
 
   const row = await inTransaction(async (client) => {
     const finished = await finish(client, taskId, operatorId, { status: 'done', resultUrl });

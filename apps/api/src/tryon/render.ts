@@ -547,12 +547,25 @@ export async function requestRender(
    * qatorini `ready` qiladi.
    */
   if (manual) {
+    /*
+     * ⚠️ O'LCHAM VA JINS HAM BERILADI (2026-09-25). Kengaytma endi AI'ga
+     * gavda suratini bermaydi — faqat yuz va kiyim; gavda shu raqamlardan
+     * (bo'y, vazn, razmer) prompt ichida quriladi.
+     */
+    const person = await pool.query<{ measurements: unknown; gender: string | null }>(
+      `SELECT COALESCE(p.measurements, '{}'::jsonb) AS measurements, u.gender
+         FROM users u LEFT JOIN profiles p ON p.user_id = u.id
+        WHERE u.id = $1`,
+      [userId],
+    );
     await enqueueTask('render', userId, fresh.id, {
       bodyUrl: sources.bodyPhotoUrl,
       garmentImageUrl: sources.garmentImageUrl,
       ...(sources.faceReferenceUrl ? { faceUrl: sources.faceReferenceUrl } : {}),
       angle,
       slot: sources.slot,
+      measurements: person.rows[0]?.measurements ?? {},
+      gender: person.rows[0]?.gender ?? null,
     });
     logger.info({ userId, renderId: fresh.id }, 'kiyintirish operator navbatiga qo`yildi');
     return toDto(fresh);
