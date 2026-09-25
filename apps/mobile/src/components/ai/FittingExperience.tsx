@@ -623,9 +623,10 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           }
         : null;
 
-  const deckIndex = Math.max(
+  /* Svayp burchakni almashtiradi: Old → Yon → Orqa */
+  const angleIndex = Math.max(
     0,
-    items.findIndex((item) => item.variantId === current?.variantId),
+    ANGLE_OPTIONS.findIndex((option) => option.value === angle),
   );
 
   /**
@@ -638,40 +639,33 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    * tayyor kartada kurtkasiz, tayyor bo'lmaganida kurtkali surat
    * chiqib, tasma sakrab ketardi.
    */
-  const layerBase = stripBase.baseRenderId
-    ? (resolved.find((layer) => layer.render?.id === stripBase.baseRenderId)?.render ?? null)
-    : null;
-
   /*
-   * Svayp tasmasi — turkumdagi HAR kiyim uchun bitta karta, hammasi
-   * shu turkum ostidagi komplekt ustida.
-   *
-   * ⚠️ TAYYOR BO'LMAGANIDA KOMPLEKTNING O'ZI TURADI, kiyim surati emas.
-   * Bo'sh karta qo'yilsa svayp «teshik»ka tushardi; kiyim surati
-   * qo'yilsa esa ekran «katalog»ga o'xshab qolardi — bu ekranning
-   * ma'nosi esa O'ZINGNI ko'rish.
+   * ⚠️ SVAYP KIYIMNI EMAS, BURCHAKNI ALMASHTIRADI (2026-09-25, so'rovga
+   * ko'ra). Avatarni chapga/o'ngga surib Old · Yon · Orqa ko'riladi;
+   * kiyim esa pastdagi tasmadan BOSIB tanlanadi. Har karta o'sha
+   * burchakdagi suratni ko'rsatadi: joriy burchakda kiyintirilgan natija,
+   * qolgan burchaklarda avatarning o'sha tomoni (svayp paytida ko'rinadi,
+   * qo'yib yuborilgach o'sha burchakning kiyimli natijasi yuklanadi).
    */
-  const deck = items.map((item) => {
-    const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
-
-    if (render?.status === 'ready') {
-      return {
-        key: item.variantId,
-        url: render.cutoutUrl ?? render.imageUrl,
-        resizeMode: 'contain' as const,
-      };
+  const angleDeck = ANGLE_OPTIONS.map((option) => {
+    if (option.value === angle) {
+      const url =
+        worn?.cutoutUrl ??
+        worn?.imageUrl ??
+        wornFront?.imageUrl ??
+        angles[option.value] ??
+        baseImage;
+      return { key: option.value, url, resizeMode: 'contain' as const };
     }
-
-    const fallbackCutout = layerBase ? layerBase.cutoutUrl : baseCutout;
-    const fallbackImage = preparingCutout ? null : layerBase ? layerBase.imageUrl : baseImage;
-
     return {
-      key: item.variantId,
-      url: fallbackCutout ?? fallbackImage,
+      key: option.value,
+      url: angles[option.value] ?? baseImage,
       resizeMode: 'contain' as const,
     };
   });
 
+  /*
+   * ⚠️ SERVERDAN KELADI, RO'YXATDAN QIDIRILMAYDI.
   /*
    * ⚠️ SERVERDAN KELADI, RO'YXATDAN QIDIRILMAYDI.
    *
@@ -747,29 +741,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             dimmed={!worn && currentWorking}
             showRings
           >
-            {deck.length > 0 ? (
-              <PhotoSwipe
-                photos={deck}
-                index={deckIndex}
-                onIndexChange={(next) => {
-                  const item = items[next];
-                  if (!item) return;
-
-                  /*
-                   * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
-                   * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
-                   * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
-                   */
-                  putOn(tab, item.variantId);
-
-                  stripRef.current?.scrollToIndex({
-                    index: next,
-                    animated: true,
-                    viewPosition: 0.5,
-                  });
-                }}
-              />
-            ) : null}
+            <PhotoSwipe
+              photos={angleDeck}
+              index={angleIndex}
+              onIndexChange={(next) => {
+                const option = ANGLE_OPTIONS[next];
+                if (option) setAngle(option.value);
+              }}
+            />
           </AvatarStage>
 
           <View style={styles.sideControls} pointerEvents="box-none">
