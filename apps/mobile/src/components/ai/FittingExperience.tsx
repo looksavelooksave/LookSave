@@ -380,6 +380,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     // Tayyor bo'lgan render tezroq ko'rinsin; ilovaga qaytganda ham yangilanadi
     refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1000 : false),
     refetchOnWindowFocus: true,
+    // Keshdagi burchak ma'lumoti darhol ishlatilsin (almashganda tarmoq kutmaslik)
+    staleTime: 30_000,
   });
 
   const resolved = useMemo(
@@ -418,7 +420,36 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     enabled: ready && stripIds.length > 0 && stripBase.ready,
     refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1000 : false),
     refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
+
+  /*
+   * ⚠️ QOLGAN BURCHAKLARNI OLDINDAN YUKLASH (2026-09-25). Uch burchak
+   * (old · yon · orqa) bitta varaqdan keladi va bir vaqtda tayyor bo'ladi.
+   * Joriy burchak yuklangach, qolgan ikkitasini keshga oldindan solamiz —
+   * foydalanuvchi svayp qilganda yoki tugmani bosganda tarmoq kutilmaydi,
+   * surat darhol almashadi.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    for (const other of ['front', 'side', 'back'] as const) {
+      if (other === angle) continue;
+      if (outfitIds.length > 0) {
+        void queryClient.prefetchQuery({
+          queryKey: ['renders', 'outfit', other, outfitIds.join(',')],
+          queryFn: () => getRenders(outfitIds, other, null, 'all'),
+          staleTime: 30_000,
+        });
+      }
+      if (stripIds.length > 0 && stripBase.ready) {
+        void queryClient.prefetchQuery({
+          queryKey: ['renders', 'strip', other, stripBase.baseRenderId, stripIds.join(',')],
+          queryFn: () => getRenders(stripIds, other, stripBase.baseRenderId),
+          staleTime: 30_000,
+        });
+      }
+    }
+  }, [ready, angle, outfitIds, stripIds, stripBase.ready, stripBase.baseRenderId, queryClient]);
 
   /**
    * Ikkala ro'yxat bitta jadvalga qo'shiladi.
