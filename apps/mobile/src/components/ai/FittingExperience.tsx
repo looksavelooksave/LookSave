@@ -377,12 +377,32 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     queryKey: ['renders', 'outfit', angle, outfitIds.join(',')],
     queryFn: () => getRenders(outfitIds, angle, null, 'all'),
     enabled: ready && outfitIds.length > 0,
-    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 2500 : false),
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1500 : false),
   });
 
   const resolved = useMemo(
     () => resolveOutfit(outfit, indexRenders(outfitRenders.data ?? [])),
     [outfit, outfitRenders.data],
+  );
+
+  /*
+   * ⚠️ YON/ORQA UCHUN OLD ZAXIRASI (2026-09-25). Yon/orqa varaqdan
+   * kesiladi; agar tanlangan kiyimning yon bo'lagi hali yo'q bo'lsa,
+   * AVATARNING yon tomoni (boshqa kiyimdagi) ko'rsatilib qolardi. Buning
+   * o'rniga O'SHA kiyimning OLD suratini ko'rsatamiz — hech qachon boshqa
+   * kiyim ko'rinmaydi. Old ko'rinishda bu zaxira kerak emas.
+   */
+  const frontFallback = useQuery({
+    queryKey: ['renders', 'outfit', 'front-fallback', outfitIds.join(',')],
+    queryFn: () => getRenders(outfitIds, 'front', null, 'all'),
+    enabled: ready && angle !== 'front' && outfitIds.length > 0,
+  });
+  const wornFront = useMemo(
+    () =>
+      angle === 'front'
+        ? null
+        : topReady(resolveOutfit(outfit, indexRenders(frontFallback.data ?? []))),
+    [angle, outfit, frontFallback.data],
   );
 
   /** Joriy turkumdagi kiyimlar qaysi surat ustiga kiydiriladi */
@@ -394,7 +414,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     queryKey: ['renders', 'strip', angle, stripBase.baseRenderId, stripIds.join(',')],
     queryFn: () => getRenders(stripIds, angle, stripBase.baseRenderId),
     enabled: ready && stripIds.length > 0 && stripBase.ready,
-    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 2500 : false),
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1500 : false),
   });
 
   /**
@@ -722,7 +742,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         <View style={styles.stage}>
           <AvatarStage
             zoomed={zoomed}
-            imageUrl={preparingCutout ? null : (worn?.imageUrl ?? baseImage)}
+            imageUrl={preparingCutout ? null : (worn?.imageUrl ?? wornFront?.imageUrl ?? baseImage)}
             cutoutUrl={worn?.cutoutUrl ?? baseCutout}
             dimmed={!worn && currentWorking}
             showRings
