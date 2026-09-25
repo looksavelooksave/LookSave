@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { cursorSchema, uuidSchema } from './common';
+import { localizedNameSchema } from './store-products';
+import { slotSchema } from './tryon';
 
 export const adminStoresQuerySchema = z.object({
   status: z.enum(['pending', 'active', 'suspended', 'rejected', 'all']).default('pending'),
@@ -101,6 +103,40 @@ export const brandUpdateSchema = brandCreateSchema
   .refine((value) => Object.keys(value).length > 0, {
     message: "Hech qanday o'zgarish yuborilmadi",
   });
+
+/**
+ * Kategoriya — admin panelda boshqariladi (qo'shish/tahrirlash/o'chirish).
+ *
+ * ⚠️ `name` KO'P TILLI (JSONB). `slug` berilmasa nomdan yasaladi. `slot`
+ * kiyintirish uchun (aksessuarda `null` bo'lishi mumkin). `parentId` —
+ * ichki kategoriya (masalan «Ustki kiyim» → «Futbolka»).
+ */
+export const categoryCreateSchema = z.object({
+  name: localizedNameSchema,
+  slug: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9-]+$/, 'Faqat lotin harflari, raqam va chiziqcha')
+    .min(2)
+    .max(64)
+    .optional(),
+  icon: z.string().trim().max(64).nullable().optional(),
+  slot: slotSchema.nullable().optional(),
+  gender: z.enum(['male', 'female', 'unisex']).default('unisex'),
+  sizeType: z.enum(['clothing', 'shoes', 'onesize']).nullable().optional(),
+  parentId: uuidSchema.nullable().optional(),
+  sortOrder: z.number().int().min(0).max(9999).default(0),
+  isActive: z.boolean().default(true),
+});
+
+export const categoryUpdateSchema = categoryCreateSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Hech qanday o'zgarish yuborilmadi",
+  });
+
+export type CategoryCreateInput = z.output<typeof categoryCreateSchema>;
+export type CategoryUpdateInput = z.output<typeof categoryUpdateSchema>;
 
 export type BrandCreateInput = z.output<typeof brandCreateSchema>;
 export type BrandUpdateInput = z.output<typeof brandUpdateSchema>;

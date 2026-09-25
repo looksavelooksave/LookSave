@@ -8,6 +8,8 @@ import {
   assetUpdateSchema,
   brandCreateSchema,
   brandUpdateSchema,
+  categoryCreateSchema,
+  categoryUpdateSchema,
   idParamSchema,
   rejectReasonSchema,
   setUsernameSchema,
@@ -35,6 +37,13 @@ import {
   updateAsset,
 } from '../admin/admin';
 import { createBrand, deleteBrand, findBrands, toBrandDto, updateBrand } from '../admin/brands';
+import {
+  createCategory,
+  deleteCategory,
+  findCategories,
+  toCategoryDto,
+  updateCategory,
+} from '../admin/categories';
 import { presignUpload } from '../integrations/r2';
 import { decodeCursor, paginate } from '../catalog/cursor';
 import { requireAuth, requireRole } from '../http/auth-middleware';
@@ -255,6 +264,37 @@ adminRouter.delete(
   '/admin/brands/:id',
   route({ params: idParamSchema }, async (input, _req, res) => {
     await deleteBrand(input.params.id);
+    sendNoContent(res);
+  }),
+);
+
+/** GET /v1/admin/categories — hammasi (nofaollar ham) */
+adminRouter.get('/admin/categories', async (_req, res) => {
+  const rows = await findCategories();
+  sendData(res, rows.map(toCategoryDto));
+});
+
+/** POST /v1/admin/categories */
+adminRouter.post(
+  '/admin/categories',
+  route({ body: categoryCreateSchema }, async (input, _req, res) => {
+    sendData(res, await createCategory(input.body), 201);
+  }),
+);
+
+/** PATCH /v1/admin/categories/:id */
+adminRouter.patch(
+  '/admin/categories/:id',
+  route({ params: idParamSchema, body: categoryUpdateSchema }, async (input, _req, res) => {
+    sendData(res, await updateCategory(input.params.id, input.body));
+  }),
+);
+
+/** DELETE /v1/admin/categories/:id — bolasi/mahsuloti bor bo'lsa o'chmaydi */
+adminRouter.delete(
+  '/admin/categories/:id',
+  route({ params: idParamSchema }, async (input, _req, res) => {
+    await deleteCategory(input.params.id);
     sendNoContent(res);
   }),
 );

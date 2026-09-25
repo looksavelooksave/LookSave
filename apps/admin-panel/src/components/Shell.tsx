@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Store,
   Tags,
+  FolderTree,
   UserRound,
   X,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ const NAV = [
   { to: '/stores', label: "Do'konlar", icon: Store, end: false },
   { to: '/products', label: 'Mahsulotlar', icon: Package, end: false },
   { to: '/brands', label: 'Brendlar', icon: Tags, end: false },
+  { to: '/categories', label: 'Kategoriyalar', icon: FolderTree, end: false },
   { to: '/orders', label: 'Buyurtmalar', icon: ClipboardList, end: false },
   { to: '/moderation', label: 'Bloklar', icon: Boxes, end: false },
 ];
