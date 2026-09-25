@@ -54,7 +54,7 @@ describe('avatar varag`i', () => {
 
     for (const part of Object.values(parts!)) {
       const meta = await sharp(part).metadata();
-      expect([meta.width, meta.height, meta.format]).toEqual([512, 1024, 'webp']);
+      expect([meta.width, meta.height, meta.format]).toEqual([500, 1000, 'webp']);
     }
   });
 

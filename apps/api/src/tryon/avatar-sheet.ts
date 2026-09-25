@@ -27,7 +27,7 @@ const SCAN_WIDTH = 360;
  * Bo'lakning eng katta balandligi (piksel). Mobilga LTE orqali katta PNG
  * uzoq keladi; WebP + kichraytirish hajmni bir necha barobar kamaytiradi.
  */
-const PANEL_MAX_HEIGHT = 1280;
+const PANEL_MAX_HEIGHT = 1000;
 /** Ustun «to'la» hisoblanishi uchun shaffof bo'lmagan piksel ulushi. */
 const COLUMN_MIN = 0.02;
 /** Shovqin: shundan tor ustun-to'plami figura emas (enning ulushi). */
@@ -133,7 +133,7 @@ export async function splitAvatarSheet(
          * ⚠️ WEBP, SHAFFOFLIK BILAN (so'rovga ko'ra). `ensureAlpha` +
          * `webp({ alphaQuality })` — orqa fon YO'Q holida saqlanadi, PNG
          * emas WebP: mobilga bir necha barobar tez keladi, sifat deyarli
-         * o'zgarmaydi. Balandlik 1280 px bilan cheklanadi (kattasi
+         * o'zgarmaydi. Balandlik 1000 px bilan cheklanadi (kattasi
          * kichraytiriladi, kichigi kattalashtirilmaydi).
          */
         .ensureAlpha()
