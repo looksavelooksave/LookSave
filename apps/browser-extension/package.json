@@ -1,0 +1,12 @@
+{
+  "name": "@looksave/browser-extension",
+  "version": "0.9.8",
+  "private": true,
+  "type": "module",
+  "description": "Operator kengaytmasi — developer_ai navbatidagi kiyimlarni brauzerdagi AI'da avatarga kiydiradi",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

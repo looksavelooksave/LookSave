@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "LookSave — AI kiyintirish",
+  "version": "0.9.8",
+  "description": "developer_ai navbatidagi kiyimlarni brauzerdagi AI orqali mijoz avatariga kiydiradi.",
+  "permissions": ["storage", "tabs", "alarms", "scripting"],
+  "host_permissions": [
+    "https://api.looksave.uz/*",
+    "https://cdn.looksave.app/*",
+    "https://cdn.looksave.uz/*",
+    "https://*.cloudflarestorage.com/*",
+    "https://*.r2.dev/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://*.oaiusercontent.com/*",
+    "https://gemini.google.com/*",
+    "https://*.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://developer.looksave.uz/*",
+        "https://ai.looksave.app/*",
+        "http://localhost:5173/*",
+        "http://localhost:5174/*",
+        "http://localhost:5175/*",
+        "http://localhost:5176/*",
+        "http://localhost:5177/*"
+      ],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LookSave kiyintirish"
+  }
+}
