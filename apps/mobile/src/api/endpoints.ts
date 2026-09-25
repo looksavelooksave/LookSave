@@ -353,6 +353,10 @@ export interface Measurements {
   chest?: number;
   waist?: number;
   hips?: number;
+  /** Tanlangan ustki kiyim razmeri (XS … 3XL) */
+  topSize?: string;
+  /** Tanlangan shim razmeri (XS … 3XL) */
+  bottomSize?: string;
   shoeSize?: number;
   shoeSizeSystem?: string;
 }

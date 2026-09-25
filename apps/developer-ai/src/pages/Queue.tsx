@@ -110,7 +110,10 @@ const MEASURE_LABEL: Record<string, string> = {
   weight: 'Vazn, kg',
   chest: 'Ko`krak, sm',
   waist: 'Bel, sm',
-  hip: 'Son, sm',
+  // ⚠️ `hips` — bazadagi kalit. Ilgari `hip` edi va son hech qachon ko'rinmasdi
+  hips: 'Son, sm',
+  topSize: 'Ustki kiyim razmeri',
+  bottomSize: 'Shim razmeri',
   shoeSize: 'Oyoq (EU)',
 };
 

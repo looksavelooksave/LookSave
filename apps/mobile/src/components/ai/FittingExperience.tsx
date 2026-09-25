@@ -21,6 +21,7 @@ import {
   type GarmentStyle,
   indexRenders,
   nextPending,
+  matchSize,
   recommendSize,
   renderKey,
   resolveOutfit,
@@ -323,23 +324,45 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
   const sizeFilter = onlyMySize ? fitSize : null;
 
+  const fetchGarments = (size: string | null) =>
+    getGarments({
+      // Bo'sh turkum — «faqat slot bo'yicha» degani (oyoq kiyim tabi)
+      category: tab || undefined,
+      slot: tab ? undefined : (activeTab?.slot ?? 'feet'),
+      style: styleFilter,
+      storeId,
+      size,
+      gender,
+      limit: 30,
+    });
+
   const garments = useQuery({
     queryKey: ['garments', tab, storeId, sizeFilter, gender, styleFilter],
-    queryFn: () =>
-      getGarments({
-        // Bo'sh turkum — «faqat slot bo'yicha» degani (oyoq kiyim tabi)
-        category: tab || undefined,
-        slot: tab ? undefined : (activeTab?.slot ?? 'feet'),
-        style: styleFilter,
-        storeId,
-        size: sizeFilter,
-        gender,
-        limit: 30,
-      }),
+    queryFn: () => fetchGarments(sizeFilter),
     enabled: ready,
   });
 
-  const items = useMemo(() => garments.data ?? [], [garments.data]);
+  /*
+   * ⚠️ MOS RAZMER YO'Q — HOZIRGIDEK ISHLAYVERADI (2026-09-25, so'rovga ko'ra).
+   * Do'konda mijozning razmeridagi kiyim bo'lmasa ro'yxat bo'sh qolmaydi:
+   * razmersiz qayta so'raladi va hamma kiyim ko'rsatiladi, tepada esa
+   * «sizning razmeringiz yo'q» izohi turadi. Kiyintirish baribir ishlaydi —
+   * mijoz kiyimni o'zida ko'radi, razmerni esa mahsulot sahifasida tanlaydi.
+   */
+  const needFallback =
+    Boolean(sizeFilter) && garments.isSuccess && (garments.data?.length ?? 0) === 0;
+  const fallback = useQuery({
+    queryKey: ['garments', tab, storeId, null, gender, styleFilter],
+    queryFn: () => fetchGarments(null),
+    enabled: ready && needFallback,
+  });
+  const usingFallback = needFallback && (fallback.data?.length ?? 0) > 0;
+
+  const items = useMemo(
+    () => (usingFallback ? (fallback.data ?? []) : (garments.data ?? [])),
+    [usingFallback, fallback.data, garments.data],
+  );
+  const itemsLoading = garments.isLoading || (needFallback && fallback.isLoading);
 
   // Ro'yxatga tushgan har kiyim keshga yoziladi — komplekt jamlanmasi uchun
   useEffect(() => {
@@ -659,7 +682,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const colorOptions = current?.colors ?? [];
   const sizes = current?.sizes ?? [];
   const soldOutSizes = current?.soldOutSizes ?? [];
-  const picked = size ?? (fitSize && sizes.includes(fitSize) ? fitSize : sizes[0]) ?? null;
+  const picked = size ?? matchSize(sizes, fitSize) ?? sizes[0] ?? null;
 
   /* ── Komplekt jamlanmasi ── */
   const outfitItems = outfit
@@ -905,7 +928,13 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           ) : null}
 
           {/* ── Kiyim tasmasi ── */}
-          {garments.isLoading ? (
+          {usingFallback && !itemsLoading ? (
+            <Text style={styles.fallbackNote}>
+              Sizning {fitSize} razmeringiz bu do‘konda yo‘q — barcha kiyimlar ko‘rsatilmoqda
+            </Text>
+          ) : null}
+
+          {itemsLoading ? (
             <ActivityIndicator color={colors.accent} style={styles.stripLoader} />
           ) : items.length === 0 ? (
             /*
@@ -1260,8 +1289,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                       const lines = outfitItems
                         .map((item) => {
                           const fit = measurements ? recommendSize(item.slot, measurements) : null;
-                          const chosenSize =
-                            fit && item.sizes.includes(fit) ? fit : (item.sizes[0] ?? null);
+                          const chosenSize = matchSize(item.sizes, fit) ?? item.sizes[0] ?? null;
                           return chosenSize ? { variantId: item.variantId, chosenSize } : null;
                         })
                         .filter((line): line is { variantId: string; chosenSize: string } =>
@@ -1352,6 +1380,12 @@ function Control({
 }
 
 const styles = StyleSheet.create({
+  fallbackNote: {
+    ...text.small,
+    color: colors.warning,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   headerButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1, alignItems: 'center' },

@@ -1,10 +1,11 @@
+import { CLOTHING_SIZES, SHOE_SIZES, type SizeLabel } from '@looksave/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Notifications from 'expo-notifications';
 import { SaveFormat, manipulateAsync } from 'expo-image-manipulator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -34,6 +35,7 @@ import { ApiError } from '../../src/api/client';
 import { AvatarBuilding } from '../../src/components/ai/AvatarBuilding';
 import { AvatarQueued } from '../../src/components/ai/AvatarQueued';
 import { Icon, type IconName } from '../../src/components/Icon';
+import { SizeChips } from '../../src/components/SizeChips';
 import { distanceMeters } from '../../src/map/distance';
 import { averageBrightness, MIN_BRIGHTNESS } from '../../src/photo/brightness';
 import { Button, ErrorView, Field, Loading } from '../../src/components/ui';
@@ -138,12 +140,18 @@ function isStepDone(
      * o'lchamdagi kiyimlar» filtri umuman ishlamaydi va ro'yxat oddiy
      * katalogga aylanadi.
      */
+    /*
+     * ⚠️ RAZMER TANLOVI (2026-09-25). Ko'krak/bel (sm) o'rniga mijoz
+     * razmerni tanlaydi. Eski profillarda sm qiymati bo'lsa ham qadam
+     * bajarilgan hisoblanadi — `recommendSize` ularni zaxira sifatida
+     * razmerga aylantiradi.
+     */
     case 'body':
       return (
         typeof profile.measurements.height === 'number' &&
         typeof profile.measurements.weight === 'number' &&
-        typeof profile.measurements.chest === 'number' &&
-        typeof profile.measurements.waist === 'number'
+        (Boolean(profile.measurements.topSize) || typeof profile.measurements.chest === 'number') &&
+        (Boolean(profile.measurements.bottomSize) || typeof profile.measurements.waist === 'number')
       );
 
     case 'shoe':
@@ -253,6 +261,9 @@ export default function AvatarFlow(): JSX.Element {
   const startResolved = useRef(false);
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [topSize, setTopSize] = useState<SizeLabel | null>(null);
+  const [bottomSize, setBottomSize] = useState<SizeLabel | null>(null);
+  const [shoeSize, setShoeSize] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -286,6 +297,17 @@ export default function AvatarFlow(): JSX.Element {
       if (typeof value === 'number') filled[key] = String(value);
     }
     setValues((current) => ({ ...filled, ...current }));
+
+    const saved = data.measurements;
+    const asSize = (value: unknown): SizeLabel | null =>
+      typeof value === 'string' && (CLOTHING_SIZES as readonly string[]).includes(value)
+        ? (value as SizeLabel)
+        : null;
+    setTopSize((current) => current ?? asSize(saved.topSize));
+    setBottomSize((current) => current ?? asSize(saved.bottomSize));
+    setShoeSize(
+      (current) => current ?? (typeof saved.shoeSize === 'number' ? saved.shoeSize : null),
+    );
   }, [profile.data]);
 
   const saveGender = useMutation({
@@ -351,9 +373,21 @@ export default function AvatarFlow(): JSX.Element {
   };
 
   /** Kiritilgan o'lchamlarni tekshirib serverga yozadi */
-  const submitMeasurements = async (keys: MeasureKey[]): Promise<boolean> => {
-    const input: Measurements = {};
+  const submitMeasurements = async (
+    keys: MeasureKey[],
+    picked: Partial<Pick<Measurements, 'topSize' | 'bottomSize' | 'shoeSize'>> = {},
+    requiredPicks: Array<{ ok: boolean; label: string }> = [],
+  ): Promise<boolean> => {
+    const input: Measurements = { ...picked };
     const missing: string[] = [];
+
+    const unpicked = requiredPicks.filter((item) => !item.ok).map((item) => item.label);
+    if (unpicked.length > 0) {
+      setError(
+        `${unpicked.join(', ')} tanlanishi shart — do'kondan sizga mos kiyim shu bilan topiladi`,
+      );
+      return false;
+    }
 
     for (const key of keys) {
       const parsed = parseField(values[key] ?? '', key);
@@ -373,14 +407,7 @@ export default function AvatarFlow(): JSX.Element {
      * «menga mos o'lchamdagi kiyimlar» filtri o'chib qoladi va
      * foydalanuvchi o'ziga to'g'ri kelmaydigan kiyimni kiyintiradi.
      */
-    const required = keys.filter(
-      (key) =>
-        key === 'height' ||
-        key === 'weight' ||
-        key === 'chest' ||
-        key === 'waist' ||
-        key === 'shoeSize',
-    );
+    const required = keys.filter((key) => key === 'height' || key === 'weight');
     const blocking = required.filter((key) => parseField(values[key] ?? '', key) === null);
 
     if (blocking.length > 0) {
@@ -390,7 +417,7 @@ export default function AvatarFlow(): JSX.Element {
       return false;
     }
 
-    if (missing.length > 0 && Object.keys(input).length === 0) return false;
+    if (Object.keys(input).length === 0) return false;
 
     setBusy(true);
     try {
@@ -460,31 +487,66 @@ export default function AvatarFlow(): JSX.Element {
 
         {step === 'body' ? (
           <MeasureStep
-            title="Tana o'lchamlari"
-            hint="Bo'y, vazn, ko'krak va bel shart — kiyim o'lchami shulardan hisoblanadi."
-            keys={['height', 'weight', 'chest', 'waist', 'hips']}
+            title="Bo'y, vazn va razmer"
+            hint="Bo'y va vazn avatar gavdasini belgilaydi. Razmeringizni tanlang — do'kondan aynan sizga mos kiyimlar ko'rsatiladi."
+            keys={['height', 'weight']}
             values={values}
             busy={busy}
             onChange={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
             onNext={async () => {
-              if (await submitMeasurements(['height', 'weight', 'chest', 'waist', 'hips']))
-                goNext();
+              const ok = await submitMeasurements(
+                ['height', 'weight'],
+                {
+                  ...(topSize ? { topSize } : {}),
+                  ...(bottomSize ? { bottomSize } : {}),
+                },
+                [
+                  { ok: Boolean(topSize), label: 'Ustki kiyim razmeri' },
+                  { ok: Boolean(bottomSize), label: 'Shim razmeri' },
+                ],
+              );
+              if (ok) goNext();
             }}
-          />
+          >
+            <Text style={styles.chipsLabel}>Ustki kiyim razmeri</Text>
+            <SizeChips
+              options={CLOTHING_SIZES}
+              value={topSize}
+              onChange={setTopSize}
+              accessibilityLabel="Ustki kiyim razmeri"
+            />
+            <Text style={styles.chipsLabel}>Shim razmeri</Text>
+            <SizeChips
+              options={CLOTHING_SIZES}
+              value={bottomSize}
+              onChange={setBottomSize}
+              accessibilityLabel="Shim razmeri"
+            />
+          </MeasureStep>
         ) : null}
 
         {step === 'shoe' ? (
           <MeasureStep
-            title="Oyoq o'lchami"
-            hint="Krossovka va poyabzalni to'g'ri o'lchamda ko'rsatish uchun."
-            keys={['shoeSize']}
+            title="Oyoq kiyim razmeri"
+            hint="Krossovka va poyabzalni to'g'ri razmerda ko'rsatish uchun (EU)."
+            keys={[]}
             values={values}
             busy={busy}
             onChange={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
             onNext={async () => {
-              if (await submitMeasurements(['shoeSize'])) goNext();
+              const ok = await submitMeasurements([], shoeSize !== null ? { shoeSize } : {}, [
+                { ok: shoeSize !== null, label: 'Oyoq kiyim razmeri' },
+              ]);
+              if (ok) goNext();
             }}
-          />
+          >
+            <SizeChips
+              options={SHOE_SIZES}
+              value={shoeSize as (typeof SHOE_SIZES)[number] | null}
+              onChange={setShoeSize}
+              accessibilityLabel="Oyoq kiyim razmeri"
+            />
+          </MeasureStep>
         ) : null}
 
         {step === 'store' ? (
@@ -886,6 +948,7 @@ function MeasureStep({
   busy,
   onChange,
   onNext,
+  children,
 }: {
   title: string;
   hint: string;
@@ -894,6 +957,8 @@ function MeasureStep({
   busy: boolean;
   onChange: (key: MeasureKey, value: string) => void;
   onNext: () => void;
+  /** Razmer chiplari — maydonlardan keyin, tugmadan oldin */
+  children?: ReactNode;
 }): JSX.Element {
   return (
     <View style={styles.card}>
@@ -910,6 +975,8 @@ function MeasureStep({
           keyboardType="numeric"
         />
       ))}
+
+      {children ? <View style={styles.chips}>{children}</View> : null}
 
       <Button title="Davom etish" onPress={onNext} loading={busy} />
     </View>
@@ -1321,6 +1388,8 @@ function RealPhotoLink(): JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  chips: { gap: spacing.sm, marginBottom: spacing.md },
+  chipsLabel: { ...text.label, color: colors.textDim, marginTop: spacing.xs },
   root: { flex: 1, backgroundColor: colors.bg },
 
   /*

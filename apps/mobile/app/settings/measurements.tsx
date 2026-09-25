@@ -1,3 +1,4 @@
+import { CLOTHING_SIZES, SHOE_SIZES, type SizeLabel } from '@looksave/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import {
@@ -27,13 +28,13 @@ import {
   ChestIcon,
   FitIcon,
   HeightIcon,
-  HipsIcon,
   ShoeIcon,
   TapeIcon,
   WaistIcon,
   WeightIcon,
 } from '../../src/components/MeasureIcons';
 import { SignInRequired } from '../../src/components/SignInRequired';
+import { SizeChips } from '../../src/components/SizeChips';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
@@ -45,8 +46,14 @@ import { goBack } from '../../src/navigation/back';
  */
 type Glyph = (props: { size?: number; color?: string }) => JSX.Element;
 
+/*
+ * ⚠️ RAQAM FAQAT BO'Y VA VAZN (2026-09-25). Ko'krak, bel va son aylanasi
+ * (sm) olib tashlandi — xaridor ularni o'lchay olmaydi. Ularning o'rnida
+ * razmer chiplari (`SIZE_GROUPS`). Bo'y va vazn esa avatar gavdasi uchun
+ * shart (`missingForAvatar`).
+ */
 const FIELDS: Array<{
-  key: keyof Measurements;
+  key: 'height' | 'weight';
   label: string;
   hint: string;
   unit: string;
@@ -54,11 +61,21 @@ const FIELDS: Array<{
 }> = [
   { key: 'height', label: "BO'Y", hint: '120–220', unit: 'sm', icon: HeightIcon },
   { key: 'weight', label: 'VAZN', hint: '30–200', unit: 'kg', icon: WeightIcon },
-  { key: 'chest', label: "KO'KRAK · ENG KENG JOYI", hint: '30–250', unit: 'sm', icon: ChestIcon },
-  { key: 'waist', label: 'BEL · ENG INGICHKA JOYI', hint: '30–250', unit: 'sm', icon: WaistIcon },
-  { key: 'hips', label: 'SON · ENG KENG JOYI', hint: '30–250', unit: 'sm', icon: HipsIcon },
-  { key: 'shoeSize', label: "OYOQ O'LCHAMI", hint: '30–50', unit: 'EU', icon: ShoeIcon },
 ];
+
+interface Sizes {
+  topSize: SizeLabel | null;
+  bottomSize: SizeLabel | null;
+  shoeSize: number | null;
+}
+
+const EMPTY_SIZES: Sizes = { topSize: null, bottomSize: null, shoeSize: null };
+
+function asSize(value: unknown): SizeLabel | null {
+  return typeof value === 'string' && (CLOTHING_SIZES as readonly string[]).includes(value)
+    ? (value as SizeLabel)
+    : null;
+}
 
 /** Blendshape qiymati 0…1 — foydalanuvchiga chiziq sifatida ko'rsatiladi. */
 function MorphBar({ label, value }: { label: string; value: number }): JSX.Element {
@@ -98,6 +115,7 @@ export default function MeasurementsScreen(): JSX.Element {
   });
 
   const [values, setValues] = useState<Record<string, string>>({});
+  const [sizes, setSizes] = useState<Sizes>(EMPTY_SIZES);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -109,11 +127,22 @@ export default function MeasurementsScreen(): JSX.Element {
       if (typeof value === 'number') initial[field.key] = String(value);
     }
     setValues(initial);
+    const saved = profile.data.measurements;
+    setSizes({
+      topSize: asSize(saved.topSize),
+      bottomSize: asSize(saved.bottomSize),
+      shoeSize: typeof saved.shoeSize === 'number' ? saved.shoeSize : null,
+    });
   }, [profile.data]);
+
+  const pickSize = <K extends keyof Sizes>(key: K, next: Sizes[K]): void => {
+    setSaved(false);
+    setError(null);
+    setSizes((prev) => ({ ...prev, [key]: next }));
+  };
 
   const save = useMutation({
     mutationFn: () => {
-      // `shoeSizeSystem` matn, qolganlari son — shuning uchun alohida yig'iladi
       const input: Measurements = {};
       for (const field of FIELDS) {
         const raw = values[field.key];
@@ -122,29 +151,12 @@ export default function MeasurementsScreen(): JSX.Element {
         const parsed = Number(raw);
         if (!Number.isFinite(parsed)) continue;
 
-        switch (field.key) {
-          case 'height':
-            input.height = parsed;
-            break;
-          case 'weight':
-            input.weight = parsed;
-            break;
-          case 'chest':
-            input.chest = parsed;
-            break;
-          case 'waist':
-            input.waist = parsed;
-            break;
-          case 'hips':
-            input.hips = parsed;
-            break;
-          case 'shoeSize':
-            input.shoeSize = parsed;
-            break;
-          default:
-            break;
-        }
+        if (field.key === 'height') input.height = parsed;
+        else input.weight = parsed;
       }
+      if (sizes.topSize) input.topSize = sizes.topSize;
+      if (sizes.bottomSize) input.bottomSize = sizes.bottomSize;
+      if (sizes.shoeSize !== null) input.shoeSize = sizes.shoeSize;
       return updateMeasurements(input);
     },
     onSuccess: () => {
@@ -208,8 +220,8 @@ export default function MeasurementsScreen(): JSX.Element {
               <TapeIcon size={30} color={colors.accent} />
             </View>
             <Text style={styles.introText}>
-              O'lchamlar avatar shaklini belgilaydi — kiyim qanday o'tirishini yaqinroq ko'rasiz.
-              Bo'y majburiy, qolganlari ixtiyoriy.
+              Bo'y va vazn avatar gavdasini belgilaydi. Razmeringizni tanlang — do'kondan aynan
+              sizga mos o'lchamdagi kiyimlar ko'rsatiladi.
             </Text>
           </View>
 
@@ -253,6 +265,54 @@ export default function MeasurementsScreen(): JSX.Element {
               </View>
             );
           })}
+
+          <View style={styles.fieldCard}>
+            <View style={styles.fieldIcon}>
+              <ChestIcon size={26} color={colors.accent} />
+            </View>
+            <View style={styles.fieldBody}>
+              <Text style={styles.fieldLabel}>USTKI KIYIM RAZMERI</Text>
+              <Text style={styles.sizeHint}>Futbolka, ko'ylak, xudi, kurtka</Text>
+              <SizeChips
+                options={CLOTHING_SIZES}
+                value={sizes.topSize}
+                onChange={(next) => pickSize('topSize', next)}
+                accessibilityLabel="Ustki kiyim razmeri"
+              />
+            </View>
+          </View>
+
+          <View style={styles.fieldCard}>
+            <View style={styles.fieldIcon}>
+              <WaistIcon size={26} color={colors.accent} />
+            </View>
+            <View style={styles.fieldBody}>
+              <Text style={styles.fieldLabel}>SHIM RAZMERI</Text>
+              <Text style={styles.sizeHint}>Shim, jinsi, shorti</Text>
+              <SizeChips
+                options={CLOTHING_SIZES}
+                value={sizes.bottomSize}
+                onChange={(next) => pickSize('bottomSize', next)}
+                accessibilityLabel="Shim razmeri"
+              />
+            </View>
+          </View>
+
+          <View style={styles.fieldCard}>
+            <View style={styles.fieldIcon}>
+              <ShoeIcon size={26} color={colors.accent} />
+            </View>
+            <View style={styles.fieldBody}>
+              <Text style={styles.fieldLabel}>OYOQ KIYIM (EU)</Text>
+              <Text style={styles.sizeHint}>Krossovka, tufli, botinka</Text>
+              <SizeChips
+                options={SHOE_SIZES}
+                value={sizes.shoeSize as (typeof SHOE_SIZES)[number] | null}
+                onChange={(next) => pickSize('shoeSize', next)}
+                accessibilityLabel="Oyoq kiyim razmeri"
+              />
+            </View>
+          </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -320,6 +380,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     gap: spacing.md,
   },
+  sizeHint: { ...text.small, color: colors.textDim, marginTop: 2, marginBottom: spacing.sm },
   topTitle: { ...text.h3, color: colors.text, flex: 1, textAlign: 'center' },
   roundButton: {
     width: 44,

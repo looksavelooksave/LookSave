@@ -122,3 +122,15 @@ describe('varaq prompti', () => {
     expect(prompt).toContain('180 cm tall');
   });
 });
+
+describe('razmer tanlovi', () => {
+  it('varaq promptida tanlangan razmer bor', () => {
+    const prompt = buildAvatarSheetPrompt('male', {
+      height: 183,
+      weight: 80,
+      topSize: 'L',
+      bottomSize: 'M',
+    });
+    expect(prompt).toContain('wears size L tops and size M trousers');
+  });
+});

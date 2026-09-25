@@ -24,6 +24,22 @@ export interface AvatarMeasurements {
   chest?: number;
   waist?: number;
   hips?: number;
+  /** Mijoz tanlagan razmerlar — gavda hajmiga qo'shimcha ishora */
+  topSize?: string;
+  bottomSize?: string;
+}
+
+/**
+ * «wears size L tops and M trousers» — razmer gavda hajmini modelga
+ * odamcha tilda aytadi. Ko'krak/bel (sm) o'rniga keldi: mijoz ularni
+ * endi kiritmaydi, razmerni esa tanlaydi.
+ */
+function sizeHint(measurements: AvatarMeasurements): string | null {
+  const parts = [
+    measurements.topSize ? `size ${measurements.topSize} tops` : null,
+    measurements.bottomSize ? `size ${measurements.bottomSize} trousers` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? `wears ${parts.join(' and ')}` : null;
 }
 
 export type AvatarGender = 'male' | 'female' | null;
@@ -169,9 +185,11 @@ export function buildAvatarPrompt(
   const shape = shapeFrom(measurements);
 
   // 1-jumla: kim
+  const sizes = sizeHint(measurements);
   parts.push(
     `Full-body studio photograph of a ${person}, ${[height, build].filter(Boolean).join(', ')}` +
       (shape ? `, with ${shape}` : '') +
+      (sizes ? `, who ${sizes}` : '') +
       '.',
   );
 
@@ -259,8 +277,11 @@ export function buildAvatarSheetPrompt(
   const height = measurements.height ? `${Math.round(measurements.height)} cm tall` : null;
   const build = buildFromBmi(measurements.height, measurements.weight);
   const shape = shapeFrom(measurements);
+  const sizes = sizeHint(measurements);
   const who =
-    `a ${person}, ${[height, build].filter(Boolean).join(', ')}` + (shape ? `, with ${shape}` : '');
+    `a ${person}, ${[height, build].filter(Boolean).join(', ')}` +
+    (shape ? `, with ${shape}` : '') +
+    (sizes ? `, who ${sizes}` : '');
 
   return [
     'Create ONE single image: a photorealistic character turnaround sheet of the person in the ' +

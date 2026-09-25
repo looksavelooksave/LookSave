@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { personNameSchema } from './common';
 import { e164PhoneSchema, validateE164Phone } from './phone';
+import { CLOTHING_SIZES } from './sizing';
 
 /**
  * Parol qoidalari.
@@ -133,6 +134,13 @@ export const measurementsSchema = z
     chest: z.number().int().min(50).max(180).optional(),
     waist: z.number().int().min(40).max(180).optional(),
     hips: z.number().int().min(50).max(180).optional(),
+    /*
+     * Mijoz o'zi tanlaydigan razmer (chiplar). Ko'krak/bel/son (sm) o'rniga
+     * — ularni oddiy foydalanuvchi o'lchay olmaydi, «L» ni esa biladi.
+     * Sm maydonlari eski profillar va avatar shakli uchun qoladi.
+     */
+    topSize: z.enum(CLOTHING_SIZES).optional(),
+    bottomSize: z.enum(CLOTHING_SIZES).optional(),
     shoeSize: z.number().min(30).max(50).optional(),
     shoeSizeSystem: z.enum(['EU', 'US', 'UK']).default('EU'),
   })

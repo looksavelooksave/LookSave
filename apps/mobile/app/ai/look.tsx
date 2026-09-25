@@ -24,7 +24,7 @@ import {
 import { Icon, type IconName } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
-import { recommendSize } from '@looksave/validation';
+import { matchSize, recommendSize } from '@looksave/validation';
 import { useAuthStore } from '../../src/store/authStore';
 import { useAiFlowStore } from '../../src/store/aiFlowStore';
 import { money } from '../../src/theme/format';
@@ -287,8 +287,7 @@ function LookRow({ item }: { item: Garment }): JSX.Element {
 function pickSize(item: Garment, measurements: Parameters<typeof recommendSize>[1] | undefined) {
   if (item.sizes.length === 0) return null;
   const recommended = measurements ? recommendSize(item.slot, measurements) : null;
-  if (recommended && item.sizes.includes(recommended)) return recommended;
-  return item.sizes[0] ?? null;
+  return matchSize(item.sizes, recommended) ?? item.sizes[0] ?? null;
 }
 
 const styles = StyleSheet.create({
