@@ -31,6 +31,12 @@ async function centerColor(input: Buffer): Promise<[number, number, number]> {
   return [data[offset]!, data[offset + 1]!, data[offset + 2]!];
 }
 
+/** WebP yo'qotishli — rang aniq emas, ustun kanalni tekshiramiz. */
+function dominant([r, g, b]: [number, number, number]): 'red' | 'green' | 'blue' {
+  if (r >= g && r >= b) return 'red';
+  return g >= b ? 'green' : 'blue';
+}
+
 describe('avatar varag`i', () => {
   it('landshaft — varaq, tik yoki kvadrat — emas', () => {
     expect(isAvatarSheet(1536, 1024)).toBe(true);
@@ -42,18 +48,13 @@ describe('avatar varag`i', () => {
     const parts = await splitAvatarSheet(await sheet(1536, 1024));
     expect(parts).not.toBeNull();
 
-    expect(await centerColor(parts!.front)).toEqual([255, 0, 0]);
-    expect(await centerColor(parts!.side)).toEqual([0, 255, 0]);
-    expect(await centerColor(parts!.back)).toEqual([0, 0, 255]);
+    expect(dominant(await centerColor(parts!.front))).toBe('red');
+    expect(dominant(await centerColor(parts!.side))).toBe('green');
+    expect(dominant(await centerColor(parts!.back))).toBe('blue');
 
     for (const part of Object.values(parts!)) {
       const meta = await sharp(part).metadata();
-      expect([meta.width, meta.height, meta.format, meta.hasAlpha]).toEqual([
-        512,
-        1024,
-        'png',
-        true,
-      ]);
+      expect([meta.width, meta.height, meta.format]).toEqual([512, 1024, 'webp']);
     }
   });
 
@@ -76,9 +77,15 @@ describe('avatar varag`i', () => {
 
     const parts = await splitAvatarSheet(sheet);
     expect(parts).not.toBeNull();
-    expect(await centerColor(parts!.front)).toEqual([255, 0, 0]);
-    expect(await centerColor(parts!.side)).toEqual([0, 255, 0]);
-    expect(await centerColor(parts!.back)).toEqual([0, 0, 255]);
+    expect(dominant(await centerColor(parts!.front))).toBe('red');
+    expect(dominant(await centerColor(parts!.side))).toBe('green');
+    expect(dominant(await centerColor(parts!.back))).toBe('blue');
+
+    // ⚠️ Shaffof fon WebP'da SAQLANADI — orqa fon bo'lmasligi shart
+    for (const part of Object.values(parts!)) {
+      const meta = await sharp(part).metadata();
+      expect([meta.format, meta.hasAlpha]).toEqual(['webp', true]);
+    }
   });
 
   it('kenglik 3 ga bo`linmasa ham bo`laklar teng', async () => {

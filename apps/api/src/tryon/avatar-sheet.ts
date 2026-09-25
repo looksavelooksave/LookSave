@@ -23,6 +23,11 @@ export const SHEET_ORDER: readonly AvatarAngle[] = ['front', 'side', 'back'];
 
 /** Ustun tahlili uchun rasm shu enga kichraytiriladi (tezlik uchun). */
 const SCAN_WIDTH = 360;
+/**
+ * Bo'lakning eng katta balandligi (piksel). Mobilga LTE orqali katta PNG
+ * uzoq keladi; WebP + kichraytirish hajmni bir necha barobar kamaytiradi.
+ */
+const PANEL_MAX_HEIGHT = 1280;
 /** Ustun «to'la» hisoblanishi uchun shaffof bo'lmagan piksel ulushi. */
 const COLUMN_MIN = 0.02;
 /** Shovqin: shundan tor ustun-to'plami figura emas (enning ulushi). */
@@ -124,9 +129,16 @@ export async function splitAvatarSheet(
     [0, 1, 2].map((i) =>
       sharp(input)
         .extract({ left: cuts[i]!, top: 0, width: Math.max(1, cuts[i + 1]! - cuts[i]!), height })
-        // Operator JPEG yuklasa ham natija PNG — kanal tuzilishi bir xil bo'lsin
+        /*
+         * ⚠️ WEBP, SHAFFOFLIK BILAN (so'rovga ko'ra). `ensureAlpha` +
+         * `webp({ alphaQuality })` — orqa fon YO'Q holida saqlanadi, PNG
+         * emas WebP: mobilga bir necha barobar tez keladi, sifat deyarli
+         * o'zgarmaydi. Balandlik 1280 px bilan cheklanadi (kattasi
+         * kichraytiriladi, kichigi kattalashtirilmaydi).
+         */
         .ensureAlpha()
-        .png()
+        .resize({ height: PANEL_MAX_HEIGHT, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 82, alphaQuality: 100, effort: 4 })
         .toBuffer(),
     ),
   );
@@ -150,9 +162,9 @@ export async function storeAvatarSheet(url: string): Promise<Record<AvatarAngle,
   const urls = await Promise.all(
     SHEET_ORDER.map((angle) =>
       uploadObject({
-        key: `avatar/${randomUUID()}.png`,
+        key: `avatar/${randomUUID()}.webp`,
         body: parts[angle],
-        contentType: 'image/png',
+        contentType: 'image/webp',
       }),
     ),
   );
