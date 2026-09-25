@@ -1142,6 +1142,31 @@ export const getStoreProfile = (): Promise<StoreProfile> => api<StoreProfile>('/
 export const updateStoreProfile = (input: Partial<StoreProfile>): Promise<StoreProfile> =>
   api<StoreProfile>('/store/profile', { method: 'PATCH', body: input });
 
+// ── Sotuvchi brendi (@username bilan) ──
+
+export interface StoreBrand {
+  id: string;
+  name: string;
+  slug: string;
+  username: string | null;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+export interface StoreBrandInput {
+  name: string;
+  username: string;
+  logoUrl?: string | null;
+  description?: string | null;
+}
+
+/** Sotuvchining o'z brendi — hali yaratmagan bo'lsa null */
+export const getMyBrand = (): Promise<StoreBrand | null> => api<StoreBrand | null>('/store/brand');
+
+/** Brendni yaratadi yoki yangilaydi (band @username bo'lsa xato qaytadi) */
+export const saveMyBrand = (input: StoreBrandInput): Promise<StoreBrand> =>
+  api<StoreBrand>('/store/brand', { method: 'PUT', body: input });
+
 /**
  * Do'kon rasmini R2 ga yuklaydi.
  *
