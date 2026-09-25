@@ -143,6 +143,7 @@ export interface Brand {
   id: string;
   slug: string;
   name: string;
+  username: string | null;
   logoUrl: string | null;
   isPartner: boolean;
 }
