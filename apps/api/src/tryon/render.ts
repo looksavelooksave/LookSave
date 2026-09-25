@@ -2,6 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { AI_TRYON_SLOTS, garmentImageForAngle, normalizeSize } from '@looksave/validation';
 
+import type { AvatarGender, AvatarMeasurements } from './avatar-prompt';
+import { buildTryonSheetPrompt } from './tryon-prompt';
+
 import { enqueueTask, isManual } from '../developer-ai/tasks';
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
@@ -558,14 +561,22 @@ export async function requestRender(
         WHERE u.id = $1`,
       [userId],
     );
+    const measurements = (person.rows[0]?.measurements ?? {}) as Record<string, number | string>;
+    const gender = person.rows[0]?.gender ?? null;
     await enqueueTask('render', userId, fresh.id, {
       bodyUrl: sources.bodyPhotoUrl,
       garmentImageUrl: sources.garmentImageUrl,
       ...(sources.faceReferenceUrl ? { faceUrl: sources.faceReferenceUrl } : {}),
       angle,
       slot: sources.slot,
-      measurements: person.rows[0]?.measurements ?? {},
-      gender: person.rows[0]?.gender ?? null,
+      measurements,
+      gender,
+      // Operator QO'LDA ishlaganda nusxalaydigan matn (avtomatik rejim o'zi quradi)
+      prompt: buildTryonSheetPrompt(
+        sources.slot,
+        measurements as AvatarMeasurements,
+        gender as AvatarGender,
+      ),
     });
     logger.info({ userId, renderId: fresh.id }, 'kiyintirish operator navbatiga qo`yildi');
     return toDto(fresh);

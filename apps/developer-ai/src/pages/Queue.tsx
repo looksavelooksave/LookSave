@@ -560,30 +560,19 @@ function TaskDetail({
             </dl>
           ) : null}
 
-          {/* Kiyintirish (render) ishi — gavda + KIYIM rasmi */}
-          {task.kind === 'render' && (task.previews.bodyUrl || task.previews.garmentImageUrl) ? (
-            <div className="grid grid-cols-2 gap-3">
-              {task.previews.bodyUrl ? (
-                <figure className="space-y-1">
-                  <figcaption className="label text-xs">Gavda (avatar)</figcaption>
-                  <img
-                    src={task.previews.bodyUrl}
-                    alt="Kiyintiriladigan gavda"
-                    className="aspect-[3/4] w-full rounded-md bg-surface2 object-cover"
-                  />
-                </figure>
-              ) : null}
-              {task.previews.garmentImageUrl ? (
-                <figure className="space-y-1">
-                  <figcaption className="label text-xs">Kiyim</figcaption>
-                  <img
-                    src={task.previews.garmentImageUrl}
-                    alt="Kiyiladigan kiyim"
-                    className="aspect-[3/4] w-full rounded-md bg-surface2 object-contain"
-                  />
-                </figure>
-              ) : null}
-            </div>
+          {/*
+            Kiyintirish (render) ishi — FAQAT KIYIM (2026-09-25). Yuz yuqorida
+            «Yuz surati» da; AI'ga faqat yuz + kiyim boradi, gavda emas.
+          */}
+          {task.kind === 'render' && task.previews.garmentImageUrl ? (
+            <figure className="space-y-1">
+              <figcaption className="label text-xs">Kiyim</figcaption>
+              <img
+                src={task.previews.garmentImageUrl}
+                alt="Kiyiladigan kiyim"
+                className="aspect-[3/4] max-h-64 w-full rounded-md bg-surface2 object-contain"
+              />
+            </figure>
           ) : null}
         </section>
 
@@ -601,7 +590,7 @@ function TaskDetail({
             <SheetPreview
               src={task.resultUrl}
               alt="Tayyor avatar"
-              guides={task.kind === 'avatar'}
+              guides
               className="aspect-[3/4] max-h-[460px] w-full rounded-md bg-surface2"
             />
           ) : task.status === 'failed' ? (
@@ -618,16 +607,14 @@ function TaskDetail({
                 <SheetPreview
                   src={preview}
                   alt="Yuklanadigan natija"
-                  guides={task.kind === 'avatar'}
+                  guides
                   className="h-full w-full"
                 />
               ) : (
                 <>
                   <p className="px-6 text-sm text-dim">
                     {mine
-                      ? task.kind === 'avatar'
-                        ? 'Tayyor 3 panelli suratni (old · yon · orqa) shu yerga tashlang — server uni o`zi 3 ga bo`ladi'
-                        : 'Tayyor suratni shu yerga tashlang'
+                      ? 'Tayyor 3 panelli suratni (old · yon · orqa) shu yerga tashlang — server uni o`zi 3 ga bo`ladi'
                       : 'Avval ishni band qiling'}
                   </p>
                   {mine ? (

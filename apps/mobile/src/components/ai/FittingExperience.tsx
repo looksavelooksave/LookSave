@@ -423,6 +423,13 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const asked = useRef(new Set<string>());
 
+  /*
+   * Turkum bir marta ochilganda birinchi kiyim O'ZI kiyiladi (pastdagi
+   * effekt). Belgi shu ref da — foydalanuvchi kiyimni yechsa, effekt uni
+   * qaytadan kiydirmaydi.
+   */
+  const autoWorn = useRef(new Set<string>());
+
   const single = useMutation({
     mutationFn: (input: { variantId: string; base: string | null }) =>
       requestRender(input.variantId, angle, input.base),
@@ -474,10 +481,26 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   }, [ready, angle, resolved, limitReached]);
 
   /*
-   * ⚠️ BIRINCHI KIYIM AVTOMATIK KIYILMAYDI (2026-09-25, so'rovga ko'ra).
-   * Turkum tanlash — faqat ko'rish; kiyintirish mijoz kiyimni o'zi
-   * bosgandagina boshlanadi.
+   * ── Turkum ochilganda FAQAT BIRINCHI kiyim kiyiladi ──
+   *
+   * ⚠️ HAMMASI EMAS, BITTASI (2026-09-25, so'rovga ko'ra). Ilgari turkum
+   * ochilishi bilan tasmadagi HAMMA kiyim navbatga tushardi (operator
+   * panelida 7 ta ish) — kredit va vaqt behuda ketardi. Endi faqat
+   * birinchisi kiyiladi, u tayyor bo'lgach mijoz keyingisini o'zi bosadi
+   * va faqat o'sha kiyim navbatga tushadi.
+   *
+   * ⚠️ HAR TURKUMDA BIR MARTA. `autoWorn` belgisi bo'lmasa, foydalanuvchi
+   * kiyimni yechganda effekt uni darhol qaytarardi.
    */
+  useEffect(() => {
+    if (!ready || items.length === 0) return;
+    if (autoWorn.current.has(tab)) return;
+    autoWorn.current.add(tab);
+    // Turkumda allaqachon kiyim tanlangan bo'lsa tegilmaydi
+    if (outfit.some((layer) => layer.category === tab)) return;
+    const first = items[0];
+    if (first) wear(tab, first.variantId);
+  }, [ready, items, outfit, tab, wear]);
 
   // Tab almashganda o'lcham tanlovi tozalanadi — eski o'lcham yangi
   // kiyimda bo'lmasligi mumkin
