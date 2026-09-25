@@ -622,6 +622,29 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     (!stripBase.ready || !shown || shown.status === 'pending' || shown.status === 'processing'),
   );
 
+  /** Sahnadagi yagona holat — ustuvorlik: kiyintirish → sahnaga tayyorlash → xato */
+  const stageStatus: { title: string; hint: string; error?: boolean } | null = currentWorking
+    ? !worn
+      ? {
+          title: '5 daqiqada tayyor bo`ladi',
+          hint: 'Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring',
+        }
+      : {
+          title: 'AI kiyintirmoqda…',
+          hint: stripBase.ready
+            ? 'Har qatlam 10–20 soniya'
+            : 'Avval ostidagi qatlam tayyorlanmoqda',
+        }
+    : preparingCutout
+      ? { title: 'Avatar sahnaga tayyorlanmoqda…', hint: 'Fon bir marta ajratiladi' }
+      : failed
+        ? {
+            title: 'Kiyintirib bo`lmadi',
+            hint: failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring',
+            error: true,
+          }
+        : null;
+
   const deckIndex = Math.max(
     0,
     items.findIndex((item) => item.variantId === current?.variantId),
@@ -771,17 +794,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             ) : null}
           </AvatarStage>
 
-          {/* «5 daqiqada tayyor» — kiyim operatorda kiydirilayotgan payt */}
-          {currentWorking && !worn ? (
-            <View style={styles.workingOverlay} pointerEvents="none">
-              <ActivityIndicator size="large" color={colors.accent} />
-              <Text style={styles.workingTitle}>5 daqiqada tayyor bo`ladi</Text>
-              <Text style={styles.workingHint}>
-                Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring
-              </Text>
-            </View>
-          ) : null}
-
           <View style={styles.sideControls} pointerEvents="box-none">
             {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
             <Control
@@ -807,33 +819,26 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             </View>
           ) : null}
 
-          {currentWorking ? (
+          {/*
+            ⚠️ BITTA HOLAT KARTASI (2026-09-25). Ilgari «5 daqiqada tayyor»
+            va «AI kiyintirmoqda» ALOHIDA qatlam edi va `currentWorking`
+            bo'lganda IKKALASI birdan markazga chizilardi — matnlar
+            ustma-ust tushib o'qib bo'lmasdi. Endi ustuvorlik bilan faqat
+            bittasi, to'q karta ichida (avatar rasmi ustida ham o'qiladi).
+          */}
+          {stageStatus ? (
             <View style={styles.overlay} pointerEvents="none">
-              <ActivityIndicator color={colors.accent} />
-              <Text style={styles.overlayText}>AI kiyintirmoqda…</Text>
-              <Text style={styles.overlayHint}>
-                {stripBase.ready
-                  ? 'Har qatlam 10–20 soniya'
-                  : 'Avval ostidagi qatlam tayyorlanmoqda'}
-              </Text>
-            </View>
-          ) : null}
-
-          {preparingCutout ? (
-            <View style={styles.overlay} pointerEvents="none">
-              <ActivityIndicator color={colors.accent} />
-              <Text style={styles.overlayText}>Avatar sahnaga tayyorlanmoqda…</Text>
-              <Text style={styles.overlayHint}>Fon bir marta ajratiladi</Text>
-            </View>
-          ) : null}
-
-          {failed && !currentWorking ? (
-            <View style={styles.overlay} pointerEvents="none">
-              <Icon name="close" size={26} color={colors.danger} />
-              <Text style={styles.overlayText}>Kiyintirib bo`lmadi</Text>
-              <Text style={styles.overlayHint} numberOfLines={2}>
-                {failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring'}
-              </Text>
+              <View style={styles.statusCard}>
+                {stageStatus.error ? (
+                  <Icon name="close" size={26} color={colors.danger} />
+                ) : (
+                  <ActivityIndicator size="large" color={colors.accent} />
+                )}
+                <Text style={styles.statusTitle}>{stageStatus.title}</Text>
+                <Text style={styles.statusHint} numberOfLines={3}>
+                  {stageStatus.hint}
+                </Text>
+              </View>
             </View>
           ) : null}
         </View>
@@ -1418,15 +1423,19 @@ const styles = StyleSheet.create({
   page: { paddingBottom: spacing.xl },
   avatar: { flex: 1 },
   dimmed: { opacity: 0.35 },
-  workingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  statusCard: {
+    maxWidth: 280,
     alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(10,10,15,0.82)',
   },
-  workingTitle: { ...text.h3, color: colors.text, textAlign: 'center', marginTop: spacing.sm },
-  workingHint: { ...text.small, color: colors.textMuted, textAlign: 'center' },
+  statusTitle: { ...text.h3, color: colors.text, textAlign: 'center' },
+  statusHint: { ...text.small, color: colors.textMuted, textAlign: 'center' },
 
   /* Chapdagi tik qator — maketdagi Rotate / Zoom / Reset */
   sideControls: {
@@ -1481,8 +1490,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.lg,
   },
-  overlayText: { ...text.bodyMed, color: colors.text, textAlign: 'center' },
-  overlayHint: { ...text.tiny, color: colors.textDim, textAlign: 'center' },
 
   /*
    * ⚠️ GORIZONTAL `ScrollView` EMAS, ODDIY `View`.
