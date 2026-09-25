@@ -2,6 +2,7 @@ import sharp from 'sharp';
 
 import { env } from '../config/env';
 import { logger } from '../logger';
+import { faceLock } from '../tryon/avatar-prompt';
 
 /**
  * OpenAI rasm modeli — avatar yasash va kiyintirish.
@@ -825,16 +826,13 @@ function identityLines(angle: 'front' | 'side' | 'back'): string[] {
 
   if (angle === 'back') {
     return [
-      'This is the SAME person as in the reference image: same hair, same head shape, same skin tone, same build.',
+      'This is the SAME person as in the reference image: same hair, same hair colour, same head shape, same ears, same skin tone, same build.',
       'The person is turned away from the camera — the face is NOT visible, only the back of the head and body.',
       carry,
     ];
   }
 
-  return [
-    "Keep the person's face, hair, skin tone and facial features EXACTLY as in the reference — this is the same person.",
-    carry,
-  ];
+  return [faceLock(false), carry];
 }
 
 /**

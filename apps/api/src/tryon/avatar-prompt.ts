@@ -203,6 +203,34 @@ export function buildAvatarPrompt(
 }
 
 /**
+ * YUZ QULFI — foydalanuvchi o'zini tanishi kerak (2026-09-25, so'rovga ko'ra).
+ *
+ * ⚠️ «same person» YETMAYDI. Model yuzni «o'xshash» qilib qayta chizadi:
+ * chiroyliroq, yoshroq, silliqroq — va foydalanuvchi o'zini tanimaydi.
+ * Shuning uchun yuzning HAR BIR qismi nomma-nom sanaladi va nima
+ * qilinmasligi ochiq aytiladi. Bu band qisqartirilmaydi.
+ *
+ * Kengaytmada nusxasi bor: `apps/browser-extension/src/shared/prompt.ts`
+ * → FACE_LOCK. Biri o'zgarsa ikkinchisi ham o'zgarsin.
+ */
+export function faceLock(panels: boolean): string {
+  return [
+    'FACE IDENTITY (the most important rule): the face must be the SAME real person as in the ' +
+      'reference photo — not a lookalike, not an idealised or "improved" version.',
+    'Preserve EXACTLY: face shape and jawline, forehead and hairline, eye shape, eye colour and ' +
+      'spacing, eyebrows, nose shape and size, lips and mouth, ears, cheekbones, skin tone and ' +
+      'skin texture, facial hair, moles, freckles and marks, apparent age and ethnicity.',
+    'Do NOT beautify, slim, smooth, de-age, retouch, symmetrise or re-imagine the face, and do ' +
+      'NOT blend it with any other face.',
+    panels
+      ? 'The SAME identical face appears in every panel: in the side view it is the true profile ' +
+        'of that same face (same nose, lips, chin and brow line); in the back view the hairstyle, ' +
+        'hair colour, head shape and ears match exactly.'
+      : 'Hairstyle and hair colour stay exactly as in the reference.',
+  ].join(' ');
+}
+
+/**
  * Uch burchak BITTA rasmda — «turnaround sheet» (operator rejimi).
  *
  * Operator bu matnni brauzerdagi AI ga beradi va bitta landshaft rasm
@@ -236,8 +264,9 @@ export function buildAvatarSheetPrompt(
 
   return [
     'Create ONE single image: a photorealistic character turnaround sheet of the person in the ' +
-      `reference photo — ${who}. Keep their face, identity, skin tone and hair exactly as in the ` +
-      'reference.',
+      `reference photo — ${who}.`,
+
+    faceLock(true),
 
     'LAYOUT: the same person is shown THREE times, side by side in one horizontal row, in three ' +
       'equal-width vertical panels — each panel is exactly one third of the image width. From ' +

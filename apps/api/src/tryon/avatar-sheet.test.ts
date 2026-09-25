@@ -111,6 +111,13 @@ describe('varaq prompti', () => {
     );
   });
 
+  it('yuz qat`iy qulflangan — har qism sanaladi, har panelda bir xil', () => {
+    expect(prompt).toMatch(/FACE IDENTITY \(the most important rule\)/);
+    expect(prompt).toMatch(/nose shape and size/);
+    expect(prompt).toMatch(/Do NOT beautify/);
+    expect(prompt).toMatch(/SAME identical face appears in every panel/);
+  });
+
   it('bo`y va gavda tavsifi bor', () => {
     expect(prompt).toContain('180 cm tall');
   });
