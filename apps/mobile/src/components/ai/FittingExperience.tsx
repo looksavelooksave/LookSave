@@ -39,7 +39,6 @@ import {
   requestAvatarCutout,
   removeFavorite,
   requestRender,
-  requestRenderBatch,
   type AvatarAngle,
   type Garment,
   type TryonRender,
@@ -203,18 +202,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const [seen, setSeen] = useState<Record<string, Garment>>({});
 
-  /**
-   * Foydalanuvchi ATAYLAB yechgan turkumlar.
-   *
-   * ⚠️ USIZ «YECHISH» ISHLAMASDI. Turkum ochilganda birinchi kiyim
-   * o'zi kiyiladi (quyidagi effekt); yechilgan turkum belgilanmasa
-   * o'sha effekt uni darhol qaytadan kiydirardi va tugma buzuq
-   * ko'rinardi.
-   *
-   * Belgi turkumga qayta kiyim tanlanganda olib tashlanadi.
-   */
-  const [dismissed, setDismissed] = useState<string[]>([]);
-
   const stripRef = useRef<FlatList<Garment>>(null);
 
   const outfit = useAiFlowStore((state) => state.outfit);
@@ -224,16 +211,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const storeName = useAiFlowStore((state) => state.storeName);
   const setStore = useAiFlowStore((state) => state.setStore);
 
-  /** Kiyintirish — belgini ham tozalaydi, aks holda effekt uni qaytarardi */
+  /** Kiyintirish — AI faqat shu yerdan (kiyim bosilganda) ishga tushadi */
   const putOn = (category: string, variantId: string): void => {
-    setDismissed((current) => current.filter((item) => item !== category));
     wear(category, variantId);
     setSize(null);
     setNotice(null);
   };
 
   const remove = (category: string): void => {
-    setDismissed((current) => (current.includes(category) ? current : [...current, category]));
     takeOff(category);
     setSize(null);
     setNotice(null);
@@ -433,19 +418,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const asked = useRef(new Set<string>());
 
-  const batch = useMutation({
-    mutationFn: (input: { variantIds: string[]; base: string | null }) =>
-      requestRenderBatch(input.variantIds, angle, input.base),
-    onSuccess: (result) => {
-      if (result.limitReached) setLimitReached(true);
-      void queryClient.invalidateQueries({ queryKey: ['renders'] });
-    },
-    onError: (err) => {
-      if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
-      else setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi');
-    },
-  });
-
   const single = useMutation({
     mutationFn: (input: { variantId: string; base: string | null }) =>
       requestRender(input.variantId, angle, input.base),
@@ -457,47 +429,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   });
 
   /*
-   * ── Tasmani oldindan tayyorlash ──
-   *
-   * ⚠️ FAQAT OLD KO'RINISHDA. Aylantirilgan ko'rinish uchun ham butun
-   * tasma yasalsa sarf uch barobar oshardi, foydalanuvchi esa aylantirgan
-   * payt odatda BITTA kiyimni ko'rmoqchi bo'ladi — uni komplekt zanjiri
-   * o'zi yasaydi.
+   * ⚠️ OLDINDAN TAYYORLASH OLIB TASHLANDI (2026-09-25, so'rovga ko'ra).
+   * Ilgari turkum ochilishi bilan tasmadagi birinchi kiyim o'zi
+   * kiyintirilardi — mijoz hech narsa bosmasdan AI ishga tushib, kredit
+   * va operator vaqti ketardi. Endi AI faqat kiyim BOSILGANDA ishlaydi
+   * (`wear` → komplekt zanjiri).
    */
-  useEffect(() => {
-    if (!ready || angle !== 'front') return;
-    if (!stripBase.ready || stripIds.length === 0) return;
-    if (limitReached) return;
-
-    /*
-     * ⚠️ FAQAT BIRINCHISI OLDINDAN YASALADI, HAMMASI EMAS.
-     *
-     * Ilgari tasmadagi BARCHA kiyim bir yo'la kiyintirilardi. Ikki zarari
-     * bor edi: har kiyim alohida OpenAI chaqiruvi, ya'ni
-     * foydalanuvchi ko'rmagan kiyimlari uchun ham to'lanardi; va hammasi
-     * navbatga tushgani uchun BIRINCHI natija ham oxirigacha kutardi.
-     *
-     * Mijoz qarori: turkum ochilganda birinchisi darhol chiqsin, qolganlari
-     * esa BOSILGANDA yasalsin — buni pastdagi komplekt zanjiri effekti
-     * o'zi qiladi, chunki tanlangan kiyim `resolveOutfit` ga tushadi.
-     */
-    const missing = stripIds
-      .filter((variantId) => !renderIndex.has(renderKey(variantId, stripBase.baseRenderId)))
-      .slice(0, 1);
-    if (missing.length === 0) return;
-
-    const key = `batch:${angle}:${stripBase.baseRenderId ?? 'root'}:${missing.join(',')}`;
-    if (asked.current.has(key)) return;
-    asked.current.add(key);
-
-    /*
-     * ⚠️ `batch` BOG'LIQLIKLARDA YO'Q — ATAYIN. U mutatsiya obyekti va
-     * har chizishda yangi havola bo'ladi; ro'yxatga qo'shilsa effekt
-     * cheksiz takrorlanardi. Ishlatilayotgani esa faqat `mutate`, u
-     * o'zgarmaydi.
-     */
-    batch.mutate({ variantIds: missing, base: stripBase.baseRenderId });
-  }, [ready, angle, stripBase.ready, stripBase.baseRenderId, stripIds, renderIndex, limitReached]);
 
   /*
    * ── Komplekt zanjirini tiklash ──
@@ -526,24 +463,10 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   }, [ready, angle, resolved, limitReached]);
 
   /*
-   * ── Turkum ochilganda birinchi kiyim kiyiladi ──
-   *
-   * ⚠️ MAKETNING VA'DASI SHU. Foydalanuvchi turkumni ochganda o'zini
-   * ALLAQACHON kiyingan holda ko'rishi kerak — bo'sh sahna va
-   * «kiyintirish» tugmasi emas. Keyingi kiyimlar bosilganda almashadi.
-   *
-   * ⚠️ FAQAT BO'SH TURKUMGA. Foydalanuvchi bu turkumda allaqachon kiyim
-   * tanlagan bo'lsa u saqlanadi — aks holda tab almashtirib qaytish
-   * tanlovni yo'qotardi.
+   * ⚠️ BIRINCHI KIYIM AVTOMATIK KIYILMAYDI (2026-09-25, so'rovga ko'ra).
+   * Turkum tanlash — faqat ko'rish; kiyintirish mijoz kiyimni o'zi
+   * bosgandagina boshlanadi.
    */
-  useEffect(() => {
-    if (!ready || items.length === 0) return;
-    if (dismissed.includes(tab)) return;
-    if (outfit.some((layer) => layer.category === tab)) return;
-
-    const first = items[0];
-    if (first) wear(tab, first.variantId);
-  }, [ready, items, outfit, tab, wear, dismissed]);
 
   // Tab almashganda o'lcham tanlovi tozalanadi — eski o'lcham yangi
   // kiyimda bo'lmasligi mumkin
@@ -989,7 +912,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               contentContainerStyle={styles.strip}
               removeClippedSubviews
               renderItem={({ item }) => {
-                const selected = item.variantId === current?.variantId;
+                // Faqat haqiqatan KIYILGANI ajratiladi — kiyim bosilmaguncha hech biri
+                const selected = item.variantId === wornHere;
                 const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
                 const isReady = render?.status === 'ready';
                 const busy = render?.status === 'pending' || render?.status === 'processing';
