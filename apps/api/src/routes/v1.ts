@@ -85,6 +85,7 @@ interface BrandRow {
   id: string;
   name: string;
   slug: string;
+  username: string | null;
   logo_url: string | null;
   is_partner: boolean;
 }
@@ -92,7 +93,7 @@ interface BrandRow {
 /** GET /v1/brands */
 v1Router.get('/brands', async (_req, res) => {
   const { rows } = await pool.query<BrandRow>(
-    `SELECT id, name, slug, logo_url, is_partner
+    `SELECT id, name, slug, username, logo_url, is_partner
        FROM brands
       ORDER BY sort_order, name`,
   );
@@ -104,6 +105,7 @@ v1Router.get('/brands', async (_req, res) => {
       id: row.id,
       name: row.name,
       slug: row.slug,
+      username: row.username,
       /*
        * ⚠️ ILGARI BU YERDA `row.is_partner ? row.logo_url : null` TURARDI —
        * logo faqat shartnomali brendga ko'rsatilardi (00-README §8).

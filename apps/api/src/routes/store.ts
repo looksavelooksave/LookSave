@@ -14,6 +14,7 @@ import {
   updateMemberSchema,
   updateProductSchema,
   setUsernameSchema,
+  storeBrandSchema,
   updateStoreSchema,
   variantInputSchema,
   supportsAiTryon,
@@ -27,6 +28,7 @@ import { env } from '../config/env';
 import { openStoreStream } from '../integrations/events';
 import { getAnalytics, getInvoices, type Period } from '../store/analytics';
 import { prepareGarmentImage } from '../store/garment-image';
+import { getMyBrand, myBrandId, saveMyBrand } from '../store/brand';
 import { getStoreProfile, setStoreUsername, updateStoreProfile } from '../store/profile';
 import {
   addMember,
@@ -225,6 +227,19 @@ storePanelRouter.patch(
   }),
 );
 
+/** GET /v1/store/brand — sotuvchining o'z brandi (yo'q bo'lsa null) */
+storePanelRouter.get('/store/brand', async (_req, res) => {
+  sendData(res, await getMyBrand(getAuth(res).sub));
+});
+
+/** PUT /v1/store/brand — brandni yaratadi yoki yangilaydi (@username bilan) */
+storePanelRouter.put(
+  '/store/brand',
+  route({ body: storeBrandSchema }, async (input, _req, res) => {
+    sendData(res, await saveMyBrand(getAuth(res).sub, input.body));
+  }),
+);
+
 /**
  * GET · POST · PATCH · DELETE /v1/store/members — jamoa.
  * Xodim avval ilovada ro'yxatdan o'tishi kerak: parol va raqam
@@ -395,7 +410,13 @@ storePanelRouter.get(
 storePanelRouter.post(
   '/store/products',
   route({ body: createProductSchema }, async (input, req, res) => {
-    sendData(res, await createProduct(storeOf(req, res), input.body), 201);
+    /*
+     * ⚠️ BRAND AVTOMAT: sotuvchi brand tanlamasa, uning O'Z brandiga
+     * bog'lanadi (bo'lsa). Shunda mahsulot brendlar bo'limida sotuvchining
+     * @username brandida ko'rinadi.
+     */
+    const brandId = input.body.brandId ?? (await myBrandId(getAuth(res).sub)) ?? undefined;
+    sendData(res, await createProduct(storeOf(req, res), { ...input.body, brandId }), 201);
   }),
 );
 

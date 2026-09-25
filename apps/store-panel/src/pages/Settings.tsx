@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AtSign, Clock, ImageIcon, MapPin, Store, Truck } from 'lucide-react';
+import { AtSign, Clock, ImageIcon, MapPin, Store, Tag, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { ApiClientError } from '../api/client';
 import {
+  getMyBrand,
   getStoreProfile,
+  saveMyBrand,
   setStoreUsername,
   updateStoreProfile,
+  type StoreBrand,
+  type StoreBrandInput,
   type StoreProfile,
   type WorkingHour,
 } from '../api/store';
@@ -116,6 +120,148 @@ function UsernameCard({ current }: { current: string | null }): JSX.Element {
   );
 }
 
+/**
+ * Sotuvchining O'Z brandi (@username bilan). Bu do'kondan alohida yozuv:
+ * xaridorlar "Brendlar" bo'limida shu nom + logo + @username bilan ko'radi,
+ * va sotuvchi qo'shgan mahsulotlar avtomatik shu brandga bog'lanadi.
+ *
+ * Yaratish ham, tahrir ham bitta "Saqlash" bilan (server upsert qiladi).
+ */
+function BrandCard(): JSX.Element {
+  const queryClient = useQueryClient();
+  const brand = useQuery<StoreBrand | null>({ queryKey: ['store', 'brand'], queryFn: getMyBrand });
+
+  const [form, setForm] = useState<StoreBrandInput>({ name: '', username: '' });
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (brand.data === undefined) return;
+    setForm({
+      name: brand.data?.name ?? '',
+      username: brand.data?.username ?? '',
+      logoUrl: brand.data?.logoUrl ?? null,
+      description: brand.data?.description ?? null,
+    });
+  }, [brand.data]);
+
+  const patch = (next: Partial<StoreBrandInput>): void => {
+    setSaved(false);
+    setForm((prev) => ({ ...prev, ...next }));
+  };
+
+  const save = useMutation({
+    mutationFn: () =>
+      saveMyBrand({
+        name: form.name.trim(),
+        username: form.username.trim().replace(/^@/, '').toLowerCase(),
+        logoUrl: form.logoUrl ?? null,
+        description: form.description?.trim() ? form.description : null,
+      }),
+    onSuccess: () => {
+      setError(null);
+      setSaved(true);
+      void queryClient.invalidateQueries({ queryKey: ['store', 'brand'] });
+    },
+    onError: (err) => {
+      setSaved(false);
+      setError(err instanceof ApiClientError ? err.message : 'Saqlab bo`lmadi');
+    },
+  });
+
+  if (brand.isLoading) {
+    return (
+      <SectionCard icon={Tag} title="Mening brendim">
+        <Spinner />
+      </SectionCard>
+    );
+  }
+
+  const username = form.username.trim().replace(/^@/, '').toLowerCase();
+  const canSave = form.name.trim().length >= 2 && username.length >= 3;
+
+  return (
+    <SectionCard
+      icon={Tag}
+      title="Mening brendim"
+      description="Xaridorlar «Brendlar» bo'limida shu nom, logo va @username bilan ko'radi. Qo'shgan mahsulotlaringiz shu brendga bog'lanadi."
+    >
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="label">Brend nomi</span>
+            <Input
+              className="mt-2"
+              value={form.name}
+              maxLength={64}
+              placeholder="Chilonzor Moda"
+              onChange={(event) => patch({ name: event.target.value })}
+            />
+          </label>
+
+          <label className="block">
+            <span className="label">Username</span>
+            <div className="relative mt-2">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-dim">
+                @
+              </span>
+              <Input
+                className="pl-7"
+                value={form.username}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={31}
+                placeholder="chilonzor_moda"
+                onChange={(event) => patch({ username: event.target.value })}
+              />
+            </div>
+            <span className="mt-1.5 block text-xs text-dim">
+              3–30 belgi: lotin harfi bilan boshlanadi, faqat harf, raqam, _ va .
+            </span>
+          </label>
+        </div>
+
+        <label className="block">
+          <span className="label">Tavsif</span>
+          <Textarea
+            className="mt-2 min-h-20"
+            value={form.description ?? ''}
+            maxLength={500}
+            placeholder="Brend haqida qisqacha"
+            onChange={(event) => patch({ description: event.target.value })}
+          />
+        </label>
+
+        <div>
+          <p className="label mb-2">Logo</p>
+          <ImageUploader
+            images={form.logoUrl ? [form.logoUrl] : []}
+            max={1}
+            purpose="brand"
+            hint="Kvadrat rasm yaxshi ko'rinadi · WEBP, JPEG yoki PNG"
+            onChange={(images) => patch({ logoUrl: images[0] ?? null })}
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button type="button" disabled={save.isPending || !canSave} onClick={() => save.mutate()}>
+            {save.isPending ? 'Saqlanmoqda…' : brand.data ? 'Saqlash' : 'Brend yaratish'}
+          </Button>
+          {saved ? <span className="text-sm text-success">Saqlandi: @{username}</span> : null}
+        </div>
+
+        {error ? (
+          <p role="alert" className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </SectionCard>
+  );
+}
+
+
 function toMap(hours: WorkingHour[]): Record<number, WorkingHour> {
   return Object.fromEntries(hours.map((hour) => [hour.day, hour]));
 }
@@ -224,6 +370,8 @@ export function SettingsPage(): JSX.Element {
       />
 
       <UsernameCard current={store.data.username} />
+
+      <BrandCard />
 
       <SectionCard icon={Store} title="Asosiy ma'lumot">
         <div className="space-y-4">

@@ -253,3 +253,29 @@ export const applyForStore = (
   input: StoreApplication,
 ): Promise<{ id: string; name: string; slug: string; status: string; createdAt: string }> =>
   api('/stores/apply', { method: 'POST', body: input });
+
+
+// ── Sotuvchi brandi ──
+
+export interface StoreBrand {
+  id: string;
+  name: string;
+  slug: string;
+  username: string | null;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+export interface StoreBrandInput {
+  name: string;
+  username: string;
+  logoUrl?: string | null;
+  description?: string | null;
+}
+
+/** Sotuvchining o'z brandi — yo'q bo'lsa null */
+export const getMyBrand = (): Promise<StoreBrand | null> => api<StoreBrand | null>('/store/brand');
+
+/** Brandni yaratadi yoki yangilaydi (@username bilan) */
+export const saveMyBrand = (input: StoreBrandInput): Promise<StoreBrand> =>
+  api<StoreBrand>('/store/brand', { method: 'PUT', body: input });

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { usernameSchema } from './username';
+
 import { cursorSchema, moneyAmountSchema, uuidSchema } from './common';
 
 /** Rang nomi — kamida bitta tilda (07-web-panels: mahsulot formasi). */
@@ -211,3 +213,18 @@ export const adminPresignSchema = presignSchema.extend({
 export type PresignInput = z.output<typeof presignSchema>;
 export type AdminPresignInput = z.output<typeof adminPresignSchema>;
 export type ProfilePresignInput = z.output<typeof profilePresignSchema>;
+
+
+/**
+ * Sotuvchi o'z brandi (03-api-spec: store brand). Har sotuvchida bitta
+ * brand: nomi, @username (majburiy), logotip va tavsif. Brandlar bo'limida
+ * shu username bilan ko'rinadi.
+ */
+export const storeBrandSchema = z.object({
+  name: z.string().trim().min(2, 'Nomi kamida 2 belgi').max(64),
+  username: usernameSchema,
+  logoUrl: z.string().url('Havola noto`g`ri').max(500).nullable().optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+});
+
+export type StoreBrandInput = z.output<typeof storeBrandSchema>;
