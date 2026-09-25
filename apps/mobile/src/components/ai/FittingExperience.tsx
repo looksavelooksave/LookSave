@@ -377,7 +377,9 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     queryKey: ['renders', 'outfit', angle, outfitIds.join(',')],
     queryFn: () => getRenders(outfitIds, angle, null, 'all'),
     enabled: ready && outfitIds.length > 0,
-    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1500 : false),
+    // Tayyor bo'lgan render tezroq ko'rinsin; ilovaga qaytganda ham yangilanadi
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1000 : false),
+    refetchOnWindowFocus: true,
   });
 
   const resolved = useMemo(
@@ -414,7 +416,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     queryKey: ['renders', 'strip', angle, stripBase.baseRenderId, stripIds.join(',')],
     queryFn: () => getRenders(stripIds, angle, stripBase.baseRenderId),
     enabled: ready && stripIds.length > 0 && stripBase.ready,
-    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1500 : false),
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1000 : false),
+    refetchOnWindowFocus: true,
   });
 
   /**
