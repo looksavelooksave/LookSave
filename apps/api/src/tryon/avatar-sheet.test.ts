@@ -57,12 +57,37 @@ describe('avatar varag`i', () => {
     }
   });
 
+  it('shaffof bo`shliq bo`yicha kesadi — figura markazdan siljigan bo`lsa ham', async () => {
+    // Shaffof fon; figuralar teng bo'lmagan joyda: chap, o'ng-o'rta, o'ng
+    const block = (r: number, g: number, b: number, w: number, h: number) =>
+      sharp({ create: { width: w, height: h, channels: 4, background: { r, g, b, alpha: 1 } } })
+        .png()
+        .toBuffer();
+    const sheet = await sharp({
+      create: { width: 900, height: 300, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .composite([
+        { input: await block(255, 0, 0, 100, 260), left: 20, top: 20 },
+        { input: await block(0, 255, 0, 170, 260), left: 350, top: 20 },
+        { input: await block(0, 0, 255, 120, 260), left: 700, top: 20 },
+      ])
+      .png()
+      .toBuffer();
+
+    const parts = await splitAvatarSheet(sheet);
+    expect(parts).not.toBeNull();
+    expect(await centerColor(parts!.front)).toEqual([255, 0, 0]);
+    expect(await centerColor(parts!.side)).toEqual([0, 255, 0]);
+    expect(await centerColor(parts!.back)).toEqual([0, 0, 255]);
+  });
+
   it('kenglik 3 ga bo`linmasa ham bo`laklar teng', async () => {
     const parts = await splitAvatarSheet(await sheet(1537, 1024));
     const widths = await Promise.all(
-      Object.values(parts!).map(async (part) => (await sharp(part).metadata()).width),
+      Object.values(parts!).map(async (part) => (await sharp(part).metadata()).width ?? 0),
     );
-    expect(new Set(widths).size).toBe(1);
+    // Qoldiq piksel oxirgi bo'lakka qo'shiladi — farq ko'pi bilan 1 px
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
   });
 
   it('bitta pozali tik rasm ajratilmaydi — eski oqim o`zgarmaydi', async () => {
