@@ -556,6 +556,20 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     return resolveAtFrontChain(outfit, frontRenders, renderIndex);
   }, [angle, outfit, renderIndex, frontRenders]);
 
+  /*
+   * ⚠️ TAB QATLAMIGACHA (2026-09-27). `visibleResolved` HOOKS ROYIXATIDA
+   * shu joyda — quyidagi early return'lardan OLDIN. Ilgari uni sahna
+   * qismida `worn` yonida qo'yganman, `if (!ready) return <Redirect />`
+   * dan KEYIN — birinchi render'da hooks ro'yxati boshqa, ikkinchisida
+   * boshqa bo'lardi va React «Rendered more hooks than during the
+   * previous render» xatosi tashlardi.
+   */
+  const tabRank = layerRank(tab);
+  const visibleResolved = useMemo(
+    () => resolved.filter((layer) => layerRank(layer.category) <= tabRank),
+    [resolved, tabRank],
+  );
+
   /* ── So'rovlar ── */
 
   /**
@@ -687,14 +701,9 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    *
    * ⚠️ TAB QATLAMIGACHA (2026-09-26). Foydalanuvchi Futbolka tabga
    * o'tsa-yu ustida ko'ylak/kurtka bor bo'lsa, sahnada u kiyimlar tabi
-   * bilan mos kelmasdi va foydalanuvchi tanlagan futbolkasini KO'RA
-   * OLMASDI. Endi sahna JORIY TAB qatlamigacha chiqadi — yuqoridagi
-   * qatlamlar vaqtincha yashiriladi (komplekt buzilmaydi, faqat ko'rish
-   * uchun). Tab almashilsa yuqoridagilar qaytadan ko'rinadi.
-   *
-   * ⚠️ NOMA'LUM TURKUM (oyoq kiyim tabining `category: ''` bo'ladi) eng
-   * tepaga tushadi (`layerRank(unknown) = LAYER_ORDER.length`), ya'ni
-   * oyoq kiyim tabida butun komplekt ko'rinadi.
+   * bilan mos kelmasdi. Endi sahna JORIY TAB qatlamigacha chiqadi —
+   * yuqoridagi qatlamlar vaqtincha yashiriladi (`visibleResolved`
+   * useMemo'si tepada, hooks ro'yxati barqaror bo'lsin uchun).
    *
    * ⚠️ OLD VA YON/ORQADA MANTIQ HAR XIL. Old: progressive (`topReady`) —
    * kutayotgan qatlam paytida oldingi tayyor qatlam ko'rinadi.
@@ -702,11 +711,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    * surati yo'q bo'lsa `null` (past qatlam chiqmaydi), `wornFront`
    * old zaxirasi ishga tushadi.
    */
-  const tabRank = layerRank(tab);
-  const visibleResolved = useMemo(
-    () => resolved.filter((layer) => layerRank(layer.category) <= tabRank),
-    [resolved, tabRank],
-  );
   const visibleTop = visibleResolved.at(-1);
   const worn =
     angle === 'front'
