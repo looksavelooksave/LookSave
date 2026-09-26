@@ -1,5 +1,6 @@
 import {
   baseForCategory,
+  GARMENT_STYLES,
   indexRenders,
   recommendSize,
   resolveOutfit,
@@ -86,6 +87,14 @@ export interface TryonState {
   frontRenders: TryonRender[];
   /** Joriy turkumdagi kiyimlar qaysi natija ustiga kiydiriladi */
   base: { baseRenderId: string | null; ready: boolean };
+  /**
+   * Foydalanuvchining o'lchamidagi kiyim topilmadi va ro'yxat butun
+   * o'lchamlar bilan qaytadi.
+   *
+   * ⚠️ SAHIFA TEPADA BANNER KO'RSATADI. Aks holda foydalanuvchi bir xil
+   * ro'yxatni ko'rib «filtr ishlamadi» deb tushunardi.
+   */
+  usingFallback: boolean;
   error: string | null;
 }
 
@@ -129,6 +138,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     frontRenders: [],
     base: { baseRenderId: null, ready: true },
     fitSize: null,
+    usingFallback: false,
     error: null,
   };
 
@@ -163,6 +173,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
    */
   const useFit = url.searchParams.get('fit') !== '0';
   const angle = (url.searchParams.get('angle') ?? 'front') as AvatarAngle;
+  const rawStyle = url.searchParams.get('style');
+  const style = rawStyle && (GARMENT_STYLES as readonly string[]).includes(rawStyle) ? rawStyle : null;
   const outfit = parseOutfit(url.searchParams.get('outfit'));
 
   let profile: FullProfile;
@@ -249,13 +261,34 @@ export async function loader({ params, request }: Route.LoaderArgs) {
      * front bo'ladi).
      */
     const variantIds = outfit.map((layer) => layer.variantId);
-    const [garments, outfitRenders, frontRenders] = await Promise.all([
-      getGarments({ category, storeId, size, gender: profile.gender, limit: 30 }, context.options),
+    const [initialGarments, outfitRenders, frontRenders] = await Promise.all([
+      getGarments(
+        { category, storeId, size, style, gender: profile.gender, limit: 30 },
+        context.options,
+      ),
       getRenders({ variantIds, angle, scope: 'all' }, context.options),
       angle === 'front'
         ? Promise.resolve([] as TryonRender[])
         : getRenders({ variantIds, angle: 'front', scope: 'all' }, context.options),
     ]);
+
+    /*
+     * ⚠️ MOS RAZMER YO'Q — razmersiz qayta so'raladi (2026-09-26,
+     * mobil bilan bir xil). Do'konda mijozning razmeridagi kiyim
+     * bo'lmasa ro'yxat bo'sh qolmaydi: hamma o'lchamdagi kiyim
+     * ko'rsatiladi, sahifa tepasida esa «sizning razmeringiz yo'q»
+     * izohi turadi. Uslub filtri esa hurmatlanadi — chunki uni
+     * foydalanuvchi qo'ygan.
+     */
+    const needFallback = Boolean(size) && initialGarments.length === 0;
+    const fallbackGarments = needFallback
+      ? await getGarments(
+          { category, storeId, size: null, style, gender: profile.gender, limit: 30 },
+          context.options,
+        )
+      : null;
+    const usingFallback = Boolean(fallbackGarments && fallbackGarments.length > 0);
+    const garments = usingFallback ? (fallbackGarments ?? []) : initialGarments;
 
     /*
      * ⚠️ ZANJIR SERVERDA TIKLANADI. Mijoz ham shu modulni ishlata olardi
@@ -283,7 +316,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       : [];
 
     return Response.json(
-      { ...state, garments, outfitRenders, stripRenders, frontRenders, base },
+      { ...state, garments, outfitRenders, stripRenders, frontRenders, base, usingFallback },
       { headers },
     );
   } catch (error) {

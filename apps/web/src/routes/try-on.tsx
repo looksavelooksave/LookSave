@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 
-import { renderKey } from '@looksave/validation';
+import { GARMENT_STYLES, type GarmentStyle, renderKey } from '@looksave/validation';
 import { Button, Card, Icon, type IconName } from '@looksave/ui-web';
 
 import { ANGLE_LABEL, type AvatarAngle } from '@/api/endpoints';
@@ -68,6 +68,15 @@ const TABS: Array<{ category: string; label: string; icon: IconName }> = [
 
 const ANGLES: AvatarAngle[] = ['front', 'side', 'back'];
 
+/** Uslub chipi ko'rsatiladigan nom — mobildagi ro'yxat bilan bir xil */
+const STYLE_LABEL: Record<GarmentStyle, string> = {
+  casual: 'Kundalik',
+  sport: 'Sport',
+  streetwear: 'Streetwear',
+  classic: 'Klassik',
+  minimal: 'Minimal',
+};
+
 export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Element {
   const { locale } = loaderData;
   const controller = useTryon(locale);
@@ -81,6 +90,8 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
     setAngle,
     onlyMySize,
     setOnlyMySize,
+    styleFilter,
+    setStyleFilter,
     store,
     outfit,
     resolved,
@@ -301,9 +312,70 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
               </div>
             )}
 
-            {/* Qatlam ko'rsatkichi — nechta kiyim kiyilgani */}
+            {/*
+              ── Chapdagi boshqaruv qatori (mobil bilan bir xil, 2026-09-27) ──
+              Burchak (Old · Yon · Orqa) sahna ustida, chap tomonda vertikal
+              pill sifatida. Foydalanuvchi tanlagan burchak sahnadagi
+              kompozitsiyani darhol almashtiradi.
+            */}
+            <div className="absolute start-3 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setRedoPhoto(true)}
+                className="flex size-11 items-center justify-center rounded-full border border-border bg-surface/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+                aria-label="Suratni qayta olish"
+              >
+                <Icon name="camera" size={16} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="flex size-11 items-center justify-center rounded-full border border-border bg-surface/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+                aria-label="Yangilash"
+              >
+                <Icon name="rotate" size={16} />
+              </button>
+
+              <div
+                role="radiogroup"
+                aria-label="Burchak"
+                className="mt-1 flex flex-col gap-1 rounded-full border border-border bg-surface/80 p-1 backdrop-blur"
+              >
+                {ANGLES.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    role="radio"
+                    aria-checked={angle === item}
+                    aria-label={ANGLE_LABEL[item]}
+                    onClick={() => {
+                      setAngle(item);
+                      /*
+                       * ⚠️ HAR BURCHAK ALOHIDA KREDIT — avval keshga
+                       * qaraladi (avatar burchagi). Yasalgani bo'lsa
+                       * bepul ko'rsatiladi.
+                       */
+                      if (!angles[item]) {
+                        void act({ op: 'angle', angle: item }).then(() => void refresh());
+                      }
+                    }}
+                    className={[
+                      'rounded-full px-3 py-1.5 text-tiny transition-colors',
+                      angle === item
+                        ? 'bg-primary text-background'
+                        : 'text-muted-foreground hover:text-foreground',
+                    ].join(' ')}
+                  >
+                    {ANGLE_LABEL[item]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Qatlam ko'rsatkichi — nechta kiyim kiyilgani (o'ngda) */}
             {resolved.length > 0 ? (
-              <div className="absolute end-3 top-1/3 flex flex-col gap-1.5">
+              <div className="absolute end-3 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
                 {resolved.map((layer) => (
                   <span
                     key={layer.category}
@@ -320,91 +392,51 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
             ) : null}
 
             {/*
-              ⚠️ `stageImage` SHART: avatarsiz kiyintirish umuman
-              boshlanmaydi, lekin eski holat qolib ketishi mumkin. Bu
-              tekshiruvsiz spinner avatar so'ralayotgan blokning USTIGA
-              chizilardi va tugmani bosib bo'lmasdi.
+              ⚠️ HOLAT KARTASI (mobil ilova bilan bir xil, 2026-09-27).
+              «AI kiyintirmoqda», «Kiyintirib bo'lmadi» — bittasi to'q
+              karta ichida chiqadi (avatar rasmi ustida ham o'qiladi).
+              `stageImage` SHART: avatarsiz kiyintirish umuman
+              boshlanmaydi, lekin eski holat qolib ketishi mumkin.
             */}
-            {rendering && stageImage ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 text-center">
-                <span className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="text-bodyMed">AI kiyintirmoqda…</p>
-                <p className="text-tiny text-muted-foreground">
-                  {stripBase.ready
-                    ? 'Har qatlam 10–20 soniya'
-                    : 'Avval ostidagi qatlam tayyorlanmoqda'}
-                </p>
-              </div>
-            ) : null}
-
-            {failed && !rendering ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 px-6 text-center">
-                <Icon name="close" size={24} className="text-danger" />
-                <p className="text-bodyMed">Kiyintirib bo‘lmadi</p>
-                <p className="text-tiny text-muted-foreground">
-                  {failed.error ?? 'Boshqa kiyim bilan urinib ko‘ring'}
-                </p>
+            {(rendering && stageImage) || (failed && !rendering) ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 rounded-lg bg-background/85 px-6 py-5 text-center shadow-lg backdrop-blur">
+                  {failed && !rendering ? (
+                    <Icon name="close" size={24} className="text-danger" />
+                  ) : (
+                    <span className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  )}
+                  <p className="text-bodyMed">
+                    {failed && !rendering ? 'Kiyintirib bo‘lmadi' : 'AI kiyintirmoqda…'}
+                  </p>
+                  <p className="text-tiny text-muted-foreground">
+                    {failed && !rendering
+                      ? (failed.error ?? 'Boshqa kiyim bilan urinib ko‘ring')
+                      : stripBase.ready
+                        ? 'Har qatlam 10–20 soniya'
+                        : 'Avval ostidagi qatlam tayyorlanmoqda'}
+                  </p>
+                </div>
               </div>
             ) : null}
           </div>
 
-          {/* Burchak va yechish */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {ANGLES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => {
-                  setAngle(item);
-                  /*
-                   * ⚠️ HAR BURCHAK ALOHIDA KREDIT — shuning uchun avval
-                   * KESHGA qaraladi. Yasalgani bo'lsa bepul ko'rsatiladi.
-                   */
-                  if (!angles[item]) {
-                    void act({ op: 'angle', angle: item }).then(() => void refresh());
-                  }
-                }}
-                className={[
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-tiny transition-colors',
-                  angle === item
-                    ? 'border-borderAccent bg-primarySoft text-foreground'
-                    : 'border-border text-muted-foreground hover:text-foreground',
-                ].join(' ')}
-              >
-                <Icon name="rotate" size={12} />
-                {ANGLE_LABEL[item]}
-              </button>
-            ))}
-
-            {/*
-              ⚠️ QAYTA OLISH — BURCHAKLAR YONIDA, ATAYIN. Avatar yoqmasa
-              odam birinchi navbatda shu joyga qaraydi: sahna ostidagi
-              qator avatarni boshqaradigan yagona joy. Sozlamalarga
-              yashirilsa uni hech kim topmaydi.
-            */}
-            <button
-              type="button"
-              onClick={() => setRedoPhoto(true)}
-              className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-tiny text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Icon name="camera" size={12} />
-              Suratni qayta olish
-            </button>
-
-            {outfit.some((layer) => layer.category === tab) ? (
+          {/* Yechish — sahna ostida, alohida qator (tab'ga tegmasin) */}
+          {outfit.some((layer) => layer.category === tab) ? (
+            <div className="mt-3 flex justify-end">
               <button
                 type="button"
                 onClick={() => {
                   takeOff(tab);
                   setSize(null);
                 }}
-                className="ms-auto flex items-center gap-1.5 rounded-full border border-danger/50 px-3 py-1.5 text-tiny text-danger transition-colors hover:bg-danger/10"
+                className="flex items-center gap-1.5 rounded-full border border-danger/50 px-3 py-1.5 text-tiny text-danger transition-colors hover:bg-danger/10"
               >
                 <Icon name="close" size={12} />
                 Yechish
               </button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {/* ── Tanlov ── */}
@@ -442,12 +474,50 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
             })}
           </div>
 
+          {/*
+            ── Uslub chiplari (mobil ilova bilan bir xil, 2026-09-27) ──
+            Tanlangan mahsulotdan tashqarida turadi — bo'sh ro'yxatda ham
+            filtrni bekor qilish yo'li qolsin (boshi berk ko'cha bo'lmasin).
+          */}
+          <div className="flex flex-wrap gap-2">
+            {GARMENT_STYLES.map((item) => {
+              const active = styleFilter === item;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setStyleFilter(active ? null : item)}
+                  className={[
+                    'rounded-full border px-3 py-1.5 text-tiny transition-colors',
+                    active
+                      ? 'border-borderAccent bg-primarySoft text-foreground'
+                      : 'border-border text-muted-foreground hover:text-foreground',
+                  ].join(' ')}
+                >
+                  {STYLE_LABEL[item]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/*
+            ⚠️ MOS RAZMER YO'Q — server barcha o'lchamlarni yubordi.
+            Sahifa buni ko'rsatmasa foydalanuvchi «filtrim ishlamadi» deb
+            o'ylardi.
+          */}
+          {state.usingFallback ? (
+            <p className="text-small text-warning">
+              Sizning {fitSize} razmeringiz bu do‘konda yo‘q — barcha kiyimlar ko‘rsatilmoqda
+            </p>
+          ) : null}
+
           {/* Kiyim tasmasi */}
           {items.length === 0 ? (
             <Card className="flex flex-col gap-3 p-6 text-center">
               {/*
                 ⚠️ XATO BO'SHLIKDAN AJRATILADI.
-                
+
                 `try-on.state.tsx` dagi `catch` kiyimlarsiz holat qaytaradi va
                 `error` maydonini to'ldiradi. Sahifa esa uni HECH QAYERDA
                 ko'rsatmasdi — API yiqilsa ham ekranda «Bu turkumda kiyim
@@ -459,12 +529,19 @@ export default function TryOnPage({ loaderData }: Route.ComponentProps): JSX.Ele
                 <p className="text-small text-danger">{state.error}</p>
               ) : (
                 <p className="text-small text-muted-foreground">
-                  {onlyMySize && fitSize
-                    ? `${store?.name ?? 'Bu do‘kon'}da ${fitSize} o‘lchamdagi kiyim yo‘q`
-                    : 'Bu turkumda hozircha kiyim yo‘q'}
+                  {styleFilter
+                    ? `${STYLE_LABEL[styleFilter]} uslubidagi kiyim topilmadi`
+                    : onlyMySize && fitSize
+                      ? `${store?.name ?? 'Bu do‘kon'}da ${fitSize} o‘lchamdagi kiyim yo‘q`
+                      : 'Bu turkumda hozircha kiyim yo‘q'}
                 </p>
               )}
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                {styleFilter ? (
+                  <Button variant="ghost" onClick={() => setStyleFilter(null)}>
+                    Uslub filtrini olib tashlash
+                  </Button>
+                ) : null}
                 {onlyMySize && fitSize ? (
                   <Button variant="ghost" onClick={() => setOnlyMySize(false)}>
                     Barcha o‘lchamlarni ko‘rsat

@@ -543,6 +543,8 @@ export interface GarmentFilters {
   gender?: string | null;
   storeId?: string | null;
   size?: string | null;
+  /** Uslub slugi (`GARMENT_STYLES`) — `products.tags` bilan kesishma */
+  style?: string | null;
   limit?: number;
 }
 
@@ -557,6 +559,7 @@ export const getGarments = (
       gender: filters.gender ?? undefined,
       storeId: filters.storeId ?? undefined,
       size: filters.size ?? undefined,
+      style: filters.style ?? undefined,
       limit: filters.limit ?? 30,
     })}`,
     options,

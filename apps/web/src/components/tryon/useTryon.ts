@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   baseForCategory,
   clearLayer,
+  type GarmentStyle,
   indexRenders,
   layerRank,
   nextPending,
@@ -88,6 +89,7 @@ export function useTryon(locale: string) {
   const [outfit, setOutfit] = useState<OutfitLayer[]>([]);
   const [store, setStoreState] = useState<ChosenStore | null>(null);
   const [onlyMySize, setOnlyMySize] = useState(true);
+  const [styleFilter, setStyleFilter] = useState<GarmentStyle | null>(null);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [limitReached, setLimitReached] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -139,6 +141,7 @@ export function useTryon(locale: string) {
     const params = new URLSearchParams({ category: tab, angle, fit: onlyMySize ? '1' : '0' });
     if (store) params.set('storeId', store.id);
     if (outfitParam) params.set('outfit', outfitParam);
+    if (styleFilter) params.set('style', styleFilter);
 
     try {
       const response = await fetch(`/${locale}/try-on/state?${params.toString()}`, {
@@ -155,7 +158,7 @@ export function useTryon(locale: string) {
     } finally {
       if (seq === requestSeq.current) setLoading(false);
     }
-  }, [locale, tab, angle, onlyMySize, store, outfitParam]);
+  }, [locale, tab, angle, onlyMySize, store, outfitParam, styleFilter]);
 
   useEffect(() => {
     void refresh();
@@ -473,6 +476,8 @@ export function useTryon(locale: string) {
     setAngle,
     onlyMySize,
     setOnlyMySize,
+    styleFilter,
+    setStyleFilter,
     store,
     setStore,
 
