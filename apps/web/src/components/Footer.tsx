@@ -59,6 +59,7 @@ export function Footer({ locale }: { locale: Locale }): JSX.Element {
       title: 'Huquqiy',
       icon: 'authentic',
       links: [
+        { to: `/${locale}/support`, label: 'Yordam' },
         { to: `/${locale}/privacy`, label: 'Maxfiylik siyosati' },
         { to: `/${locale}/terms`, label: 'Foydalanish shartlari' },
       ],
