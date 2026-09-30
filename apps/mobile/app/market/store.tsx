@@ -19,19 +19,26 @@ import { goBack } from '../../src/navigation/back';
  * ochiladi.
  */
 
-/** Kategoriya slot'iga qarab ikonka — topilmasa umumiy kiyim ikonkasi. */
-const SLOT_ICON: Record<string, IconName> = {
-  top: 'slotTop',
-  outer: 'slotTop',
-  bottom: 'slotBottom',
-  feet: 'slotFeet',
-  head: 'slotHead',
-  dress: 'dress',
-};
+/**
+ * Kategoriya NOMIGA mos ikonka — nom yoki slug ичидаги kalit so'zга qarab.
+ * Tartib muhim: aniqroq kalitlar (oyoq kiyim, ko'zoynak) umumiy «kiyim»dan
+ * oldin tekshiriladi.
+ */
+const ICON_RULES: Array<{ match: RegExp; icon: IconName }> = [
+  { match: /sneaker|shoe|sandal|boot|trainer|krossovka|oyoq|feet|footwear|loafer/, icon: 'slotFeet' },
+  { match: /watch|soat|clock/, icon: 'clock' },
+  { match: /bag|backpack|sumka|rюкзак|ryukzak|clutch/, icon: 'bag' },
+  { match: /glass|eyewear|sunglass|ko.?zoynak|optic/, icon: 'eye' },
+  { match: /dress|ko.?ylak|ko.?ylagi|skirt|yubka/, icon: 'dress' },
+  { match: /trouser|pant|jean|short|shim|bottom|chino|cargo/, icon: 'slotBottom' },
+  { match: /jacket|coat|hoodie|xudi|kurtka|outer|palto|windbreaker|bomber/, icon: 'slotOuter' },
+  { match: /shirt|tee|t-?shirt|top|futbolka|ko.?ylak|polo|sweater|jumper/, icon: 'slotTop' },
+];
 
-function iconFor(slug: string): IconName {
-  for (const key of Object.keys(SLOT_ICON)) {
-    if (slug.includes(key)) return SLOT_ICON[key]!;
+function iconFor(slug: string, name: string): IconName {
+  const hay = `${slug} ${name}`.toLowerCase();
+  for (const rule of ICON_RULES) {
+    if (rule.match.test(hay)) return rule.icon;
   }
   return 'slotTop';
 }
@@ -107,7 +114,7 @@ export default function MarketStore(): JSX.Element {
                 style={StyleSheet.absoluteFill}
               />
               <View style={styles.catIcon}>
-                <Icon name={iconFor(item.slug)} size={26} color={colors.accent} />
+                <Icon name={iconFor(item.slug, item.name)} size={26} color={colors.accent} />
               </View>
               <Text style={styles.catName} numberOfLines={1}>
                 {item.name}
