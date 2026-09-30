@@ -111,6 +111,8 @@ function AppShell(): JSX.Element {
           {/* Katalog va kolleksiyada o'z sarlavhasi bor (orqaga, nom, savat) */}
           <Stack.Screen name="catalog" options={{ headerShown: false }} />
           <Stack.Screen name="collection" options={{ headerShown: false }} />
+          {/* Market ichma-ich oqimi: do`konlar → kategoriyalar (o`z sarlavhasi bor) */}
+          <Stack.Screen name="market" options={{ headerShown: false }} />
           <Stack.Screen name="stores" options={{ title: t.tabs.stores }} />
           {/* O'lchamlar ekranida o'z sarlavhasi bor */}
           <Stack.Screen name="settings/measurements" options={{ headerShown: false }} />

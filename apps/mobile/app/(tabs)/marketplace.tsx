@@ -136,7 +136,8 @@ export default function Marketplace(): JSX.Element {
       key: 'men',
       title: t.marketplace.men,
       icon: 'slotTop',
-      href: '/collection?kind=men',
+      // Endi to'g'ridan-to'g'ri mahsulot emas — avval DO'KONLAR ochiladi
+      href: '/market/stores?gender=male',
       image: images.collectionMen,
       accent: colors.primary,
     },
@@ -144,7 +145,7 @@ export default function Marketplace(): JSX.Element {
       key: 'women',
       title: t.marketplace.women,
       icon: 'dress',
-      href: '/collection?kind=women',
+      href: '/market/stores?gender=female',
       image: images.collectionWomen,
       accent: colors.accent,
     },
