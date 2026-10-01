@@ -27,7 +27,9 @@ import { goBack } from '../../src/navigation/back';
 const ICON_RULES: Array<{ match: RegExp; icon: IconName }> = [
   { match: /sneaker|shoe|sandal|boot|trainer|krossovka|oyoq|feet|footwear|loafer/, icon: 'slotFeet' },
   { match: /watch|soat|clock/, icon: 'clock' },
-  { match: /bag|backpack|sumka|rюкзак|ryukzak|clutch/, icon: 'bag' },
+  // `cart` nomi ShoppingBag glifini beradi (Icon.tsx da nomlar teskari),
+  // shuning uchun sumka uchun `cart` — haqiqiy sumka shakli.
+  { match: /bag|backpack|sumka|rюкзак|ryukzak|clutch/, icon: 'cart' },
   { match: /glass|eyewear|sunglass|ko.?zoynak|optic/, icon: 'eye' },
   { match: /dress|ko.?ylak|ko.?ylagi|skirt|yubka/, icon: 'dress' },
   { match: /trouser|pant|jean|short|shim|bottom|chino|cargo/, icon: 'slotBottom' },
