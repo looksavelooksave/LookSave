@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -74,6 +75,31 @@ function addressText(address: unknown): string {
   return '';
 }
 
+/**
+ * Yangi buyurtma kelganda ovoz + banner.
+ *
+ * ⚠️ NEGA LOKAL BILDIRISHNOMA: server push faqat haqiqiy qurilmada va
+ * EXPO_ACCESS_TOKEN sozlanganda ishlaydi. Panel ochiq turganda esa sotuvchi
+ * darhol sezishi kerak — shuning uchun navbat kuzatiladi va yangi buyurtma
+ * aniqlanganda darhol lokal bildirishnoma chiqariladi (ovoz + banner). Ovoz
+ * va ko'rinish `usePush` dagi global handler orqali oldinda ham ishlaydi.
+ */
+async function playNewOrderAlert(count: number): Promise<void> {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: count > 1 ? `${count} ta yangi buyurtma!` : 'Yangi buyurtma!',
+        body: 'Mijoz buyurtma yubordi — tasdiqlang',
+        sound: 'default',
+        data: { type: 'store_order' },
+      },
+      trigger: null, // darhol
+    });
+  } catch {
+    // Ruxsat yo'q yoki qo'llab-quvvatlanmaydi — jim o'tkaziladi
+  }
+}
+
 export default function SellerOrders(): JSX.Element {
   /*
    * ⚠️ Ildiz Stack bu bo'limda sarlavha chizmaydi (`headerShown: false`),
@@ -114,6 +140,26 @@ export default function SellerOrders(): JSX.Element {
      */
     refetchInterval: filter === 'new' ? 30_000 : false,
   });
+
+  /*
+   * Yangi buyurtma kelganini kuzatish: `new` navbati soni OSHGANDA ovoz +
+   * banner. Birinchi yuklanishda jim (oldingi son yo'q). Boshqa filtrga
+   * o'tilsa hisob tiklanadi — qaytilganda eski buyurtmalarga ovoz chiqmaydi.
+   */
+  const prevNewCount = useRef<number | null>(null);
+  useEffect(() => {
+    if (filter !== 'new') {
+      prevNewCount.current = null;
+      return;
+    }
+    const count = orders.data?.items.length;
+    if (count === undefined) return;
+
+    if (prevNewCount.current !== null && count > prevNewCount.current) {
+      void playNewOrderAlert(count - prevNewCount.current);
+    }
+    prevNewCount.current = count;
+  }, [orders.data, filter]);
 
   const act = useMutation({
     mutationFn: ({
