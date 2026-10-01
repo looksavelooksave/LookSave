@@ -2,18 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   getStoreDashboard,
   getStoreOrders,
+  getStoreProfile,
   storeOrderAction,
   type StoreOrder,
   type StoreOrderFilter,
 } from '../../src/api/endpoints';
 import { ApiError } from '../../src/api/client';
-import { Icon, type IconName } from '../../src/components/Icon';
+import { Icon } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { SkeletonList } from '../../src/components/Skeleton';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
@@ -28,8 +29,9 @@ import { goBack } from '../../src/navigation/back';
  * Bu yerdan hammasi boshqariladi: buyurtmalar, mahsulotlar, sozlamalar.
  * Sotuvchi kompyuter oldiga o'tirmasdan do'konini to'liq yuritadi.
  *
- * Tartib ish chastotasiga qarab: buyurtmalar kunlik, mahsulot va
- * sozlamalar esa vaqti-vaqti bilan — shuning uchun ular yuqorida emas.
+ * PREMIUM TUZILISH: sarlavha + tushum kartasi + boshqaruv + filtrlar hammasi
+ * ro'yxat bilan BIRGA suriladi (`ListHeaderComponent`). Ilgari ular qotib
+ * turardi va buyurtmalarga tor oyna qolardi.
  *
  * ⚠️ VAQT CHEGARASI BOR. `new` holatdagi buyurtma muddati o'tsa avtomatik
  * `expired` bo'ladi va mijoz yo'qoladi. Shuning uchun qolgan daqiqalar
@@ -66,8 +68,8 @@ const NEXT_ACTION: Record<
 function addressText(address: unknown): string {
   if (typeof address === 'string') return address;
   if (address && typeof address === 'object') {
-    const text = (address as { text?: unknown }).text;
-    if (typeof text === 'string') return text;
+    const value = (address as { text?: unknown }).text;
+    if (typeof value === 'string') return value;
   }
   return '';
 }
@@ -87,6 +89,13 @@ export default function SellerOrders(): JSX.Element {
   const [filter, setFilter] = useState<StoreOrderFilter>('new');
 
   const isSeller = role === 'store_owner' || role === 'admin';
+
+  const profile = useQuery({
+    queryKey: ['store', 'profile'],
+    queryFn: getStoreProfile,
+    enabled: signedIn && isSeller,
+    staleTime: 5 * 60_000,
+  });
 
   const dashboard = useQuery({
     queryKey: ['store', 'dashboard'],
@@ -147,11 +156,12 @@ export default function SellerOrders(): JSX.Element {
   }
 
   const stats = dashboard.data;
+  const store = profile.data;
 
-  return (
-    <Screen>
+  const header = (
+    <View>
       <LinearGradient
-        colors={['#171126', colors.bg]}
+        colors={['#1D1636', '#120E1C', colors.bg]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
@@ -166,9 +176,13 @@ export default function SellerOrders(): JSX.Element {
             <Icon name="back" size={20} color={colors.accent} />
           </Pressable>
 
+          <Text style={styles.eyebrow}>
+            LOOK<Text style={styles.eyebrowAccent}>SAVE</Text> · SELLER
+          </Text>
+
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Buyurtmalar"
+            accessibilityLabel="Yangi buyurtmalar"
             onPress={() => setFilter('new')}
             style={styles.iconButton}
           >
@@ -183,57 +197,109 @@ export default function SellerOrders(): JSX.Element {
           </Pressable>
         </View>
 
-        <View style={styles.brandRow}>
-          <View style={styles.brandMark}>
-            <Icon name="bag" size={20} color={colors.text} />
+        {/* Do'kon o'ziga xosligi — real nom, logo va ish holati */}
+        <View style={styles.identity}>
+          <View style={styles.logoTile}>
+            {store?.logoUrl ? (
+              <Image source={{ uri: store.logoUrl }} style={styles.logoImg} resizeMode="cover" />
+            ) : (
+              <Icon name="shop" size={26} color={colors.text} />
+            )}
           </View>
-          <View>
-            <Text style={styles.wordmark}>
-              LOOK<Text style={styles.wordmarkAccent}>SAVE</Text>
+
+          <View style={styles.identityText}>
+            <Text style={styles.storeName} numberOfLines={1}>
+              {store?.name ?? 'Do`konim'}
             </Text>
-            <Text style={styles.panelLabel}>Seller admin</Text>
+
+            {store ? (
+              <View
+                style={[styles.statusPill, store.isOpen ? styles.statusOpen : styles.statusClosed]}
+              >
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: store.isOpen ? colors.success : colors.textDim },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: store.isOpen ? colors.success : colors.textMuted },
+                  ]}
+                >
+                  {store.isOpen
+                    ? `Ochiq${store.closesAt ? ` · ${store.closesAt} gacha` : ''}`
+                    : `Yopiq${store.opensAt ? ` · ${store.opensAt} dan` : ''}`}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.subtitle}>Seller admin paneli</Text>
+            )}
           </View>
         </View>
 
-        <Text style={styles.title}>Do`konim</Text>
         {stats ? (
           <Text style={styles.subtitle}>
-            {stats.newOrders} yangi · {stats.inProgress} jarayonda
+            <Text style={styles.subtitleStrong}>{stats.newOrders}</Text> yangi ·{' '}
+            <Text style={styles.subtitleStrong}>{stats.inProgress}</Text> jarayonda
           </Text>
         ) : null}
       </LinearGradient>
 
-      {/* Oylik ko'rsatkichlar */}
+      {/* Hero: oylik tushum — sotuvchi uchun eng muhim raqam */}
       {stats ? (
-        <View style={styles.stats}>
-          <Stat icon="bag" value={String(stats.completedMonth)} label="Bu oy yakunlangan" />
-          <Stat
-            icon="premium"
-            value={money(stats.revenueMonth, stats.currency)}
-            label="Bu oy tushum"
-          />
-          <Stat icon="orders" value={String(stats.productCount)} label="Mahsulot" />
-        </View>
+        <LinearGradient
+          colors={['#271B47', '#17121F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroTop}>
+            <Text style={styles.heroLabel}>BU OY TUSHUM</Text>
+            <View style={styles.heroBadge}>
+              <Icon name="premium" size={16} color={colors.accent} />
+            </View>
+          </View>
+
+          <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>
+            {money(stats.revenueMonth, stats.currency)}
+          </Text>
+
+          <View style={styles.heroStats}>
+            <View style={styles.heroStat}>
+              <Icon name="authentic" size={14} color={colors.success} />
+              <Text style={styles.heroStatText}>{stats.completedMonth} yakunlangan</Text>
+            </View>
+            <View style={styles.heroDivider} />
+            <View style={styles.heroStat}>
+              <Icon name="orders" size={14} color={colors.accent} />
+              <Text style={styles.heroStatText}>{stats.productCount} mahsulot</Text>
+            </View>
+          </View>
+        </LinearGradient>
       ) : null}
 
       {/*
-        Boshqaruv yo'llari — buyurtmalardan YUQORIDA emas, pastida turadi.
-        Buyurtmalar kunlik ish, mahsulot va sozlama esa vaqti-vaqti bilan.
-        Yuqoriga qo'ysak, har kirganda ular ko'zni egallardi.
+        Boshqaruv — 2 ustunli plitalar. Buyurtmalar kunlik ish, mahsulot va
+        sozlama esa vaqti-vaqti bilan, shuning uchun ular pastda.
       */}
       <View style={styles.manage}>
-        <ManageButton
+        <ManageTile
           icon="slotTop"
           label="Mahsulotlar"
+          hint={stats ? `${stats.productCount} ta katalogda` : 'Katalog'}
           onPress={() => router.push('/seller/products')}
         />
-        <ManageButton
+        <ManageTile
           icon="settings"
           label="Sozlamalar"
+          hint="Do`kon profili"
           onPress={() => router.push('/seller/settings')}
         />
       </View>
 
+      {/* Buyurtma filtrlari */}
       <View style={styles.filters}>
         {FILTERS.map((item) => (
           <Pressable
@@ -261,26 +327,34 @@ export default function SellerOrders(): JSX.Element {
         ))}
       </View>
 
-      {orders.isLoading ? <SkeletonList count={4} /> : null}
-      {orders.isError ? (
-        <ErrorView error={orders.error} onRetry={() => void orders.refetch()} />
+      {orders.isLoading ? (
+        <View style={styles.statePad}>
+          <SkeletonList count={4} />
+        </View>
       ) : null}
+      {orders.isError ? (
+        <View style={styles.statePad}>
+          <ErrorView error={orders.error} onRetry={() => void orders.refetch()} />
+        </View>
+      ) : null}
+    </View>
+  );
 
-      {orders.data ? (
-        <FlatList
-          data={orders.data.items}
-          keyExtractor={(order) => order.id}
-          contentContainerStyle={styles.list}
-          refreshing={orders.isFetching}
-          onRefresh={() => void orders.refetch()}
-          removeClippedSubviews
-          initialNumToRender={6}
-          ListEmptyComponent={
-            /*
-              Uzuq chiziqli ramka — bu yer TO'LDIRILISHI kerakligini
-              bildiradi. Tekis ramka «shunday bo'lishi kerak» degan
-              taassurot berardi.
-            */
+  return (
+    <Screen>
+      <FlatList
+        data={orders.data?.items ?? []}
+        keyExtractor={(order) => order.id}
+        contentContainerStyle={styles.scroll}
+        refreshing={orders.isFetching}
+        onRefresh={() => void orders.refetch()}
+        removeClippedSubviews
+        initialNumToRender={6}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          // Yuklanayotganda skelet sarlavhada ko'rsatiladi — bu yerda emas
+          orders.data && !orders.isError ? (
             <View style={styles.emptyBox}>
               <View style={styles.emptyIcon}>
                 <Icon name="orders" size={34} color={colors.accent} />
@@ -299,8 +373,6 @@ export default function SellerOrders(): JSX.Element {
               {/*
                 ⚠️ AMAL «MAHSULOT QO'SHISH», «buyurtma qo'shish» EMAS.
                 Buyurtmani MIJOZ yaratadi — sotuvchi uni qo'la olmaydi.
-                Bu yerda foydali yagona qadam: katalogni to'ldirish,
-                shunda buyurtma keladigan bo'ladi.
               */}
               <Pressable
                 accessibilityRole="button"
@@ -313,65 +385,50 @@ export default function SellerOrders(): JSX.Element {
                 <Text style={styles.emptyActionText}>Mahsulot qo`shish</Text>
               </Pressable>
             </View>
-          }
-          renderItem={({ item }) => (
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <View style={styles.cardWrap}>
             <OrderCard
               order={item}
               busy={act.isPending && act.variables?.id === item.id}
               onAction={(action, body) => act.mutate({ id: item.id, action, body })}
             />
-          )}
-        />
-      ) : null}
+          </View>
+        )}
+      />
     </Screen>
   );
 }
 
-function ManageButton({
+function ManageTile({
   icon,
   label,
+  hint,
   onPress,
 }: {
   icon: 'slotTop' | 'settings';
   label: string;
+  hint: string;
   onPress: () => void;
 }): JSX.Element {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.manageButton}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.manageTile, pressed && styles.manageTilePressed]}
+    >
       <View style={styles.manageIcon}>
-        <Icon name={icon} size={18} color={colors.accent} />
+        <Icon name={icon} size={20} color={colors.accent} />
       </View>
-      <Text style={styles.manageText}>{label}</Text>
-      <Icon name="next" size={16} color={colors.textDim} />
-    </Pressable>
-  );
-}
-
-function Stat({
-  icon,
-  value,
-  label,
-}: {
-  icon: IconName;
-  value: string;
-  label: string;
-}): JSX.Element {
-  return (
-    <View style={styles.stat}>
-      <View style={styles.statIcon}>
-        <Icon name={icon} size={18} color={colors.accent} />
-      </View>
-      <Text style={styles.statValue} numberOfLines={1}>
-        {value}
-      </Text>
-      {/*
-        ⚠️ IKKI QATOR. Bitta qatorda «Bu oy yakunlangan» uch ustunli
-        kartaga sig'masdi va «Bu oy yakunlan…» bo'lib kesilardi.
-      */}
-      <Text style={styles.statLabel} numberOfLines={2}>
+      <Text style={styles.manageLabel} numberOfLines={1}>
         {label}
       </Text>
-    </View>
+      <Text style={styles.manageHint} numberOfLines={1}>
+        {hint}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -447,7 +504,7 @@ function OrderCard({
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Qo`ng`iroq"
+          accessibilityLabel="Mijozga qo`ng`iroq"
           onPress={() => void Linking.openURL(`tel:${order.customer.phone}`)}
           style={styles.callButton}
         >
@@ -471,10 +528,13 @@ function OrderCard({
 }
 
 const styles = StyleSheet.create({
+  scroll: { paddingBottom: spacing.xxl },
+
+  // ── Sarlavha ──
   header: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
-    gap: spacing.xs,
+    gap: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -482,7 +542,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
   },
   iconButton: {
     width: 44,
@@ -494,6 +553,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     backgroundColor: 'rgba(20, 18, 28, 0.74)',
   },
+  eyebrow: { ...text.wordmark, fontSize: 11, letterSpacing: 2.5, color: colors.textMuted },
+  eyebrowAccent: { color: colors.accent },
   bellBadge: {
     position: 'absolute',
     top: -3,
@@ -507,89 +568,116 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   bellBadgeText: { ...text.tiny, color: colors.text, fontWeight: '700' },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  brandMark: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
+
+  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  logoTile: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.55,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  wordmark: { ...text.bodyMed, color: colors.text, letterSpacing: 1.2 },
-  wordmarkAccent: { color: colors.accent },
-  panelLabel: { ...text.tiny, color: colors.textMuted, marginTop: 2 },
-  title: { ...text.h1, color: colors.text, marginTop: spacing.xs },
-  subtitle: { ...text.body, color: colors.textMuted, marginTop: 2 },
-
-  stats: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm },
-  stat: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 18, 28, 0.9)',
-    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    padding: spacing.md,
-    gap: spacing.xs,
     shadowColor: colors.primary,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
   },
-  statIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.primarySoft,
-    marginBottom: spacing.xs,
-  },
-  statValue: { ...text.h3, color: colors.accent },
-  statLabel: { ...text.tiny, color: colors.textDim },
-
-  manage: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  manageButton: {
+  logoImg: { width: '100%', height: '100%' },
+  identityText: { flex: 1, gap: spacing.xs },
+  storeName: { ...text.h1, color: colors.text },
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 58,
-    paddingHorizontal: spacing.md,
-    justifyContent: 'center',
-    borderRadius: radius.lg,
+    gap: spacing.xs + 2,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  statusOpen: { borderColor: 'rgba(34,197,94,0.35)', backgroundColor: 'rgba(34,197,94,0.1)' },
+  statusClosed: { borderColor: colors.border, backgroundColor: colors.surface2 },
+  statusDot: { width: 7, height: 7, borderRadius: radius.pill },
+  statusText: { ...text.tiny },
+  subtitle: { ...text.body, color: colors.textMuted },
+  subtitleStrong: { color: colors.text, fontWeight: '700' },
+
+  // ── Hero: oylik tushum ──
+  hero: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.xxl,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
+    gap: spacing.sm,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 },
   },
-  manageIcon: {
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroLabel: { ...text.label, color: colors.accent },
+  heroBadge: {
     width: 34,
     height: 34,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
   },
-  manageText: { ...text.bodyMed, color: colors.text, flex: 1 },
+  heroValue: { ...text.hero, color: colors.text, marginTop: spacing.xs },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  heroStat: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
+  heroStatText: { ...text.small, color: colors.textMuted },
+  heroDivider: { width: 1, height: 14, backgroundColor: colors.borderStrong },
 
+  // ── Boshqaruv plitalari ──
+  manage: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
+  manageTile: {
+    flex: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  manageTilePressed: { borderColor: colors.accent, backgroundColor: colors.surface2 },
+  manageIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  manageLabel: { ...text.bodyMed, color: colors.text, marginTop: spacing.xs },
+  manageHint: { ...text.tiny, color: colors.textDim },
+
+  // ── Filtrlar ──
   filters: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginHorizontal: spacing.md,
+    marginTop: spacing.md,
     padding: spacing.xs,
     borderRadius: radius.xl,
     borderWidth: 1,
@@ -603,17 +691,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
   },
-  // Faol chip gradient bilan chiziladi, bu esa tanlanmagani
   filterIdle: { borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
   filterText: { ...text.small, color: colors.textMuted, fontWeight: '600' },
 
+  statePad: { paddingHorizontal: spacing.md, marginTop: spacing.md },
+
+  // ── Bo'sh holat ──
   emptyBox: {
     alignItems: 'center',
     gap: spacing.sm,
     padding: spacing.xl,
-    marginTop: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
     borderRadius: radius.xl,
-    // Uzuq chiziq — bu yer to'ldirilishi kerakligini bildiradi
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.borderStrong,
@@ -655,8 +745,8 @@ const styles = StyleSheet.create({
   },
   emptyActionText: { ...text.small, color: colors.text, fontWeight: '600' },
 
-  list: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
-
+  // ── Buyurtma kartasi ──
+  cardWrap: { paddingHorizontal: spacing.md, marginTop: spacing.md },
   card: {
     backgroundColor: 'rgba(20, 18, 28, 0.95)',
     borderRadius: radius.xl,
