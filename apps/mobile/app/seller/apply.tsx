@@ -2,15 +2,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { applyForStore, type StoreApplicationInput } from '../../src/api/endpoints';
 import { ApiError, refreshSession } from '../../src/api/client';
+import { SellerHeader } from '../../src/components/SellerHeader';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, Field, Screen } from '../../src/components/ui';
 import { useAuthStore } from '../../src/store/authStore';
 import { useLocationStore } from '../../src/store/locationStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
+import { goBack } from '../../src/navigation/back';
 
 /**
  * Do'kon arizasi — sotuvchi bo'lish.
@@ -53,7 +54,6 @@ export default function StoreApply(): JSX.Element {
    * shuning uchun status paneli ostidagi bo'shliq QO'LDA qo'yiladi.
    * Aks holda sarlavha soat va batareya ustiga chiqib ketadi.
    */
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
@@ -123,15 +123,16 @@ export default function StoreApply(): JSX.Element {
 
   return (
     <Screen>
+      <SellerHeader
+        title="Do`kon ochish"
+        subtitle="Sotuvchi bo`lish arizasi"
+        onBack={() => goBack('/profile')}
+      />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.title}>Do`kon ochish</Text>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.lead}>
             Ariza yuborilgach panelga darhol kirasiz va mahsulotlaringizni tayyorlab qo`yasiz.
             Do`kon tasdiqlangandan keyin katalogda paydo bo`ladi.
@@ -200,7 +201,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.sm },
 
-  title: { ...text.h1, color: colors.text },
   lead: { ...text.small, color: colors.textMuted, marginBottom: spacing.md },
 
   form: { gap: 0 },

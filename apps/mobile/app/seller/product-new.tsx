@@ -13,7 +13,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GARMENT_STYLES, type GarmentStyle } from '@looksave/validation';
 
 import {
@@ -25,6 +24,7 @@ import {
 } from '../../src/api/endpoints';
 import { ApiError } from '../../src/api/client';
 import { Icon } from '../../src/components/Icon';
+import { SellerHeader } from '../../src/components/SellerHeader';
 import { Button, Field, Screen } from '../../src/components/ui';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
@@ -80,7 +80,6 @@ export default function NewProduct(): JSX.Element {
    * shuning uchun status paneli ostidagi bo'shliq QO'LDA qo'yiladi.
    * Aks holda sarlavha soat va batareya ustiga chiqib ketadi.
    */
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -238,19 +237,11 @@ export default function NewProduct(): JSX.Element {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Orqaga"
-          hitSlop={10}
-          onPress={() => goBack('/seller/products')}
-          style={styles.back}
-        >
-          <Icon name="back" size={20} color={colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Yangi mahsulot</Text>
-        <View style={styles.back} />
-      </View>
+      <SellerHeader
+        title="Yangi mahsulot"
+        subtitle="Katalogga qo`shish"
+        onBack={() => goBack('/seller/products')}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -440,14 +431,6 @@ export default function NewProduct(): JSX.Element {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
-  },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { ...text.h3, color: colors.text, flex: 1, textAlign: 'center' },
 
   content: { padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.xs },
 

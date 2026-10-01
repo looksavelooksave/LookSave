@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   deleteStoreProduct,
@@ -15,6 +14,7 @@ import {
 } from '../../src/api/endpoints';
 import { ApiError } from '../../src/api/client';
 import { Icon } from '../../src/components/Icon';
+import { SellerHeader } from '../../src/components/SellerHeader';
 import { SkeletonList } from '../../src/components/Skeleton';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
 import { money } from '../../src/theme/format';
@@ -57,7 +57,6 @@ export default function SellerProducts(): JSX.Element {
    * shuning uchun status paneli ostidagi bo'shliq QO'LDA qo'yiladi.
    * Aks holda sarlavha soat va batareya ustiga chiqib ketadi.
    */
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<ProductStatusFilter>('all');
@@ -76,27 +75,11 @@ export default function SellerProducts(): JSX.Element {
 
   return (
     <Screen>
-      <LinearGradient
-        colors={['#171126', colors.bg]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Orqaga"
-          hitSlop={10}
-          onPress={() => goBack('/seller')}
-          style={styles.back}
-        >
-          <Icon name="back" size={20} color={colors.text} />
-        </Pressable>
-        <View style={styles.headerText}>
-          <Text style={styles.panelLabel}>LOOKSAVE admin</Text>
-          <Text style={styles.title}>Mahsulotlar</Text>
-        </View>
-        <View style={styles.back} />
-      </LinearGradient>
+      <SellerHeader
+        title="Mahsulotlar"
+        subtitle={products.data ? `${products.data.items.length} ta ko\`rsatilmoqda` : undefined}
+        onBack={() => goBack('/seller')}
+      />
 
       <View style={styles.filters}>
         {FILTERS.map((item) => (
@@ -183,7 +166,7 @@ function ProductRow({
   product: StoreProduct;
   onDelete: () => void;
 }): JSX.Element {
-  const status = STATUS_LABEL[product.status] ?? STATUS_LABEL['draft'];
+  const status = STATUS_LABEL[product.status] ?? { text: product.status, color: colors.textDim };
 
   return (
     <View style={styles.card}>
@@ -201,7 +184,15 @@ function ProductRow({
             {product.title}
           </Text>
           <Text style={styles.price}>{money(product.price, product.currency)}</Text>
-          <Text style={[styles.status, { color: status?.color }]}>{status?.text}</Text>
+          <View
+            style={[
+              styles.statusPill,
+              { borderColor: `${status.color}55`, backgroundColor: `${status.color}1A` },
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+            <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
+          </View>
         </View>
 
         <Pressable
@@ -332,28 +323,6 @@ function SizeInputs({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  back: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: 'rgba(20, 18, 28, 0.74)',
-  },
-  headerText: { flex: 1, alignItems: 'center' },
-  panelLabel: { ...text.tiny, color: colors.accent, letterSpacing: 1.1, textTransform: 'uppercase' },
-  title: { ...text.h2, color: colors.text, marginTop: 2 },
-
   filters: {
     flexDirection: 'row',
     gap: spacing.xs,
@@ -400,10 +369,21 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  cardText: { flex: 1, gap: 2 },
+  cardText: { flex: 1, gap: spacing.xs },
   cardTitle: { ...text.bodyMed, color: colors.text },
-  price: { ...text.small, color: colors.accent },
-  status: { ...text.tiny },
+  price: { ...text.bodyMed, color: colors.accent },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 1,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  statusDot: { width: 6, height: 6, borderRadius: radius.pill },
+  statusText: { ...text.tiny },
   delete: {
     width: 34,
     height: 34,
