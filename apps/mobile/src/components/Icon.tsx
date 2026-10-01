@@ -21,6 +21,7 @@ import {
   MapPin,
   Navigation,
   Package,
+  Phone,
   RefreshCcw,
   RotateCw,
   Search,
@@ -65,6 +66,8 @@ const LUCIDE = {
   tryon: Sparkles,
   cart: ShoppingBag,
   bag: ShoppingCart,
+  /** Mijoz bilan bog'lanish — buyurtma kartasidagi qo'ng'iroq tugmasi */
+  phone: Phone,
   profile: User,
   /** Logotipdagi to'rt uchli yulduz (deck 01-slayd) */
   logo: Sparkle,

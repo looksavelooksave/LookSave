@@ -451,7 +451,7 @@ function OrderCard({
           onPress={() => void Linking.openURL(`tel:${order.customer.phone}`)}
           style={styles.callButton}
         >
-          <Icon name="stores" size={18} color={colors.accent} />
+          <Icon name="phone" size={18} color={colors.accent} />
         </Pressable>
 
         {next ? (
