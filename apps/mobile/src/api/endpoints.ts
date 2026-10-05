@@ -1119,6 +1119,16 @@ export const updateVariantStock = (
 ): Promise<unknown> =>
   api(`/store/variants/${variantId}/stock`, { method: 'PATCH', body: { sizes } });
 
+export interface WorkingHour {
+  /** 1 = Dushanba … 7 = Yakshanba */
+  day: number;
+  /** HH:MM */
+  open: string;
+  /** HH:MM */
+  close: string;
+  closed: boolean;
+}
+
 export interface StoreProfile {
   id: string;
   name: string;
@@ -1130,13 +1140,37 @@ export interface StoreProfile {
   phone: string;
   status: string;
   currency: string;
+  workingHours: WorkingHour[];
+  delivery: { enabled: boolean; radiusM: number; fee: string; freeFrom: string | null };
+  pickupEnabled: boolean;
+  isOpen: boolean;
+  closesAt: string | null;
+  opensAt: string | null;
+}
+
+/**
+ * Do'kon sozlamalarini yangilash uchun jismli maydonlar. Server oxirgi
+ * qiymatlarni alohida ustunlarda saqlaydi (`delivery_*`), shuning uchun
+ * bu yerdagi kalitlar `StoreProfile.delivery` obyektidan farq qiladi.
+ */
+export interface UpdateStoreBody {
+  name?: string;
+  description?: string | null;
+  phone?: string;
+  logoUrl?: string | null;
+  address?: string;
+  landmark?: string | null;
+  workingHours?: WorkingHour[];
   deliveryEnabled?: boolean;
   pickupEnabled?: boolean;
+  deliveryRadiusM?: number;
+  deliveryFee?: string;
+  freeDeliveryFrom?: string | null;
 }
 
 export const getStoreProfile = (): Promise<StoreProfile> => api<StoreProfile>('/store/profile');
 
-export const updateStoreProfile = (input: Partial<StoreProfile>): Promise<StoreProfile> =>
+export const updateStoreProfile = (input: UpdateStoreBody): Promise<StoreProfile> =>
   api<StoreProfile>('/store/profile', { method: 'PATCH', body: input });
 
 /**
