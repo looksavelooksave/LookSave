@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnimatedSplash } from '../src/components/AnimatedSplash';
@@ -135,10 +136,15 @@ function AppShell(): JSX.Element {
 
 export default function RootLayout(): JSX.Element {
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <AppShell />
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    // ⚠️ GestureHandlerRootView ILDIZDA SHART. Usiz ba'zi qurilmalarda
+    // (ayniqsa iPad va yangi iOS) touch tizimi noto'g'ri ishlashi mumkin.
+    // Expo/RN rasmiy tavsiyasi — butun ilovani shu bilan o'rash.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppShell />
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
