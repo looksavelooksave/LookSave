@@ -91,6 +91,15 @@ const envSchema = z.object({
    * ko'rmaydigan joyda qolib ketmasin.
    */
   DEVELOPER_AI_KINDS: z.string().default(''),
+  /**
+   * AI MAJBURAN avtomatik (OpenAI) ishlaydigan foydalanuvchilar — vergul
+   * bilan ajratilgan user ID (UUID) ro'yxati. Operator rejimi (yuqoridagi)
+   * yoniq bo'lsa ham, bu akkauntlar OpenAI orqali darhol natija oladi.
+   *
+   * Maqsad: App Store tekshiruvida DEMO akkaunt jonli natija ko'rsin, qolgan
+   * mijozlar esa operatorda qolsin. Bo'sh — hech kimga istisno yo'q.
+   */
+  DEVELOPER_AI_AUTO_USERS: z.string().default(''),
   /** Yangi ish haqida xabar boradigan Telegram chat (operatorlar guruhi). */
   DEVELOPER_AI_TELEGRAM_CHAT_ID: z.string().default(''),
   DEVELOPER_AI_PANEL_URL: z.string().url().default('https://ai.looksave.app'),
