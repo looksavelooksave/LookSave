@@ -1,0 +1,88 @@
+{
+  "ownerPhone": "+998936558959",
+  "stores": [
+    {
+      "name": "Marosa Style",
+      "slug": "marosa-style",
+      "city": "Toshkent",
+      "address": "Yunusobod, Amir Temur ko'chasi 108",
+      "landmark": "Oqtepa yonida",
+      "phone": "+998901234501",
+      "lat": 41.3615,
+      "lng": 69.2897,
+      "logoUrl": "https://example.com/marosa-logo.jpg",
+      "description": "Erkaklar va ayollar uchun zamonaviy kundalik kiyim",
+      "currency": "UZS",
+      "products": [
+        {
+          "title": "Oq paxta futbolka",
+          "description": "100% paxta, yumshoq va nafas oladigan oq futbolka",
+          "categorySlug": "tshirt",
+          "gender": "male",
+          "basePrice": "129000",
+          "oldPrice": "159000",
+          "images": [
+            "https://example.com/products/tshirt-white-1.jpg",
+            "https://example.com/products/tshirt-white-2.jpg"
+          ],
+          "tags": ["casual"],
+          "isLimited": false,
+          "colorHex": "#FFFFFF",
+          "colorName": { "uz": "Oq", "ru": "Белый", "en": "White" },
+          "sizes": [
+            { "size": "S", "stock": 8 },
+            { "size": "M", "stock": 12 },
+            { "size": "L", "stock": 10 },
+            { "size": "XL", "stock": 6 }
+          ]
+        },
+        {
+          "title": "Ko'k jinsi shim",
+          "description": "To'g'ri qirqimli, mustahkam jinsi shim",
+          "categorySlug": "trousers",
+          "gender": "male",
+          "basePrice": "289000",
+          "images": [
+            "https://example.com/products/jeans-blue-1.jpg"
+          ],
+          "tags": ["casual", "classic"],
+          "colorHex": "#1E3A5F",
+          "colorName": { "uz": "Ko'k", "ru": "Синий", "en": "Blue" },
+          "sizes": [
+            { "size": "30", "stock": 5 },
+            { "size": "32", "stock": 7 },
+            { "size": "34", "stock": 4 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Luxe Avenue",
+      "slug": "luxe-avenue",
+      "city": "Toshkent",
+      "address": "Mirzo Ulug'bek, Buyuk Ipak Yo'li 45",
+      "phone": "+998901234502",
+      "lat": 41.3275,
+      "lng": 69.3412,
+      "logoUrl": "https://example.com/luxe-logo.jpg",
+      "description": "Premium aksessuarlar: soat, ko'zoynak, sumka",
+      "currency": "UZS",
+      "products": [
+        {
+          "title": "Klassik teri soat",
+          "description": "Jigarrang teri tasmali erkaklar soati",
+          "categorySlug": "watch",
+          "gender": "unisex",
+          "basePrice": "750000",
+          "images": [
+            "https://example.com/products/watch-1.jpg"
+          ],
+          "tags": ["classic"],
+          "sizes": [
+            { "size": "onesize", "stock": 10 }
+          ]
+        }
+      ]
+    }
+  ]
+}
