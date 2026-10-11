@@ -3,7 +3,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
 import { env } from '../config/env';
-import { enqueueTask, isManual, openTaskFor, type OpenTaskInfo } from '../developer-ai/tasks';
+import {
+  enqueueTask,
+  isAutoAiUser,
+  isManual,
+  openTaskFor,
+  type OpenTaskInfo,
+} from '../developer-ai/tasks';
 import { generateAvatar, generationFingerprint, isOpenAiEnabled } from '../integrations/openai';
 import { presignRead, uploadObject } from '../integrations/r2';
 import { makeCutout } from '../store/cutout';
@@ -175,7 +181,8 @@ export async function requestAvatar(
    * ⚠️ OPERATOR REJIMIDA OPENAI SHART EMAS. Ish navbatga tushadi va uni
    * odam bajaradi — kalit bo'lmasa ham so'rov qabul qilinishi kerak.
    */
-  const manual = isManual('avatar');
+  // Istisno akkauntlar (masalan App Store demo) operator rejimida ham OpenAI'dan
+  const manual = isManual('avatar') && !isAutoAiUser(userId);
   if (!manual && !isOpenAiEnabled()) {
     throw new ApiError('SERVICE_UNAVAILABLE', 'AI hozircha sozlanmagan');
   }

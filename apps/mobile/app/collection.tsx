@@ -195,7 +195,13 @@ function CollectionCard({
 
 export default function Collection(): JSX.Element {
   const router = useRouter();
-  const params = useLocalSearchParams<{ kind?: string }>();
+  const params = useLocalSearchParams<{
+    kind?: string;
+    storeId?: string;
+    category?: string;
+    gender?: string;
+    title?: string;
+  }>();
   const t = useI18n((state) => state.t);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -203,6 +209,10 @@ export default function Collection(): JSX.Element {
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
 
   const kind: Kind = params.kind === 'women' || params.kind === 'limited' ? params.kind : 'men';
+  // Do'kon + kategoriya orqali kelinganda shular bo'yicha filtrlaymiz
+  const storeId = params.storeId;
+  const category = params.category;
+  const gender = params.gender === 'female' ? 'female' : params.gender === 'male' ? 'male' : null;
 
   /* Sevimli holati darhol o'zgaradi — tarmoq javobini kutish sekin ko'rinardi */
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
@@ -226,12 +236,19 @@ export default function Collection(): JSX.Element {
   const cartCount = cart.data?.stores.reduce((sum, group) => sum + group.items.length, 0) ?? 0;
 
   const products = useInfiniteQuery({
-    queryKey: ['products', 'collection', kind, coords.lat, coords.lng],
+    queryKey: ['products', 'collection', kind, storeId ?? '', category ?? '', coords.lat, coords.lng],
     queryFn: ({ pageParam }) =>
       getProducts({
-        ...(kind === 'limited'
-          ? { limited: true }
-          : { gender: kind === 'men' ? 'male' : 'female' }),
+        // Do'kon+kategoriya rejimi: aynan shu do'kon va kategoriya, jins bo'yicha
+        ...(storeId
+          ? {
+              storeId,
+              ...(category ? { category } : {}),
+              ...(gender ? { gender } : {}),
+            }
+          : kind === 'limited'
+            ? { limited: true }
+            : { gender: kind === 'men' ? 'male' : 'female' }),
         sort: 'newest',
         lat: coords.lat,
         lng: coords.lng,
@@ -260,11 +277,12 @@ export default function Collection(): JSX.Element {
   };
 
   const title =
-    kind === 'men'
+    params.title ??
+    (kind === 'men'
       ? t.marketplace.men
       : kind === 'women'
         ? t.marketplace.women
-        : t.marketplace.limited;
+        : t.marketplace.limited);
 
   return (
     <Screen>

@@ -37,6 +37,24 @@ export function isManual(kind: TaskKind): boolean {
     .includes(kind);
 }
 
+/**
+ * Bu foydalanuvchi uchun AI MAJBURAN avtomatik (OpenAI) ishlaydimi.
+ *
+ * ⚠️ FAQAT SANAB O'TILGAN AKKAUNTLAR. Operator rejimi yoniq bo'lsa ham
+ * (`DEVELOPER_AI_KINDS`), bu ro'yxatdagi userlar OpenAI orqali DARHOL natija
+ * oladi. Sabab: App Store tekshiruvida demo akkaunt jonli natija ko'rishi
+ * kerak, qolgan mijozlar esa operatorda qolsin (xarajat nazorati).
+ *
+ * `DEVELOPER_AI_AUTO_USERS` — vergul bilan ajratilgan user ID (UUID) ro'yxati.
+ */
+export function isAutoAiUser(userId: string): boolean {
+  return env()
+    .DEVELOPER_AI_AUTO_USERS.split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .includes(userId);
+}
+
 export interface TaskDto {
   id: string;
   kind: TaskKind;
@@ -259,6 +277,53 @@ export async function listTasks(
 }
 
 /**
+ * «Men hali ishlayapman» — tirik belgisini yangilaydi.
+ *
+ * ⚠️ EGALIK TEKSHIRILADI. Aks holda istalgan operator begona ishning
+ * belgisini yangilab, uni navbatga qaytmaydigan qilib qo'yardi.
+ *
+ * Topilmasa xato tashlamaydi: ish allaqachon yopilgan yoki boshqaga
+ * o'tgan bo'lishi mumkin va bu ishlayotgan tomonni to'xtatishi shart
+ * emas — u keyingi qadamda haqiqiy xatoni ko'radi.
+ */
+export async function heartbeatTask(taskId: string, operatorId: string): Promise<{ alive: boolean }> {
+  const { rowCount } = await pool.query(
+    `UPDATE developer_ai_tasks
+        SET heartbeat_at = now()
+      WHERE id = $1 AND claimed_by = $2 AND status = 'claimed'`,
+    [taskId, operatorId],
+  );
+
+  return { alive: Boolean(rowCount) };
+}
+
+/**
+ * Tashlab ketilgan ishlarni navbatga qaytaradi.
+ *
+ * ⚠️ TIRIK BELGISIGA QARAB, VAQTGA EMAS. Avatar ishi soatlab davom
+ * etishi mumkin (bitta gavda va o'nlab kiyim) — «ancha bo'ldi, bo'shat»
+ * degan qoida tirik ishni tortib olardi va ikki operator bir kiyimni
+ * bir vaqtda yasab, biri ikkinchisining natijasini ustiga yozardi.
+ *
+ * ⚠️ ESKI QATORLARDA BELGI YO'Q (`NULL`) — ular migratsiyadan oldin
+ * band qilingan. Ular uchun `claimed_at` ga qaraladi, aks holda
+ * migratsiyadan keyingi birinchi supurishda HAMMASI navbatga
+ * qaytardi.
+ */
+export async function sweepStaleTasks(): Promise<number> {
+  const { rowCount } = await pool.query(
+    `UPDATE developer_ai_tasks
+        SET status = 'pending', claimed_by = NULL, claimed_at = NULL, heartbeat_at = NULL
+      WHERE status = 'claimed'
+        AND COALESCE(heartbeat_at, claimed_at) < now() - interval '15 minutes'`,
+  );
+
+  if (rowCount) logger.info({ count: rowCount }, 'developer_ai: tashlab ketilgan ishlar navbatga qaytdi');
+
+  return rowCount ?? 0;
+}
+
+/**
  * Ishni band qiladi.
  *
  * ⚠️ SHART `UPDATE` NING O'ZIDA, oldindan `SELECT` bilan emas. Ikki
@@ -270,7 +335,7 @@ export async function listTasks(
 export async function claimTask(taskId: string, operatorId: string): Promise<TaskDto> {
   const { rowCount } = await pool.query(
     `UPDATE developer_ai_tasks
-        SET status = 'claimed', claimed_by = $2, claimed_at = now()
+        SET status = 'claimed', claimed_by = $2, claimed_at = now(), heartbeat_at = now()
       WHERE id = $1 AND status = 'pending'`,
     [taskId, operatorId],
   );
@@ -297,7 +362,7 @@ export async function claimTask(taskId: string, operatorId: string): Promise<Tas
 export async function releaseTask(taskId: string, operatorId: string): Promise<TaskDto> {
   const { rowCount } = await pool.query(
     `UPDATE developer_ai_tasks
-        SET status = 'pending', claimed_by = NULL, claimed_at = NULL
+        SET status = 'pending', claimed_by = NULL, claimed_at = NULL, heartbeat_at = NULL
       WHERE id = $1 AND status = 'claimed' AND claimed_by = $2`,
     [taskId, operatorId],
   );
@@ -514,7 +579,17 @@ export async function completeTask(
    * uning nosozligi avatarni buzmasligi kerak — ilova kesimsiz ham
    * oddiy suratni ko'rsatadi.
    */
+  /*
+   * ⚠️ KIYINTIRISH UCHUN HAM SHART — ILGARI FAQAT AVATAR UCHUN EDI.
+   *
+   * Server o'zi yasagan kiyintirishda kesim bor (`render.ts` —
+   * `storeResult`), operator yuborganida esa yo'q edi. Natijada bitta
+   * mijozning gallereyasida ikki xil surat turardi: bittasi qorong'i
+   * sahnaga toza tushardi, ikkinchisi och kulrang to'rtburchak bo'lib
+   * ko'rinardi — va farq operatordan kelgan-kelmaganiga bog'liq edi.
+   */
   if (row.kind === 'avatar') void attachCutout(row.ref_id, angles?.['front'] ?? resultUrl);
+  else void attachRenderCutout(row.ref_id, resultUrl);
 
   void updateAnnouncement(taskId, {
     kind: 'done',
@@ -558,6 +633,29 @@ export async function failTask(
 
 function secondsSince(date: Date): number {
   return Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+}
+
+/**
+ * Kiyintirish natijasining kesimi.
+ *
+ * ⚠️ SHART `result_url` BO'YICHA HAM TEKSHIRILADI. Kesim yasalguncha
+ * (bir necha soniya) mijoz o'sha kiyimni qayta so'ragan va natija
+ * almashgan bo'lishi mumkin — eski kesim yangi suratga yozilmasligi
+ * kerak, aks holda odam bir kiyimda, kesimda boshqasida bo'lardi.
+ */
+async function attachRenderCutout(renderId: string, url: string): Promise<void> {
+  try {
+    const cutout = await makeCutout(url, 'tryon');
+    if (!cutout) return;
+
+    await pool.query(`UPDATE tryon_renders SET cutout_url = $2 WHERE id = $1 AND result_url = $3`, [
+      renderId,
+      cutout,
+      url,
+    ]);
+  } catch (err) {
+    logger.warn({ err, renderId }, 'developer_ai: kiyintirish kesimi yasalmadi');
+  }
 }
 
 async function attachCutout(userId: string, url: string): Promise<void> {

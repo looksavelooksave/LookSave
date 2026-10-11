@@ -5,7 +5,7 @@ import { AI_TRYON_SLOTS, garmentImageForAngle, normalizeSize } from '@looksave/v
 import type { AvatarGender, AvatarMeasurements } from './avatar-prompt';
 import { buildTryonSheetPrompt } from './tryon-prompt';
 
-import { enqueueTask, isManual } from '../developer-ai/tasks';
+import { enqueueTask, isAutoAiUser, isManual } from '../developer-ai/tasks';
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
 import {
@@ -464,7 +464,8 @@ export async function requestRender(
    * `DEVELOPER_AI_KINDS` da bo'lsa ish navbatga tushadi va uni odam
    * bajaradi — payloadga gavda va KIYIM rasmi yoziladi.
    */
-  const manual = isManual('render');
+  // Istisno akkauntlar (masalan App Store demo) operator rejimida ham OpenAI'dan
+  const manual = isManual('render') && !isAutoAiUser(userId);
   if (!manual && !isOpenAiEnabled()) {
     throw new ApiError('SERVICE_UNAVAILABLE', 'AI kiyintirish hozircha sozlanmagan');
   }

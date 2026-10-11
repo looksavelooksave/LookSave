@@ -2,7 +2,7 @@ import { env } from '../config/env';
 import { pool } from '../db/pool';
 import { logger } from '../logger';
 import { publishStoreEvent } from './events';
-import { notifyCustomer } from './push';
+import { isPushEnabled, notifyCustomer, sendPush } from './push';
 import {
   editMessageText,
   escapeHtml,
@@ -127,7 +127,40 @@ export function buildOrderText(order: OrderNotification): string {
   return lines.join('\n');
 }
 
-/** Yangi buyurtma: Telegramga xabar + panelga SSE. */
+/**
+ * Do'kon a'zolariga push — yangi buyurtma kelganda.
+ *
+ * ⚠️ XARIDORNING O'ZI CHIQARIB TASHLANADI: sotuvchi o'z do'konidan buyurtma
+ * bersa, o'ziga "yangi buyurtma" push kelishi mantiqsiz. Qolgan barcha
+ * a'zolar (egasi, menejer, operator) xabar oladi.
+ *
+ * Push YETKAZILISHI KAFOLATLANMAGAN — panel SSE va Telegram ham bor.
+ */
+async function notifyStoreMembers(order: OrderNotification): Promise<void> {
+  if (!isPushEnabled()) return;
+
+  const { rows } = await pool.query<{ user_id: string }>(
+    `SELECT sm.user_id
+       FROM store_members sm
+       JOIN orders o ON o.id = $2
+      WHERE sm.store_id = $1 AND sm.user_id <> o.user_id`,
+    [order.storeId, order.id],
+  );
+
+  const title = 'Yangi buyurtma';
+  const body = `${order.contactName} · ${formatMoney(order.total, order.currency)}`;
+
+  await Promise.all(
+    rows.map((row) =>
+      sendPush(row.user_id, title, `${body} · ${order.orderNumber}`, {
+        type: 'store_order',
+        orderId: order.id,
+      }),
+    ),
+  );
+}
+
+/** Yangi buyurtma: Telegramga xabar + panelga SSE + do'kon a'zolariga push. */
 export async function notifyNewOrder(orderId: string): Promise<void> {
   try {
     const order = await loadNotification(orderId);
@@ -139,6 +172,9 @@ export async function notifyNewOrder(orderId: string): Promise<void> {
       total: order.total,
       currency: order.currency,
     });
+
+    // Push — sotuvchi ilovani ochib turmasa ham xabar topadi
+    void notifyStoreMembers(order);
 
     if (!isTelegramEnabled()) return;
 

@@ -17,10 +17,11 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "Avatar yasash uchun yuzingiz va gavdangiz suratini olamiz. Surat serverimizda saqlanadi va avatarni yasash uchun tashqi AI xizmatiga yuboriladi. Uni istalgan vaqtda ilovadan o'chirishingiz mumkin.",
-        "NSLocationWhenInUseUsageDescription": "Yaqin atrofdagi do'konlarni ko'rsatish uchun",
+        "NSPhotoLibraryUsageDescription": "Galereyangizdan surat tanlaganingizda ishlatiladi — masalan, avatar yasash uchun o'z suratingizni, yoki sotuvchi bo'lsangiz do'kon logosi va mahsulot rasmlarini yuklash uchun. Tanlangan surat serverimizda saqlanadi va faqat shu maqsadda ishlatiladi; uni istalgan vaqtda o'chirishingiz mumkin.",
+        "NSLocationWhenInUseUsageDescription": "Yaqin atrofdagi do'konlarni va ularning mahsulotlarini xaritada ko'rsatish uchun joylashuvingizdan foydalanamiz.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "21"
+      "buildNumber": "26"
     },
     "android": {
       "package": "com.looksave.looksave",

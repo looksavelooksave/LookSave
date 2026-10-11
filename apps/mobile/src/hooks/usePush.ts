@@ -101,6 +101,17 @@ export function usePushRegistration(): void {
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
+
+      /*
+       * Do'kon buyurtmasi — sotuvchi panelga olib boriladi, mijoz buyurtma
+       * sahifasiga EMAS. Ikkalasida ham `orderId` bor, shuning uchun tur
+       * oldin tekshiriladi.
+       */
+      if (data?.['type'] === 'store_order') {
+        router.push('/seller');
+        return;
+      }
+
       const orderId = data?.['orderId'];
       if (typeof orderId === 'string') {
         router.push(`/order/${orderId}`);
