@@ -5,6 +5,8 @@ import { create } from 'zustand';
 import { setApiLanguage } from '../api/client';
 import { dictionaries, type Dictionary } from './dictionaries';
 
+export type { Dictionary };
+
 const SUPPORTED: Locale[] = ['uz', 'ru', 'en', 'ar'];
 
 /** Qurilma tili qo'llab-quvvatlansa o'sha, aks holda o'zbekcha. */

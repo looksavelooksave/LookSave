@@ -37,6 +37,7 @@ import { Icon, type IconName } from '../../src/components/Icon';
 import { distanceMeters } from '../../src/map/distance';
 import { averageBrightness, MIN_BRIGHTNESS } from '../../src/photo/brightness';
 import { Button, ErrorView, Field, Loading } from '../../src/components/ui';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { useAiFlowStore } from '../../src/store/aiFlowStore';
@@ -80,14 +81,24 @@ type StepKey = 'gender' | 'body' | 'shoe' | 'store' | 'face' | 'done';
  * nima uchun kerakligi tushuntiriladi (`FACE_CONSENT`) — ya'ni ruxsat
  * so'rovi baribir izohsiz kelmaydi.
  */
-const STEPS: Array<{ key: StepKey; label: string; icon: IconName }> = [
-  { key: 'face', label: 'Yuz', icon: 'camera' },
-  { key: 'gender', label: 'Jins', icon: 'profile' },
-  { key: 'body', label: 'Tana', icon: 'slotTop' },
-  { key: 'shoe', label: 'Oyoq', icon: 'slotFeet' },
-  { key: 'store', label: "Do'kon", icon: 'stores' },
-  { key: 'done', label: 'Tayyor', icon: 'authentic' },
+const STEPS: Array<{ key: StepKey; icon: IconName }> = [
+  { key: 'face', icon: 'camera' },
+  { key: 'gender', icon: 'profile' },
+  { key: 'body', icon: 'slotTop' },
+  { key: 'shoe', icon: 'slotFeet' },
+  { key: 'store', icon: 'stores' },
+  { key: 'done', icon: 'authentic' },
 ];
+
+/** Qadam yorlig'i — i18n (`t.avatar`) dan. */
+const STEP_LABEL: Record<StepKey, keyof Dictionary['avatar']> = {
+  face: 'stepFace',
+  gender: 'stepGender',
+  body: 'stepBody',
+  shoe: 'stepShoe',
+  store: 'stepStore',
+  done: 'stepDone',
+};
 
 /**
  * Faqat sonli o'lchamlar. `Measurements` da `shoeSizeSystem` (matn) ham bor —
@@ -96,14 +107,40 @@ const STEPS: Array<{ key: StepKey; label: string; icon: IconName }> = [
 type MeasureKey = 'height' | 'weight' | 'chest' | 'waist' | 'hips' | 'shoeSize';
 
 /** `packages/validation/src/auth.ts` dagi chegaralar bilan bir xil */
-const LIMITS: Record<MeasureKey, { min: number; max: number; label: string; hint: string }> = {
-  height: { min: 120, max: 220, label: "Bo'y (sm)", hint: '120–220' },
-  weight: { min: 30, max: 200, label: 'Vazn (kg)', hint: '30–200' },
-  chest: { min: 50, max: 180, label: "Ko'krak (sm)", hint: 'eng keng joyi' },
-  waist: { min: 40, max: 180, label: 'Bel (sm)', hint: 'eng ingichka joyi' },
-  hips: { min: 50, max: 180, label: 'Son (sm)', hint: 'eng keng joyi' },
-  shoeSize: { min: 30, max: 50, label: "Oyoq o'lchami (EU)", hint: '30–50' },
+const LIMITS: Record<MeasureKey, { min: number; max: number }> = {
+  height: { min: 120, max: 220 },
+  weight: { min: 30, max: 200 },
+  chest: { min: 50, max: 180 },
+  waist: { min: 40, max: 180 },
+  hips: { min: 50, max: 180 },
+  shoeSize: { min: 30, max: 50 },
 };
+
+/** O'lcham yorlig'i — i18n (`t.avatar`) dan. */
+function measureLabel(t: Dictionary, key: MeasureKey): string {
+  const map: Record<MeasureKey, string> = {
+    height: t.avatar.heightLabel,
+    weight: t.avatar.weightLabel,
+    chest: t.avatar.chestLabel,
+    waist: t.avatar.waistLabel,
+    hips: t.avatar.hipsLabel,
+    shoeSize: t.avatar.shoeLabel,
+  };
+  return map[key];
+}
+
+/** O'lcham izohi — raqamli oraliq qotiq, matnli qism i18n'dan. */
+function measureHint(t: Dictionary, key: MeasureKey): string {
+  const map: Record<MeasureKey, string> = {
+    height: '120–220',
+    weight: '30–200',
+    chest: t.avatar.chestHint,
+    waist: t.avatar.waistHint,
+    hips: t.avatar.hipsHint,
+    shoeSize: '30–50',
+  };
+  return map[key];
+}
 
 /**
  * Qadam allaqachon bajarilganmi.
@@ -182,6 +219,7 @@ function parseField(raw: string, key: MeasureKey): number | null | 'invalid' {
  * degan yagona urg'u bo'lib qoladi.
  */
 function StepBar({ current }: { current: StepKey }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const activeIndex = STEPS.findIndex((step) => step.key === current);
   // Chiziq faol qadamning MARKAZIgacha to'ladi
   const progress = STEPS.length > 1 ? activeIndex / (STEPS.length - 1) : 0;
@@ -217,7 +255,7 @@ function StepBar({ current }: { current: StepKey }): JSX.Element {
               ]}
               numberOfLines={1}
             >
-              {step.label}
+              {t.avatar[STEP_LABEL[step.key]]}
             </Text>
           </View>
         );
@@ -234,6 +272,7 @@ export default function AvatarFlow(): JSX.Element {
    * ular ortida qolib ketsa React qoidasi buziladi.
    */
   const authStatus = useAuthStore((state) => state.status);
+  const t = useI18n((state) => state.t);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -303,17 +342,12 @@ export default function AvatarFlow(): JSX.Element {
   });
 
   if (authStatus !== 'signedIn') {
-    return (
-      <SignInRequired
-        title="AI Designer"
-        hint="Avatar yaratish uchun akkaunt kerak — o‘lchamlar va tanlovlar sizga bog‘lanadi."
-      />
-    );
+    return <SignInRequired title="AI Designer" hint={t.avatar.signInHint} />;
   }
 
   if (profile.isLoading) return <Loading />;
   if (profile.isError) {
-    return <ErrorView message="Profil yuklanmadi" onRetry={() => void profile.refetch()} />;
+    return <ErrorView message={t.avatar.profileLoadError} onRetry={() => void profile.refetch()} />;
   }
 
   /*
@@ -358,10 +392,14 @@ export default function AvatarFlow(): JSX.Element {
     for (const key of keys) {
       const parsed = parseField(values[key] ?? '', key);
       if (parsed === 'invalid') {
-        setError(`${LIMITS[key]?.label}: ${LIMITS[key]?.hint} oralig'ida bo'lishi kerak`);
+        setError(
+          t.avatar.rangeError
+            .replace('{label}', measureLabel(t, key))
+            .replace('{hint}', measureHint(t, key)),
+        );
         return false;
       }
-      if (parsed === null) missing.push(LIMITS[key]?.label ?? key);
+      if (parsed === null) missing.push(measureLabel(t, key));
       else input[key] = parsed;
     }
 
@@ -385,7 +423,10 @@ export default function AvatarFlow(): JSX.Element {
 
     if (blocking.length > 0) {
       setError(
-        `${blocking.map((key) => LIMITS[key]?.label).join(', ')} kiritilishi shart — ularsiz o'lchamga mos kiyim tanlab bo'lmaydi`,
+        t.avatar.requiredError.replace(
+          '{fields}',
+          blocking.map((key) => measureLabel(t, key)).join(', '),
+        ),
       );
       return false;
     }
@@ -398,7 +439,7 @@ export default function AvatarFlow(): JSX.Element {
       return true;
     } catch (saveError) {
       console.warn('[ai-flow] o`lchamlarni saqlab bo`lmadi', saveError);
-      setError('Saqlanmadi — internetni tekshiring');
+      setError(t.avatar.saveError);
       return false;
     } finally {
       setBusy(false);
@@ -421,8 +462,8 @@ export default function AvatarFlow(): JSX.Element {
           <Icon name="back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Avataringizni yarating</Text>
-          <Text style={styles.headerHint}>AI uchun aniq · shaxsiy</Text>
+          <Text style={styles.headerTitle}>{t.avatar.title}</Text>
+          <Text style={styles.headerHint}>{t.avatar.subtitle}</Text>
         </View>
         <View style={styles.backButton} />
       </View>
@@ -448,7 +489,7 @@ export default function AvatarFlow(): JSX.Element {
                 goNext();
               } catch (saveError) {
                 console.warn('[ai-flow] jinsni saqlab bo`lmadi', saveError);
-                setError('Saqlanmadi — internetni tekshiring');
+                setError(t.avatar.saveError);
               } finally {
                 setBusy(false);
               }
@@ -460,8 +501,8 @@ export default function AvatarFlow(): JSX.Element {
 
         {step === 'body' ? (
           <MeasureStep
-            title="Tana o'lchamlari"
-            hint="Bo'y, vazn, ko'krak va bel shart — kiyim o'lchami shulardan hisoblanadi."
+            title={t.avatar.bodyTitle}
+            hint={t.avatar.bodyHint}
             keys={['height', 'weight', 'chest', 'waist', 'hips']}
             values={values}
             busy={busy}
@@ -475,8 +516,8 @@ export default function AvatarFlow(): JSX.Element {
 
         {step === 'shoe' ? (
           <MeasureStep
-            title="Oyoq o'lchami"
-            hint="Krossovka va poyabzalni to'g'ri o'lchamda ko'rsatish uchun."
+            title={t.avatar.shoeTitle}
+            hint={t.avatar.shoeHint}
             keys={['shoeSize']}
             values={values}
             busy={busy}
@@ -495,7 +536,7 @@ export default function AvatarFlow(): JSX.Element {
             onSelect={(id, name) => setStore(id, name)}
             onNext={() => {
               if (!storeId) {
-                setError("Do'kon tanlang — kiyimlar shu do'kondan olinadi");
+                setError(t.avatar.pickStoreError);
                 return;
               }
               goNext();
@@ -537,17 +578,16 @@ function GenderStep({
   busy: boolean;
   onSelect: (value: 'male' | 'female') => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const options: Array<{ key: 'male' | 'female'; label: string; hint: string; icon: IconName }> = [
-    { key: 'male', label: 'Erkak', hint: 'Erkaklar kesimi', icon: 'slotTop' },
-    { key: 'female', label: 'Ayol', hint: 'Ayollar kesimi', icon: 'dress' },
+    { key: 'male', label: t.avatar.male, hint: t.avatar.maleHint, icon: 'slotTop' },
+    { key: 'female', label: t.avatar.female, hint: t.avatar.femaleHint, icon: 'dress' },
   ];
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Avatar turini tanlang</Text>
-      <Text style={styles.cardHint}>
-        Tana modeli va kiyim kesimi shunga qarab tanlanadi. Keyinroq profildan o‘zgartirsa bo‘ladi.
-      </Text>
+      <Text style={styles.cardTitle}>{t.avatar.genderTitle}</Text>
+      <Text style={styles.cardHint}>{t.avatar.genderHint}</Text>
 
       <View style={styles.genderRow}>
         {options.map((option) => {
@@ -601,19 +641,19 @@ function GenderStep({
   );
 }
 
-/** Chap ustundagi holat ko'rsatkichlari — rasmdagi kompozitsiya */
-const FACE_GUIDES: Array<{ icon: IconName; label: string }> = [
-  { icon: 'limited', label: "Yorug'lik\nyetarli" },
-  { icon: 'profile', label: 'Yuz\nmarkazda' },
-  { icon: 'reset', label: 'Boshni\negmang' },
+/** Chap ustundagi holat ko'rsatkichlari — matni i18n (`t.avatar`) dan */
+const FACE_GUIDES: Array<{ icon: IconName; key: keyof Dictionary['avatar'] }> = [
+  { icon: 'limited', key: 'guideLight' },
+  { icon: 'profile', key: 'guideCenter' },
+  { icon: 'reset', key: 'guideStraight' },
 ];
 
-/** Pastdagi maslahatlar kartasi */
-const FACE_TIPS: Array<{ icon: IconName; label: string }> = [
-  { icon: 'limited', label: "Yaxshi yorug'lik" },
-  { icon: 'profile', label: 'Yuz va yelka' },
-  { icon: 'camera', label: "To'g'ri qarang" },
-  { icon: 'close', label: "Ko'zoynaksiz" },
+/** Pastdagi maslahatlar kartasi — matni i18n dan */
+const FACE_TIPS: Array<{ icon: IconName; key: keyof Dictionary['avatar'] }> = [
+  { icon: 'limited', key: 'tipLight' },
+  { icon: 'profile', key: 'tipFaceShoulder' },
+  { icon: 'camera', key: 'tipLookStraight' },
+  { icon: 'close', key: 'tipNoGlasses' },
 ];
 
 /** Ramkaning to'rt burchagidagi qavs — kamera "vizyor" bo'lib ko'rinadi */
@@ -634,27 +674,15 @@ function FrameCorner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }): JSX
  * xizmat suratni qancha saqlashini biz nazorat qilmaymiz — shuning
  * uchun u haqda va'da berilmaydi, faqat fakt aytiladi.
  */
-const FACE_CONSENT: Array<{ icon: IconName; title: string; hint: string }> = [
-  {
-    icon: 'profile',
-    title: 'Nima uchun kerak',
-    hint: 'Avatar sizga o‘xshashi uchun — yuzingizsiz u begona odam bo‘ladi',
-  },
-  {
-    icon: 'premium',
-    title: 'Tashqi AI xizmatiga yuboriladi',
-    hint: 'Avatarni yasash uchun surat hamkor xizmatga uzatiladi. Uni biz emas, o‘sha xizmat qayta ishlaydi',
-  },
-  {
-    icon: 'looks',
-    title: 'Serverimizda saqlanadi',
-    hint: 'Manzil tasodifiy va hech qayerda ko‘rsatilmaydi, lekin havolani bilgan odam ochа oladi',
-  },
-  {
-    icon: 'trash',
-    title: 'Istalgan vaqtda o‘chirasiz',
-    hint: 'Profil → Yuz surati → O‘chirish. Akkaunt o‘chirilganda ham surat butunlay o‘chadi',
-  },
+const FACE_CONSENT: Array<{
+  icon: IconName;
+  titleKey: keyof Dictionary['avatar'];
+  hintKey: keyof Dictionary['avatar'];
+}> = [
+  { icon: 'profile', titleKey: 'consent1Title', hintKey: 'consent1Hint' },
+  { icon: 'premium', titleKey: 'consent2Title', hintKey: 'consent2Hint' },
+  { icon: 'looks', titleKey: 'consent3Title', hintKey: 'consent3Hint' },
+  { icon: 'trash', titleKey: 'consent4Title', hintKey: 'consent4Hint' },
 ];
 
 function FaceStep({
@@ -664,6 +692,7 @@ function FaceStep({
   onDone: () => void;
   onError: (message: string) => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(false);
   /*
@@ -677,26 +706,24 @@ function FaceStep({
   if (!consented) {
     return (
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Yuz skaneri</Text>
-        <Text style={styles.cardHint}>
-          Davom etishdan oldin surat bilan nima bo‘lishini o‘qing.
-        </Text>
+        <Text style={styles.cardTitle}>{t.avatar.scannerTitle}</Text>
+        <Text style={styles.cardHint}>{t.avatar.consentIntro}</Text>
 
         <View style={styles.consentList}>
           {FACE_CONSENT.map((item) => (
-            <View key={item.title} style={styles.consentRow}>
+            <View key={item.titleKey} style={styles.consentRow}>
               <View style={styles.consentIcon}>
                 <Icon name={item.icon} size={16} color={colors.accent} />
               </View>
               <View style={styles.consentText}>
-                <Text style={styles.consentTitle}>{item.title}</Text>
-                <Text style={styles.consentHint}>{item.hint}</Text>
+                <Text style={styles.consentTitle}>{t.avatar[item.titleKey]}</Text>
+                <Text style={styles.consentHint}>{t.avatar[item.hintKey]}</Text>
               </View>
             </View>
           ))}
         </View>
 
-        <Button title="Roziman, davom etamiz" onPress={() => setConsented(true)} />
+        <Button title={t.avatar.consentCta} onPress={() => setConsented(true)} />
 
         {/*
           ⚠️ O'TKAZIB YUBORISH HAR DOIM OCHIQ. Yuz surati majburiy emas:
@@ -704,7 +731,7 @@ function FaceStep({
           Rad etgan odam ilovadan chiqib ketmasligi kerak.
         */}
         <Pressable onPress={onDone} style={styles.skip}>
-          <Text style={styles.skipText}>Yuz surati kerak emas — o‘tkazib yuborish</Text>
+          <Text style={styles.skipText}>{t.avatar.skipFace}</Text>
         </Pressable>
       </View>
     );
@@ -715,13 +742,11 @@ function FaceStep({
   if (!permission.granted) {
     return (
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Yuz skaneri</Text>
-        <Text style={styles.cardHint}>
-          Avatarga yuzingizni qo‘shish uchun kameraga ruxsat kerak.
-        </Text>
-        <Button title="Kameraga ruxsat berish" onPress={() => void requestPermission()} />
+        <Text style={styles.cardTitle}>{t.avatar.scannerTitle}</Text>
+        <Text style={styles.cardHint}>{t.avatar.permissionHint}</Text>
+        <Button title={t.avatar.allowCamera} onPress={() => void requestPermission()} />
         <Pressable onPress={onDone} style={styles.skip}>
-          <Text style={styles.skipText}>Hozircha o‘tkazib yuborish</Text>
+          <Text style={styles.skipText}>{t.avatar.skipForNow}</Text>
         </Pressable>
       </View>
     );
@@ -782,9 +807,7 @@ function FaceStep({
       const brightness = await averageBrightness(upright.uri);
 
       if (brightness !== null && brightness < MIN_BRIGHTNESS) {
-        onError(
-          'Juda qorong‘i — yuz tanilmaydi. Yorug‘ joyga o‘ting yoki chiroqni yoqing va qayta urinib ko‘ring.',
-        );
+        onError(t.avatar.tooDark);
         setScanning(false);
         return;
       }
@@ -805,7 +828,7 @@ function FaceStep({
       onDone();
     } catch (error) {
       console.warn(`[face-scan] "${stage}" bosqichida yiqildi`, error);
-      onError(`Skanerlash bajarilmadi (${stage}) — qayta urinib ko‘ring`);
+      onError(t.avatar.scanFailed);
     } finally {
       setScanning(false);
     }
@@ -820,17 +843,17 @@ function FaceStep({
         <FrameCorner position="bl" />
         <FrameCorner position="br" />
 
-        <Text style={styles.faceTitle}>Yuz skaneri</Text>
-        <Text style={styles.faceSubtitle}>Yuzingizni ramka ichiga joylang</Text>
+        <Text style={styles.faceTitle}>{t.avatar.scannerTitle}</Text>
+        <Text style={styles.faceSubtitle}>{t.avatar.faceSubtitle}</Text>
 
         <View style={styles.scanRow}>
           <View style={styles.guides}>
             {FACE_GUIDES.map((guide) => (
-              <View key={guide.label} style={styles.guide}>
+              <View key={guide.key} style={styles.guide}>
                 <View style={styles.guideIcon}>
                   <Icon name={guide.icon} size={16} color={colors.accent} />
                 </View>
-                <Text style={styles.guideText}>{guide.label}</Text>
+                <Text style={styles.guideText}>{t.avatar[guide.key]}</Text>
               </View>
             ))}
           </View>
@@ -846,33 +869,33 @@ function FaceStep({
         </View>
 
         <View style={styles.facePill}>
-          <Text style={styles.facePillText}>Yuz va yelkangiz ramkaga sig‘sin</Text>
+          <Text style={styles.facePillText}>{t.avatar.facePill}</Text>
         </View>
       </View>
 
       {/* Maslahatlar */}
       <View style={styles.tipsCard}>
-        <Text style={styles.tipsTitle}>Yaxshi natija uchun</Text>
+        <Text style={styles.tipsTitle}>{t.avatar.tipsTitle}</Text>
         <View style={styles.tipsRow}>
           {FACE_TIPS.map((tip) => (
-            <View key={tip.label} style={styles.tip}>
+            <View key={tip.key} style={styles.tip}>
               <View style={styles.tipIcon}>
                 <Icon name={tip.icon} size={16} color={colors.textMuted} />
               </View>
-              <Text style={styles.tipText}>{tip.label}</Text>
+              <Text style={styles.tipText}>{t.avatar[tip.key]}</Text>
             </View>
           ))}
         </View>
       </View>
 
       <Button
-        title={scanning ? 'Skanerlanmoqda…' : 'Skanerlashni boshlash'}
+        title={scanning ? t.avatar.scanning : t.avatar.scanStart}
         onPress={() => void scan()}
         loading={scanning}
       />
 
       <Pressable onPress={onDone} style={styles.skip}>
-        <Text style={styles.skipText}>Hozircha o‘tkazib yuborish</Text>
+        <Text style={styles.skipText}>{t.avatar.skipForNow}</Text>
       </Pressable>
     </View>
   );
@@ -895,6 +918,8 @@ function MeasureStep({
   onChange: (key: MeasureKey, value: string) => void;
   onNext: () => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{title}</Text>
@@ -903,15 +928,15 @@ function MeasureStep({
       {keys.map((key) => (
         <Field
           key={key}
-          label={LIMITS[key]?.label ?? key}
-          placeholder={LIMITS[key]?.hint}
+          label={measureLabel(t, key)}
+          placeholder={measureHint(t, key)}
           value={values[key] ?? ''}
           onChangeText={(value) => onChange(key, value)}
           keyboardType="numeric"
         />
       ))}
 
-      <Button title="Davom etish" onPress={onNext} loading={busy} />
+      <Button title={t.avatar.continue} onPress={onNext} loading={busy} />
     </View>
   );
 }
@@ -972,6 +997,7 @@ function StoreStep({
   onSelect: (id: string, name: string) => void;
   onNext: () => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const nearby = useQuery({
     queryKey: ['stores', 'nearby', lat, lng],
     queryFn: () => getNearbyStores(lat, lng, { radius: 50_000 }),
@@ -996,10 +1022,8 @@ function StoreStep({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Qaysi do‘kondan kiyinasiz?</Text>
-      <Text style={styles.cardHint}>
-        Kiyimlar va buyurtma shu do‘kondan bo‘ladi. Keyinroq almashtirsa bo‘ladi.
-      </Text>
+      <Text style={styles.cardTitle}>{t.avatar.storeTitle}</Text>
+      <Text style={styles.cardHint}>{t.avatar.storeHint}</Text>
 
       {loading ? <Loading /> : null}
 
@@ -1007,7 +1031,7 @@ function StoreStep({
           ro'yxat baribir to'ladi */}
       {nearby.isError && all.isError ? (
         <ErrorView
-          message="Do‘konlar yuklanmadi"
+          message={t.avatar.storesLoadError}
           onRetry={() => {
             void nearby.refetch();
             void all.refetch();
@@ -1017,12 +1041,14 @@ function StoreStep({
 
       {nearbyList.length > 0 ? (
         <>
-          <Text style={styles.sectionLabel}>Yaqin atrofda</Text>
+          <Text style={styles.sectionLabel}>{t.avatar.nearby}</Text>
           {nearbyList.map((store) => (
             <StoreRow
               key={store.id}
               name={store.name}
-              meta={`${(store.distanceM / 1000).toFixed(1)} km · ${store.tryonCount} ta AI kiyim`}
+              meta={t.avatar.storeMetaAi
+                .replace('{km}', (store.distanceM / 1000).toFixed(1))
+                .replace('{n}', String(store.tryonCount))}
               selected={selectedId === store.id}
               onPress={() => onSelect(store.id, store.name)}
             />
@@ -1033,7 +1059,7 @@ function StoreStep({
       {others.length > 0 ? (
         <>
           <Text style={styles.sectionLabel}>
-            {nearbyList.length > 0 ? 'Boshqa do‘konlar' : 'Barcha do‘konlar'}
+            {nearbyList.length > 0 ? t.avatar.otherStores : t.avatar.allStores}
           </Text>
           {others.map((store) => (
             <StoreRow
@@ -1048,10 +1074,10 @@ function StoreStep({
       ) : null}
 
       {!loading && nearbyList.length === 0 && others.length === 0 ? (
-        <Text style={styles.cardHint}>Hozircha birorta faol do‘kon yo‘q.</Text>
+        <Text style={styles.cardHint}>{t.avatar.noStores}</Text>
       ) : null}
 
-      <Button title="Davom etish" onPress={onNext} />
+      <Button title={t.avatar.continue} onPress={onNext} />
     </View>
   );
 }
@@ -1105,6 +1131,7 @@ function DoneStep({
   /** Yuz skaneri qadamiga qaytaradi — surat bo'lmasa yagona yo'l */
   onRescan: () => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const storeName = useAiFlowStore((state) => state.storeName);
   const occasion = useAiFlowStore((state) => state.occasion);
   const style = useAiFlowStore((state) => state.style);
@@ -1215,7 +1242,7 @@ function DoneStep({
   const startError = startAvatar.error;
 
   if (startError) {
-    const message = startError instanceof ApiError ? startError.message : 'Avatar yasalmadi';
+    const message = startError instanceof ApiError ? startError.message : t.avatar.avatarFailed;
     /*
      * Yuz surati yo'qligi — eng ko'p uchraydigan sabab va u tuzatiladi.
      * Shuning uchun bu holatda skanerga qaytish tugmasi ko'rsatiladi.
@@ -1227,12 +1254,12 @@ function DoneStep({
         <View style={styles.doneIcon}>
           <Icon name="camera" size={32} color={colors.accent} />
         </View>
-        <Text style={styles.cardTitle}>{needsFace ? 'Yuz surati kerak' : 'Avatar yasalmadi'}</Text>
+        <Text style={styles.cardTitle}>{needsFace ? t.avatar.needFace : t.avatar.avatarFailed}</Text>
         <Text style={styles.cardHint}>{message}</Text>
         {needsFace ? (
-          <Button title="Yuzni skaner qilish" onPress={onRescan} />
+          <Button title={t.avatar.scanFace} onPress={onRescan} />
         ) : (
-          <Button title="Qaytadan urinish" onPress={() => startAvatar.mutate()} />
+          <Button title={t.avatar.retry} onPress={() => startAvatar.mutate()} />
         )}
         <RealPhotoLink />
       </View>
@@ -1262,9 +1289,9 @@ function DoneStep({
         <View style={styles.doneIcon}>
           <Icon name="close" size={32} color={colors.danger} />
         </View>
-        <Text style={styles.cardTitle}>Avatar yasalmadi</Text>
-        <Text style={styles.cardHint}>{message ?? 'Boshqa yuz surati bilan urinib ko`ring'}</Text>
-        <Button title="Qaytadan urinish" onPress={() => startAvatar.mutate()} />
+        <Text style={styles.cardTitle}>{t.avatar.avatarFailed}</Text>
+        <Text style={styles.cardHint}>{message ?? t.avatar.failedFallback}</Text>
+        <Button title={t.avatar.retry} onPress={() => startAvatar.mutate()} />
         <RealPhotoLink />
       </View>
     );
@@ -1278,16 +1305,13 @@ function DoneStep({
         <Image source={{ uri: imageUrl }} style={styles.avatarPreview} resizeMode="cover" />
       ) : null}
 
-      <Text style={styles.cardTitle}>Avataringiz tayyor</Text>
+      <Text style={styles.cardTitle}>{t.avatar.avatarReady}</Text>
       <Text style={styles.cardHint}>
         {storeName ? `${storeName} · ` : ''}
         {occasion} · {style}
       </Text>
-      <Text style={styles.cardHint}>
-        Endi kiyimlarni kiyib ko‘rish mumkin. O‘lchamlaringizga mos variantlar birinchi bo‘lib
-        ko‘rsatiladi.
-      </Text>
-      <Button title="Kiyintirishni boshlash" onPress={onStart} />
+      <Text style={styles.cardHint}>{t.avatar.avatarReadyHint}</Text>
+      <Button title={t.avatar.startFitting} onPress={onStart} />
       <RealPhotoLink />
     </View>
   );
@@ -1306,6 +1330,7 @@ function DoneStep({
  * Shuning uchun bu yo'l yashirilmaydi, faqat ikkinchi o'rinda turadi.
  */
 function RealPhotoLink(): JSX.Element {
+  const t = useI18n((state) => state.t);
   const router = useRouter();
 
   return (
@@ -1315,7 +1340,7 @@ function RealPhotoLink(): JSX.Element {
       hitSlop={8}
       style={styles.realPhoto}
     >
-      <Text style={styles.realPhotoText}>Yoki o`z to`liq bo`yli suratimni yuklayman</Text>
+      <Text style={styles.realPhotoText}>{t.avatar.realPhoto}</Text>
     </Pressable>
   );
 }
