@@ -24,9 +24,19 @@ export default function Store(): JSX.Element {
     enabled: Boolean(id),
   });
 
-  if (store.isLoading) return <Loading />;
+  if (store.isLoading) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
   if (store.isError || !store.data) {
-    return <ErrorView message={t.common.notFound} onRetry={() => void store.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView message={t.common.notFound} onRetry={() => void store.refetch()} />
+      </Screen>
+    );
   }
 
   const data = store.data;
@@ -45,19 +55,21 @@ export default function Store(): JSX.Element {
             <Text style={[styles.status, { color: data.isOpen ? colors.success : colors.textDim }]}>
               {data.isOpen
                 ? data.closesAt
-                  ? `Ochiq · ${data.closesAt} gacha`
-                  : 'Ochiq'
+                  ? t.stores.openUntil.replace('{time}', data.closesAt)
+                  : t.stores.open
                 : data.opensAt
-                  ? `Yopiq · ${data.opensAt} da ochiladi`
-                  : 'Yopiq'}
+                  ? t.stores.closedOpensAt.replace('{time}', data.opensAt)
+                  : t.stores.closed}
             </Text>
 
             <Text style={styles.address}>{data.address}</Text>
-            {data.landmark ? <Text style={styles.landmark}>Mo'ljal: {data.landmark}</Text> : null}
+            {data.landmark ? (
+              <Text style={styles.landmark}>{t.stores.landmarkLine.replace('{x}', data.landmark)}</Text>
+            ) : null}
 
             {data.avgResponseMin !== null ? (
               <Text style={styles.response}>
-                Odatda {data.avgResponseMin} daqiqada javob beradi
+                {t.stores.respondsIn.replace('{n}', String(data.avgResponseMin))}
               </Text>
             ) : null}
 
@@ -80,16 +92,16 @@ export default function Store(): JSX.Element {
 
             {data.delivery.enabled ? (
               <Text style={styles.delivery}>
-                Yetkazib berish {(data.delivery.radiusM / 1000).toFixed(0)} km gacha ·{' '}
+                {t.stores.deliveryUpTo.replace('{km}', (data.delivery.radiusM / 1000).toFixed(0))} ·{' '}
                 {Number(data.delivery.fee) === 0
-                  ? 'bepul'
+                  ? t.stores.deliveryFree
                   : money(data.delivery.fee, data.currency)}
                 {data.delivery.freeFrom
-                  ? ` · ${money(data.delivery.freeFrom, data.currency)} dan bepul`
+                  ? ` · ${t.stores.freeFrom.replace('{x}', money(data.delivery.freeFrom, data.currency))}`
                   : ''}
               </Text>
             ) : (
-              <Text style={styles.delivery}>Faqat do'kondan olib ketish</Text>
+              <Text style={styles.delivery}>{t.stores.pickupOnly}</Text>
             )}
           </View>
         }
@@ -107,7 +119,7 @@ export default function Store(): JSX.Element {
           </Pressable>
         )}
         ListEmptyComponent={
-          products.isLoading ? <Loading /> : <Empty title="Bu do'konda hozircha mahsulot yo'q" />
+          products.isLoading ? <Loading /> : <Empty title={t.stores.noProducts} />
         }
       />
     </Screen>

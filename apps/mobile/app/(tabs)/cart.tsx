@@ -46,6 +46,7 @@ function StoreGroup({
   onRemove: (itemId: string) => void;
   onCheckout: () => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const hasUnavailable = group.items.some((item) => !item.available);
 
   const canSend = !busy && !hasUnavailable;
@@ -82,7 +83,7 @@ function StoreGroup({
 
             {!item.available ? (
               <Text style={styles.unavailable}>
-                {item.stock === 0 ? 'Tugadi' : `Faqat ${item.stock} dona qoldi`}
+                {item.stock === 0 ? t.cart.soldOut : t.cart.onlyLeft.replace('{n}', String(item.stock))}
               </Text>
             ) : null}
 
@@ -128,7 +129,7 @@ function StoreGroup({
       <View style={styles.totals}>
         <View style={styles.totalLeft}>
           <Icon name="bag" size={17} color={colors.textDim} />
-          <Text style={styles.totalLabel}>Mahsulotlar</Text>
+          <Text style={styles.totalLabel}>{t.cart.products}</Text>
         </View>
         <Text style={styles.totalValue}>{money(group.subtotal, group.store.currency)}</Text>
       </View>
@@ -136,11 +137,11 @@ function StoreGroup({
       <View style={styles.totals}>
         <View style={styles.totalLeft}>
           <Icon name="delivery" size={17} color={colors.textDim} />
-          <Text style={styles.totalLabel}>Yetkazib berish</Text>
+          <Text style={styles.totalLabel}>{t.cart.delivery}</Text>
         </View>
         <Text style={styles.totalValue}>
           {Number(group.deliveryFee) === 0
-            ? 'Bepul'
+            ? t.cart.free
             : money(group.deliveryFee, group.store.currency)}
         </Text>
       </View>
@@ -148,7 +149,7 @@ function StoreGroup({
       <View style={styles.divider} />
 
       <View style={styles.totals}>
-        <Text style={styles.totalLabelStrong}>Jami</Text>
+        <Text style={styles.totalLabelStrong}>{t.cart.total}</Text>
         <Text style={styles.totalValueStrong}>{money(group.total, group.store.currency)}</Text>
       </View>
 
@@ -167,16 +168,14 @@ function StoreGroup({
         >
           <Icon name="bag" size={18} color={canSend ? colors.text : colors.textDim} />
           <Text style={[styles.sendText, !canSend && { color: colors.textDim }]}>
-            Buyurtma yuborish
+            {t.cart.placeOrder}
           </Text>
           <Icon name="next" size={18} color={canSend ? colors.text : colors.textDim} />
         </LinearGradient>
       </Pressable>
 
       {hasUnavailable ? (
-        <Text style={styles.warning}>
-          Mavjud bo'lmagan mahsulotni olib tashlang — shundan keyin yuborish mumkin.
-        </Text>
+        <Text style={styles.warning}>{t.cart.removeUnavailable}</Text>
       ) : null}
     </View>
   );
@@ -392,9 +391,7 @@ export default function Cart(): JSX.Element {
         {/* To'lov qanday ishlashini aytadi — K-10 bo'yicha bu SHART */}
         <View style={styles.paymentBox}>
           <Icon name="authentic" size={22} color={colors.accent} />
-          <Text style={styles.paymentNote}>
-            To'lov ilovada emas: buyurtma do'konga so'rov bo'lib boradi, hisob-kitob topshirishda.
-          </Text>
+          <Text style={styles.paymentNote}>{t.cart.paymentNote}</Text>
         </View>
       </ScrollView>
     </Screen>

@@ -18,7 +18,7 @@ import { Icon } from '../../src/components/Icon';
 import { Hero } from '../../src/components/home/Hero';
 import { ScrollFade } from '../../src/components/ScrollFade';
 import { BrandRow, SectionHeader } from '../../src/components/home/Sections';
-import { ErrorView, Screen } from '../../src/components/ui';
+import { Empty, ErrorView, Screen } from '../../src/components/ui';
 import { rtlStyles, useI18n } from '../../src/i18n';
 import { useLocationStore } from '../../src/store/locationStore';
 import { useSplashLanding } from '../../src/store/splashTargetStore';
@@ -239,10 +239,7 @@ export default function Home(): JSX.Element {
         )}
         ListEmptyComponent={
           products.isLoading ? null : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>{t.home.emptyTitle}</Text>
-              <Text style={styles.emptyHint}>{t.home.emptyHint}</Text>
-            </View>
+            <Empty icon="bag" title={t.home.emptyTitle} hint={t.home.emptyHint} />
           )
         }
         /*
@@ -365,8 +362,4 @@ const styles = StyleSheet.create({
   badgeTryonText: { ...text.tiny, color: colors.accent },
   cardTitle: { ...text.small, color: colors.text, marginTop: spacing.sm },
   price: { ...text.price, color: colors.text, fontSize: 15, lineHeight: 20 },
-
-  empty: { paddingVertical: spacing.xl, gap: spacing.sm },
-  emptyTitle: { ...text.h3, color: colors.text, textAlign: 'center' },
-  emptyHint: { ...text.small, color: colors.textDim, textAlign: 'center' },
 });
