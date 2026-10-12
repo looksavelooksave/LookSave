@@ -19,6 +19,7 @@ import { Icon } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { SkeletonList } from '../../src/components/Skeleton';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
+import { translations, useI18n, type Dictionary } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { money } from '../../src/theme/format';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
@@ -39,21 +40,21 @@ import { goBack } from '../../src/navigation/back';
  * kartada eng ko'zga tashlanadigan joyda turadi.
  */
 
-const FILTERS: Array<{ key: StoreOrderFilter; label: string }> = [
-  { key: 'new', label: 'Yangi' },
-  { key: 'active', label: 'Jarayonda' },
-  { key: 'completed', label: 'Yakunlangan' },
+const FILTERS: Array<{ key: StoreOrderFilter; labelKey: keyof Dictionary['seller'] }> = [
+  { key: 'new', labelKey: 'filterNew' },
+  { key: 'active', labelKey: 'filterInProgress' },
+  { key: 'completed', labelKey: 'filterCompleted' },
 ];
 
-/** Holat -> keyingi qadam. `null` — bu holatda tugma yo'q. */
+/** Holat -> keyingi qadam. `null` — bu holatda tugma yo'q. Yorlig'i i18n'dan. */
 const NEXT_ACTION: Record<
   string,
-  { action: 'confirm' | 'ready' | 'complete'; label: string } | null
+  { action: 'confirm' | 'ready' | 'complete'; labelKey: keyof Dictionary['seller'] } | null
 > = {
-  new: { action: 'confirm', label: 'Tasdiqlash' },
-  seen: { action: 'confirm', label: 'Tasdiqlash' },
-  confirmed: { action: 'ready', label: 'Tayyor deb belgilash' },
-  ready: { action: 'complete', label: 'Topshirildi' },
+  new: { action: 'confirm', labelKey: 'actConfirm' },
+  seen: { action: 'confirm', labelKey: 'actConfirm' },
+  confirmed: { action: 'ready', labelKey: 'actReady' },
+  ready: { action: 'complete', labelKey: 'actComplete' },
   completed: null,
   rejected: null,
   expired: null,
@@ -85,11 +86,12 @@ function addressText(address: unknown): string {
  * va ko'rinish `usePush` dagi global handler orqali oldinda ham ishlaydi.
  */
 async function playNewOrderAlert(count: number): Promise<void> {
+  const s = translations().seller;
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: count > 1 ? `${count} ta yangi buyurtma!` : 'Yangi buyurtma!',
-        body: 'Mijoz buyurtma yubordi — tasdiqlang',
+        title: count > 1 ? s.notifyMultiTitle.replace('{n}', String(count)) : s.notifyTitle,
+        body: s.notifyBody,
         sound: 'default',
         data: { type: 'store_order' },
       },
@@ -109,6 +111,7 @@ export default function SellerOrders(): JSX.Element {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
   const role = useAuthStore((state) => state.user?.role);
 
@@ -175,14 +178,17 @@ export default function SellerOrders(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['store'] });
     },
     onError: (err) => {
-      Alert.alert('Bajarilmadi', err instanceof ApiError ? err.message : 'Qaytadan urinib ko`ring');
+      Alert.alert(
+        t.seller.actionFailed,
+        err instanceof ApiError ? err.message : t.seller.retryGeneric,
+      );
     },
   });
 
   if (!signedIn) {
     return (
       <Screen>
-        <SignInRequired hint="Do`kon paneli akkauntingizga bog`langan." />
+        <SignInRequired hint={t.seller.panelSignInHint} />
       </Screen>
     );
   }
@@ -193,9 +199,11 @@ export default function SellerOrders(): JSX.Element {
       <Screen>
         <Empty
           icon="stores"
-          title="Sizda do`kon yo`q"
-          hint="Do`kon ochsangiz buyurtmalar shu yerga keladi va darhol javob bera olasiz."
-          action={<Button title="Do`kon ochish" onPress={() => router.push('/seller/apply')} />}
+          title={t.seller.noStoreTitle}
+          hint={t.seller.noStoreHint}
+          action={
+            <Button title={t.seller.applyTitle} onPress={() => router.push('/seller/apply')} />
+          }
         />
       </Screen>
     );
@@ -255,7 +263,7 @@ export default function SellerOrders(): JSX.Element {
 
           <View style={styles.identityText}>
             <Text style={styles.storeName} numberOfLines={1}>
-              {store?.name ?? 'Do`konim'}
+              {store?.name ?? t.profile.myStore}
             </Text>
 
             {store ? (
@@ -275,20 +283,24 @@ export default function SellerOrders(): JSX.Element {
                   ]}
                 >
                   {store.isOpen
-                    ? `Ochiq${store.closesAt ? ` · ${store.closesAt} gacha` : ''}`
-                    : `Yopiq${store.opensAt ? ` · ${store.opensAt} dan` : ''}`}
+                    ? store.closesAt
+                      ? t.stores.openUntil.replace('{time}', store.closesAt)
+                      : t.stores.open
+                    : store.opensAt
+                      ? t.stores.closedOpensAt.replace('{time}', store.opensAt)
+                      : t.stores.closed}
                 </Text>
               </View>
             ) : (
-              <Text style={styles.subtitle}>Seller admin paneli</Text>
+              <Text style={styles.subtitle}>{t.seller.adminPanel}</Text>
             )}
           </View>
         </View>
 
         {stats ? (
           <Text style={styles.subtitle}>
-            <Text style={styles.subtitleStrong}>{stats.newOrders}</Text> yangi ·{' '}
-            <Text style={styles.subtitleStrong}>{stats.inProgress}</Text> jarayonda
+            <Text style={styles.subtitleStrong}>{stats.newOrders}</Text> {t.seller.statNew} ·{' '}
+            <Text style={styles.subtitleStrong}>{stats.inProgress}</Text> {t.seller.statInProgress}
           </Text>
         ) : null}
       </LinearGradient>
@@ -302,7 +314,7 @@ export default function SellerOrders(): JSX.Element {
           style={styles.hero}
         >
           <View style={styles.heroTop}>
-            <Text style={styles.heroLabel}>BU OY TUSHUM</Text>
+            <Text style={styles.heroLabel}>{t.seller.revenueLabel}</Text>
             <View style={styles.heroBadge}>
               <Icon name="premium" size={16} color={colors.accent} />
             </View>
@@ -315,12 +327,16 @@ export default function SellerOrders(): JSX.Element {
           <View style={styles.heroStats}>
             <View style={styles.heroStat}>
               <Icon name="authentic" size={14} color={colors.success} />
-              <Text style={styles.heroStatText}>{stats.completedMonth} yakunlangan</Text>
+              <Text style={styles.heroStatText}>
+                {stats.completedMonth} {t.seller.completedWord}
+              </Text>
             </View>
             <View style={styles.heroDivider} />
             <View style={styles.heroStat}>
               <Icon name="orders" size={14} color={colors.accent} />
-              <Text style={styles.heroStatText}>{stats.productCount} mahsulot</Text>
+              <Text style={styles.heroStatText}>
+                {stats.productCount} {t.seller.productWord}
+              </Text>
             </View>
           </View>
         </LinearGradient>
@@ -333,14 +349,16 @@ export default function SellerOrders(): JSX.Element {
       <View style={styles.manage}>
         <ManageTile
           icon="slotTop"
-          label="Mahsulotlar"
-          hint={stats ? `${stats.productCount} ta katalogda` : 'Katalog'}
+          label={t.seller.productsTitle}
+          hint={
+            stats ? t.seller.inCatalog.replace('{n}', String(stats.productCount)) : t.seller.catalogWord
+          }
           onPress={() => router.push('/seller/products')}
         />
         <ManageTile
           icon="settings"
-          label="Sozlamalar"
-          hint="Do`kon profili"
+          label={t.seller.settingsTitle}
+          hint={t.seller.storeProfileHint}
           onPress={() => router.push('/seller/settings')}
         />
       </View>
@@ -362,11 +380,13 @@ export default function SellerOrders(): JSX.Element {
                 end={{ x: 1, y: 1 }}
                 style={styles.filter}
               >
-                <Text style={[styles.filterText, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.filterText, { color: colors.text }]}>
+                  {t.seller[item.labelKey]}
+                </Text>
               </LinearGradient>
             ) : (
               <View style={[styles.filter, styles.filterIdle]}>
-                <Text style={styles.filterText}>{item.label}</Text>
+                <Text style={styles.filterText}>{t.seller[item.labelKey]}</Text>
               </View>
             )}
           </Pressable>
@@ -407,13 +427,11 @@ export default function SellerOrders(): JSX.Element {
               </View>
 
               <Text style={styles.emptyTitle}>
-                {filter === 'new' ? 'Yangi buyurtma yo`q' : 'Bu yerda hozircha bo`sh'}
+                {filter === 'new' ? t.seller.emptyNewTitle : t.seller.emptyOtherTitle}
               </Text>
 
               {filter === 'new' ? (
-                <Text style={styles.emptyHint}>
-                  Mijoz buyurtma yuborsa shu yerda darhol ko`rinadi.
-                </Text>
+                <Text style={styles.emptyHint}>{t.seller.emptyNewHint}</Text>
               ) : null}
 
               {/*
@@ -428,7 +446,7 @@ export default function SellerOrders(): JSX.Element {
                 <View style={styles.emptyActionIcon}>
                   <Icon name="premium" size={14} color={colors.text} />
                 </View>
-                <Text style={styles.emptyActionText}>Mahsulot qo`shish</Text>
+                <Text style={styles.emptyActionText}>{t.seller.addProduct}</Text>
               </Pressable>
             </View>
           ) : null
@@ -490,6 +508,7 @@ function OrderCard({
     body?: Record<string, unknown>,
   ) => void;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const next = NEXT_ACTION[order.status] ?? null;
 
   /*
@@ -498,11 +517,11 @@ function OrderCard({
    * ro'yxat tez javob berishga xalaqit qiladi.
    */
   const reject = (): void => {
-    Alert.alert('Buyurtmani rad etish', 'Sababini tanlang', [
-      { text: 'Mahsulot tugagan', onPress: () => onAction('reject', { reason: 'out_of_stock' }) },
-      { text: 'O`lcham yo`q', onPress: () => onAction('reject', { reason: 'size_unavailable' }) },
-      { text: 'Boshqa sabab', onPress: () => onAction('reject', { reason: 'other' }) },
-      { text: 'Bekor qilish', style: 'cancel' },
+    Alert.alert(t.seller.rejectTitle, t.seller.rejectPrompt, [
+      { text: t.seller.rejectOutOfStock, onPress: () => onAction('reject', { reason: 'out_of_stock' }) },
+      { text: t.seller.rejectNoSize, onPress: () => onAction('reject', { reason: 'size_unavailable' }) },
+      { text: t.seller.rejectOther, onPress: () => onAction('reject', { reason: 'other' }) },
+      { text: t.common.cancel, style: 'cancel' },
     ]);
   };
 
@@ -518,7 +537,7 @@ function OrderCard({
         {order.minutesLeft !== null ? (
           <View style={[styles.timer, order.minutesLeft <= 5 && styles.timerUrgent]}>
             <Text style={[styles.timerText, order.minutesLeft <= 5 && { color: colors.danger }]}>
-              {order.minutesLeft} daqiqa
+              {order.minutesLeft} {t.seller.minutesWord}
             </Text>
           </View>
         ) : null}
@@ -536,7 +555,7 @@ function OrderCard({
       <View style={styles.cardBottom}>
         <Text style={styles.total}>{money(order.total, order.currency)}</Text>
         <Text style={styles.delivery}>
-          {order.deliveryType === 'pickup' ? 'Olib ketish' : 'Yetkazish'}
+          {order.deliveryType === 'pickup' ? t.seller.pickupShort : t.seller.deliveryShort}
           {order.deliveryWhen ? ` · ${order.deliveryWhen}` : ''}
         </Text>
       </View>
@@ -559,13 +578,17 @@ function OrderCard({
 
         {next ? (
           <View style={styles.actionMain}>
-            <Button title={next.label} onPress={() => onAction(next.action)} loading={busy} />
+            <Button
+              title={t.seller[next.labelKey]}
+              onPress={() => onAction(next.action)}
+              loading={busy}
+            />
           </View>
         ) : null}
 
         {order.status === 'new' || order.status === 'seen' ? (
           <View style={styles.actionSecondary}>
-            <Button title="Rad etish" variant="danger" onPress={reject} disabled={busy} />
+            <Button title={t.seller.reject} variant="danger" onPress={reject} disabled={busy} />
           </View>
         ) : null}
       </View>
