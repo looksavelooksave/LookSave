@@ -19,6 +19,7 @@ import { usePushRegistration } from '../src/hooks/usePush';
 import { useI18n } from '../src/i18n';
 import { useAiFlowStore } from '../src/store/aiFlowStore';
 import { useAuthStore } from '../src/store/authStore';
+import { useOnboardingStore } from '../src/store/onboardingStore';
 import { colors } from '../src/theme/tokens';
 
 // Native splash o'zi yashirinmasin — uni `AnimatedSplash` chizilgach o'zimiz
@@ -42,6 +43,8 @@ function AppShell(): JSX.Element {
   const status = useAuthStore((state) => state.status);
   const restore = useAuthStore((state) => state.restore);
   const restoreStore = useAiFlowStore((state) => state.restoreStore);
+  const restoreOnboarding = useOnboardingStore((state) => state.restore);
+  const onboardingSeen = useOnboardingStore((state) => state.seen);
   const t = useI18n((state) => state.t);
 
   usePushRegistration();
@@ -58,6 +61,12 @@ function AppShell(): JSX.Element {
   useEffect(() => {
     void restore();
     /*
+     * Onboarding bayrog'ini qurilmadan tiklaymiz — kirish nuqtasi
+     * (`app/index.tsx`) ilk ochilishni shunga qarab aniqlaydi. Kirishdan
+     * mustaqil, tokensiz o'qiladi.
+     */
+    void restoreOnboarding();
+    /*
      * Saqlangan do'konni tiklaymiz.
      *
      * ⚠️ KIRISHDAN MUSTAQIL. Do'kon akkauntga emas, QURILMAGA bog'langan
@@ -66,12 +75,15 @@ function AppShell(): JSX.Element {
      * foydalanuvchini sehrgarga yuborib yuborardi.
      */
     void restoreStore();
-  }, [restore, restoreStore]);
+  }, [restore, restoreStore, restoreOnboarding]);
 
   // Splash animatsiyasi tugagunicha qatlam ekranda turadi. `appReady` — sahnaga
   // "endi chiqishing mumkin" degan signal; sahna o'z animatsiyasini yarim yo'lda
   // uzmaydi, shuning uchun tez yuklanganda ham to'liq ko'rinadi.
-  const appReady = fontsLoaded && status !== 'loading';
+  // Onboarding bayrog'i o'qilmaguncha (`null`) splash ushlab turiladi: aks
+  // holda kirish nuqtasi ilk-ochilishni bilmay (tabs) ga sakrab, onboarding
+  // uning ustidan ochilib miltillardi.
+  const appReady = fontsLoaded && status !== 'loading' && onboardingSeen !== null;
   const [splashDone, setSplashDone] = useState(false);
   const handleSplashFinish = useCallback(() => setSplashDone(true), []);
 
@@ -90,6 +102,8 @@ function AppShell(): JSX.Element {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          {/* Ilk ochilish onboarding'i — to'liq ekran, o'z tugmalari bilan */}
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           {/* AI oqimi to'liq ekran — tab qatori ustidan ochiladi va uni yashiradi */}
           <Stack.Screen name="ai" options={{ headerShown: false }} />

@@ -228,6 +228,20 @@ const uz = {
     outOfStock: 'Mahsulot omborda tugadi. Savatni yangilang.',
     generic: "Xatolik yuz berdi. Qaytadan urinib ko'ring.",
   },
+  onboarding: {
+    skip: "O'tkazish",
+    next: 'Keyingi',
+    start: 'Boshlash',
+    slide1Title: "O'zingizda ko'ring",
+    slide1Body:
+      "Kiyimni sotib olishdan oldin AI yordamida o'z suratingizda kiyib ko'ring — tasavvur emas, aniq natija.",
+    slide2Title: "Sizning o'lchovingiz",
+    slide2Body:
+      "Bo'y va o'lchovlaringizdan shaxsiy avatar — kiyim qanday o'tirishini oldindan ko'ring.",
+    slide3Title: "Yaqin do'konlardan",
+    slide3Body:
+      "Atrofingizdagi do'konlar, to'g'ridan-to'g'ri sotuvchiga buyurtma va yetkazib berish.",
+  },
 } as const;
 
 /**
@@ -448,6 +462,19 @@ const ru: Dictionary = {
     outOfStock: 'Товар закончился. Обновите корзину.',
     generic: 'Произошла ошибка. Попробуйте снова.',
   },
+  onboarding: {
+    skip: 'Пропустить',
+    next: 'Далее',
+    start: 'Начать',
+    slide1Title: 'Примерьте на себе',
+    slide1Body:
+      'Перед покупкой примерьте одежду на своём фото с помощью ИИ — не воображение, а точный результат.',
+    slide2Title: 'Ваши параметры',
+    slide2Body:
+      'Персональный аватар по росту и меркам — заранее увидите, как сядет одежда.',
+    slide3Title: 'Из ближайших магазинов',
+    slide3Body: 'Магазины рядом, заказ напрямую продавцу и доставка.',
+  },
 };
 
 const en: Dictionary = {
@@ -657,6 +684,19 @@ const en: Dictionary = {
     outOfStock: 'The item is out of stock. Refresh your cart.',
     generic: 'Something went wrong. Please try again.',
   },
+  onboarding: {
+    skip: 'Skip',
+    next: 'Next',
+    start: 'Get started',
+    slide1Title: 'See it on you',
+    slide1Body:
+      'Try clothes on your own photo with AI before you buy — not a guess, a real result.',
+    slide2Title: 'Your measurements',
+    slide2Body:
+      'A personal avatar from your height and measurements — see how it fits before ordering.',
+    slide3Title: 'From stores near you',
+    slide3Body: 'Nearby stores, order straight from the seller, and delivery.',
+  },
 };
 
 const ar: Dictionary = {
@@ -865,6 +905,17 @@ const ar: Dictionary = {
     blocked: 'الطلب مقيّد مؤقتًا. تواصل مع الدعم.',
     outOfStock: 'المنتج نفد. حدّث السلة.',
     generic: 'حدث خطأ. حاول مجددًا.',
+  },
+  onboarding: {
+    skip: 'تخطّي',
+    next: 'التالي',
+    start: 'لنبدأ',
+    slide1Title: 'جرّبها عليك',
+    slide1Body: 'جرّب الملابس على صورتك بالذكاء الاصطناعي قبل الشراء — ليست تخيّلًا بل نتيجة حقيقية.',
+    slide2Title: 'مقاساتك',
+    slide2Body: 'أفاتار شخصي من طولك ومقاساتك — شاهد كيف تبدو الملابس قبل الطلب.',
+    slide3Title: 'من متاجر قريبة منك',
+    slide3Body: 'متاجر قريبة، واطلب مباشرة من البائع مع التوصيل.',
   },
 };
 
