@@ -8,6 +8,7 @@ import { ApiError, refreshSession } from '../../src/api/client';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, Field, Screen } from '../../src/components/ui';
+import { useI18n } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { useLocationStore } from '../../src/store/locationStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
@@ -56,6 +57,7 @@ export default function StoreApply(): JSX.Element {
    */
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
   const refreshUser = useAuthStore((state) => state.restore);
   const coords = useLocationStore((state) => state.coords);
@@ -82,14 +84,14 @@ export default function StoreApply(): JSX.Element {
       router.replace('/seller');
     },
     onError: (err) => {
-      setError(err instanceof ApiError ? err.message : 'Ariza yuborilmadi');
+      setError(err instanceof ApiError ? err.message : t.seller.applyFailed);
     },
   });
 
   if (!signedIn) {
     return (
       <Screen>
-        <SignInRequired hint="Do`kon ochish uchun avval akkaunt kerak." />
+        <SignInRequired hint={t.seller.applySignInHint} />
       </Screen>
     );
   }
@@ -101,10 +103,10 @@ export default function StoreApply(): JSX.Element {
     setError(null);
 
     // Serverdagi sxemaga mos eng kam talablar — xatoni so'rovsiz ushlaymiz
-    if (form.name.trim().length < 2) return setError('Do`kon nomini kiriting');
-    if (!/^\+998\d{9}$/.test(form.phone.trim())) return setError('Telefon raqami to`liq emas');
-    if (form.address.trim().length < 5) return setError('Manzilni to`liqroq yozing');
-    if (form.city.trim().length < 2) return setError('Shaharni kiriting');
+    if (form.name.trim().length < 2) return setError(t.seller.errName);
+    if (!/^\+998\d{9}$/.test(form.phone.trim())) return setError(t.seller.errPhone);
+    if (form.address.trim().length < 5) return setError(t.seller.errAddress);
+    if (form.city.trim().length < 2) return setError(t.seller.errCity);
 
     apply.mutate({
       name: form.name.trim(),
@@ -124,8 +126,8 @@ export default function StoreApply(): JSX.Element {
   return (
     <Screen>
       <SellerHeader
-        title="Do`kon ochish"
-        subtitle="Sotuvchi bo`lish arizasi"
+        title={t.seller.applyTitle}
+        subtitle={t.seller.applySubtitle}
         onBack={() => goBack('/profile')}
       />
       <KeyboardAvoidingView
@@ -133,50 +135,47 @@ export default function StoreApply(): JSX.Element {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.lead}>
-            Ariza yuborilgach panelga darhol kirasiz va mahsulotlaringizni tayyorlab qo`yasiz.
-            Do`kon tasdiqlangandan keyin katalogda paydo bo`ladi.
-          </Text>
+          <Text style={styles.lead}>{t.seller.applyLead}</Text>
 
           <View style={styles.form}>
             <Field
-              label="Do`kon nomi"
+              label={t.seller.fieldName}
               value={form.name}
               onChangeText={set('name')}
-              placeholder="Chilonzor Fashion"
+              placeholder={t.seller.phName}
               autoCapitalize="words"
             />
             <Field
-              label="Telefon"
+              label={t.auth.phone}
               value={form.phone}
               onChangeText={set('phone')}
               keyboardType="phone-pad"
-              placeholder="+998 90 123 45 67"
+              placeholder={t.seller.phPhone}
             />
             <Field
-              label="Shahar"
+              label={t.seller.fieldCity}
               value={form.city}
               onChangeText={set('city')}
-              placeholder="Toshkent"
+              placeholder={t.seller.phCity}
               autoCapitalize="words"
             />
             <Field
-              label="Manzil"
+              label={t.checkout.address}
               value={form.address}
               onChangeText={set('address')}
-              placeholder="Chilonzor 9-kvartal, 24-uy"
+              placeholder={t.seller.phAddress}
             />
             <Field
-              label="Mo`ljal"
+              label={t.checkout.landmark}
               value={form.landmark}
               onChangeText={set('landmark')}
-              placeholder="Mehnat metrosi yonida"
+              placeholder={t.seller.phLandmark}
             />
             <Field
-              label="Qisqacha tavsif"
+              label={t.seller.fieldDescription}
               value={form.description}
               onChangeText={set('description')}
-              placeholder="Erkaklar va ayollar kiyimlari"
+              placeholder={t.seller.phDescription}
               multiline
             />
           </View>
@@ -184,13 +183,10 @@ export default function StoreApply(): JSX.Element {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.note}>
-            <Text style={styles.noteText}>
-              Buyurtmalar ilovada keladi va shu yerda javob berasiz. Mahsulot qo`shish va analitika
-              esa veb-panelda — u kompyuterda ancha qulay.
-            </Text>
+            <Text style={styles.noteText}>{t.seller.applyNote}</Text>
           </View>
 
-          <Button title="Ariza yuborish" onPress={submit} loading={apply.isPending} />
+          <Button title={t.seller.applySubmit} onPress={submit} loading={apply.isPending} />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

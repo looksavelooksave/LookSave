@@ -499,6 +499,30 @@ const uz = {
     delete: "O'chirish",
     back: 'Orqaga',
   },
+  seller: {
+    applyTitle: "Do'kon ochish",
+    applySubtitle: "Sotuvchi bo'lish arizasi",
+    applySignInHint: "Do'kon ochish uchun avval akkaunt kerak.",
+    applyLead:
+      "Ariza yuborilgach panelga darhol kirasiz va mahsulotlaringizni tayyorlab qo'yasiz. Do'kon tasdiqlangandan keyin katalogda paydo bo'ladi.",
+    applyNote:
+      "Buyurtmalar ilovada keladi va shu yerda javob berasiz. Mahsulot qo'shish va analitika esa veb-panelda — u kompyuterda ancha qulay.",
+    applySubmit: 'Ariza yuborish',
+    applyFailed: 'Ariza yuborilmadi',
+    errName: "Do'kon nomini kiriting",
+    errPhone: "Telefon raqami to'liq emas",
+    errAddress: "Manzilni to'liqroq yozing",
+    errCity: 'Shaharni kiriting',
+    fieldName: "Do'kon nomi",
+    fieldCity: 'Shahar',
+    fieldDescription: 'Qisqacha tavsif',
+    phName: 'Chilonzor Fashion',
+    phPhone: '+998 90 123 45 67',
+    phCity: 'Toshkent',
+    phAddress: 'Chilonzor 9-kvartal, 24-uy',
+    phLandmark: 'Mehnat metrosi yonida',
+    phDescription: 'Erkaklar va ayollar kiyimlari',
+  },
 } as const;
 
 /**
@@ -988,6 +1012,30 @@ const ru: Dictionary = {
     delete: 'Удалить',
     back: 'Назад',
   },
+  seller: {
+    applyTitle: 'Открыть магазин',
+    applySubtitle: 'Заявка на продавца',
+    applySignInHint: 'Чтобы открыть магазин, сначала нужен аккаунт.',
+    applyLead:
+      'После отправки заявки вы сразу войдёте в панель и подготовите товары. После подтверждения магазин появится в каталоге.',
+    applyNote:
+      'Заказы приходят в приложение, и вы отвечаете здесь. Добавление товаров и аналитика — в веб-панели, на компьютере удобнее.',
+    applySubmit: 'Отправить заявку',
+    applyFailed: 'Заявка не отправлена',
+    errName: 'Введите название магазина',
+    errPhone: 'Телефон указан не полностью',
+    errAddress: 'Укажите адрес подробнее',
+    errCity: 'Укажите город',
+    fieldName: 'Название магазина',
+    fieldCity: 'Город',
+    fieldDescription: 'Краткое описание',
+    phName: 'Chilonzor Fashion',
+    phPhone: '+998 90 123 45 67',
+    phCity: 'Ташкент',
+    phAddress: 'Чиланзар, 9-й квартал, дом 24',
+    phLandmark: 'Рядом с метро Mehnat',
+    phDescription: 'Мужская и женская одежда',
+  },
 };
 
 const en: Dictionary = {
@@ -1464,6 +1512,30 @@ const en: Dictionary = {
     delete: 'Delete',
     back: 'Back',
   },
+  seller: {
+    applyTitle: 'Open a store',
+    applySubtitle: 'Seller application',
+    applySignInHint: 'You need an account first to open a store.',
+    applyLead:
+      'Once you apply, you’ll enter the panel right away and prepare your products. After approval, the store appears in the catalog.',
+    applyNote:
+      'Orders arrive in the app and you reply here. Adding products and analytics are in the web panel — it’s more convenient on a computer.',
+    applySubmit: 'Submit application',
+    applyFailed: 'Application not sent',
+    errName: 'Enter the store name',
+    errPhone: 'Phone number is incomplete',
+    errAddress: 'Write the address in more detail',
+    errCity: 'Enter the city',
+    fieldName: 'Store name',
+    fieldCity: 'City',
+    fieldDescription: 'Short description',
+    phName: 'Chilonzor Fashion',
+    phPhone: '+998 90 123 45 67',
+    phCity: 'Tashkent',
+    phAddress: 'Chilanzar, block 9, house 24',
+    phLandmark: 'Near Mehnat metro',
+    phDescription: 'Men’s and women’s clothing',
+  },
 };
 
 const ar: Dictionary = {
@@ -1927,6 +1999,30 @@ const ar: Dictionary = {
     deleteConfirmBody: 'ستُحذف الصورة نهائيًا من الخادم وستتوقف الصورة الرمزية عن استخدامها. لا يمكن التراجع عن هذا.',
     delete: 'حذف',
     back: 'رجوع',
+  },
+  seller: {
+    applyTitle: 'افتح متجرًا',
+    applySubtitle: 'طلب بائع',
+    applySignInHint: 'تحتاج حسابًا أولًا لفتح متجر.',
+    applyLead:
+      'بعد إرسال الطلب تدخل اللوحة فورًا وتجهّز منتجاتك. وبعد الموافقة يظهر المتجر في الكتالوج.',
+    applyNote:
+      'تصل الطلبات إلى التطبيق وتردّ هنا. أما إضافة المنتجات والتحليلات فعبر لوحة الويب — أسهل على الحاسوب.',
+    applySubmit: 'إرسال الطلب',
+    applyFailed: 'لم يُرسل الطلب',
+    errName: 'أدخل اسم المتجر',
+    errPhone: 'رقم الهاتف غير مكتمل',
+    errAddress: 'اكتب العنوان بتفصيل أكثر',
+    errCity: 'أدخل المدينة',
+    fieldName: 'اسم المتجر',
+    fieldCity: 'المدينة',
+    fieldDescription: 'وصف مختصر',
+    phName: 'Chilonzor Fashion',
+    phPhone: '+998 90 123 45 67',
+    phCity: 'طشقند',
+    phAddress: 'شيلانزار، الحي 9، منزل 24',
+    phLandmark: 'بجانب مترو Mehnat',
+    phDescription: 'ملابس رجالية ونسائية',
   },
 };
 
