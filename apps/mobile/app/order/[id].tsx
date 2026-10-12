@@ -11,8 +11,6 @@ import { money, phone as formatPhone } from '../../src/theme/format';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { statusTone } from '../../src/theme/orderStatus';
 
-const STEPS = ['Yuborildi', 'Tasdiqlandi', 'Tayyor', 'Topshirildi'];
-
 const STEP_INDEX: Record<string, number> = {
   new: 0,
   seen: 0,
@@ -21,19 +19,28 @@ const STEP_INDEX: Record<string, number> = {
   completed: 3,
 };
 
-function remaining(expiresAt: string): string {
+/** `{h}`/`{m}` o'rinbosarli shablonni to'ldiradi (til `t.order.remaining` dan). */
+function remaining(expiresAt: string, template: string): string {
   const minutes = Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 60_000));
   const hours = Math.floor(minutes / 60);
-  return `${hours} soat ${minutes % 60} daqiqa qoldi`;
+  return template.replace('{h}', String(hours)).replace('{m}', String(minutes % 60));
 }
 
 function Progress({ status }: { status: string }): JSX.Element | null {
+  const t = useI18n((state) => state.t);
   const current = STEP_INDEX[status];
   if (current === undefined) return null;
 
+  const steps = [
+    t.order.stepSent,
+    t.order.stepConfirmed,
+    t.order.stepReady,
+    t.order.stepDelivered,
+  ];
+
   return (
     <View style={styles.progress}>
-      {STEPS.map((label, index) => (
+      {steps.map((label, index) => (
         <View key={label} style={styles.step}>
           <View style={[styles.dot, index <= current && styles.dotActive]} />
           <Text style={[styles.stepText, index <= current && { color: colors.textMuted }]}>
@@ -46,6 +53,7 @@ function Progress({ status }: { status: string }): JSX.Element | null {
 }
 
 function StatusBanner({ order }: { order: OrderDetail }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const tone = statusTone(order.status);
 
   return (
@@ -53,7 +61,7 @@ function StatusBanner({ order }: { order: OrderDetail }): JSX.Element {
       <Text style={[styles.bannerTitle, { color: tone }]}>{order.statusLabel}</Text>
 
       {order.status === 'new' ? (
-        <Text style={styles.bannerHint}>{remaining(order.expiresAt)}</Text>
+        <Text style={styles.bannerHint}>{remaining(order.expiresAt, t.order.remaining)}</Text>
       ) : null}
 
       {order.status === 'rejected' && order.rejectReason ? (
@@ -61,9 +69,7 @@ function StatusBanner({ order }: { order: OrderDetail }): JSX.Element {
       ) : null}
 
       {order.status === 'expired' ? (
-        <Text style={styles.bannerHint}>
-          Do'kon javob bermadi. Shu mahsulotni boshqa do'konda qidirib ko'ring.
-        </Text>
+        <Text style={styles.bannerHint}>{t.order.expiredHint}</Text>
       ) : null}
     </View>
   );
@@ -109,9 +115,19 @@ export default function Order(): JSX.Element {
     );
   }
 
-  if (order.isLoading) return <Loading />;
+  if (order.isLoading) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
   if (order.isError || !order.data) {
-    return <ErrorView message={t.common.notFound} onRetry={() => void order.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView message={t.common.notFound} onRetry={() => void order.refetch()} />
+      </Screen>
+    );
   }
 
   const data = order.data;
@@ -145,49 +161,52 @@ export default function Order(): JSX.Element {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Mahsulotlar</Text>
+          <Text style={styles.sectionTitle}>{t.cart.products}</Text>
           {data.items.map((item, index) => (
             <View key={`${item.title ?? 'item'}-${index}`} style={styles.item}>
-              <Text style={styles.itemTitle}>{item.title ?? 'Mahsulot'}</Text>
+              <Text style={styles.itemTitle}>{item.title ?? t.order.product}</Text>
               <Text style={styles.itemMeta}>
                 {item.colorName ? `${item.colorName} · ` : ''}
-                {item.size} · {item.qty} dona · {money(item.unitPrice, data.currency)}
+                {item.size} · {t.order.qtyPieces.replace('{n}', String(item.qty))} ·{' '}
+                {money(item.unitPrice, data.currency)}
               </Text>
             </View>
           ))}
 
           <View style={styles.totals}>
-            <Text style={styles.totalLabel}>Mahsulotlar</Text>
+            <Text style={styles.totalLabel}>{t.cart.products}</Text>
             <Text style={styles.totalValue}>{money(data.subtotal, data.currency)}</Text>
           </View>
           <View style={styles.totals}>
-            <Text style={styles.totalLabel}>Yetkazib berish</Text>
+            <Text style={styles.totalLabel}>{t.cart.delivery}</Text>
             <Text style={styles.totalValue}>
-              {Number(data.deliveryFee) === 0 ? 'Bepul' : money(data.deliveryFee, data.currency)}
+              {Number(data.deliveryFee) === 0 ? t.cart.free : money(data.deliveryFee, data.currency)}
             </Text>
           </View>
           <View style={styles.totals}>
-            <Text style={styles.totalLabelStrong}>Jami</Text>
+            <Text style={styles.totalLabelStrong}>{t.cart.total}</Text>
             <Text style={styles.totalValueStrong}>{money(data.total, data.currency)}</Text>
           </View>
           <Text style={styles.paymentNote}>
             {data.paymentStatus === 'paid'
-              ? "To'landi"
+              ? t.order.paid
               : data.deliveryType === 'delivery'
-                ? "To'lov yetkazib berilganda"
-                : "To'lov do'konda"}
+                ? t.checkout.payOnDelivery
+                : t.checkout.payAtStore}
           </Text>
         </View>
 
         {data.deliveryType === 'delivery' && data.address?.text ? (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Manzil</Text>
+            <Text style={styles.sectionTitle}>{t.checkout.address}</Text>
             {data.deliveryWhen ? (
               <Text style={styles.itemMeta}>🕒 {data.deliveryWhen}</Text>
             ) : null}
             <Text style={styles.itemMeta}>{data.address.text}</Text>
             {data.address.landmark ? (
-              <Text style={styles.itemMeta}>Mo'ljal: {data.address.landmark}</Text>
+              <Text style={styles.itemMeta}>
+                {t.stores.landmarkLine.replace('{x}', data.address.landmark)}
+              </Text>
             ) : null}
             <Text style={styles.itemMeta}>{formatPhone(data.contactPhone)}</Text>
           </View>

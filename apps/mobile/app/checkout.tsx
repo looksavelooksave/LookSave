@@ -157,12 +157,26 @@ export default function Checkout(): JSX.Element {
     onError: (err) => setError(explain(err)),
   });
 
-  if (cart.isLoading) return <Loading />;
+  if (cart.isLoading) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
   if (cart.isError) {
-    return <ErrorView message="Savatni yuklab bo'lmadi" onRetry={() => void cart.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView message={t.checkout.cartLoadError} onRetry={() => void cart.refetch()} />
+      </Screen>
+    );
   }
   if (!group) {
-    return <ErrorView message="Bu do'kon savatda yo'q" onRetry={() => goBack('/cart')} />;
+    return (
+      <Screen>
+        <ErrorView message={t.checkout.storeNotInCart} onRetry={() => goBack('/cart')} />
+      </Screen>
+    );
   }
 
   return (
@@ -240,41 +254,36 @@ export default function Checkout(): JSX.Element {
           <View style={styles.phoneBox}>
             <Text style={styles.phoneLabel}>{t.auth.phone}</Text>
             <Text style={styles.phoneValue}>{user?.phone}</Text>
-            <Text style={styles.phoneHint}>
-              Sotuvchi shu raqamga qo'ng'iroq qiladi. Raqamni profildan o'zgartirasiz.
-            </Text>
+            <Text style={styles.phoneHint}>{t.checkout.phoneHint}</Text>
           </View>
 
           {deliveryType === 'delivery' ? (
             <>
               <Field
-                label="Manzil"
+                label={t.checkout.address}
                 value={addressText}
                 onChangeText={setAddressText}
-                placeholder="Chilonzor 9-kvartal, 24-uy, 12-xonadon"
+                placeholder={t.checkout.addressPlaceholder}
               />
               <Field
-                label="Mo'ljal"
+                label={t.checkout.landmark}
                 value={landmark}
                 onChangeText={setLandmark}
-                placeholder="Mehnat metrosi yonida"
+                placeholder={t.checkout.landmarkPlaceholder}
               />
 
               {isFallback ? (
-                <Text style={styles.warning}>
-                  Joylashuv aniqlanmagan — koordinata Toshkent markazi bo'yicha yuboriladi. Do'kon
-                  hududidan tashqarida chiqishi mumkin.
-                </Text>
+                <Text style={styles.warning}>{t.checkout.locationWarning}</Text>
               ) : null}
 
               {/* Yetkazish vaqti — 3 xil */}
-              <Text style={[styles.label, { marginTop: spacing.md }]}>Yetkazish vaqti</Text>
+              <Text style={[styles.label, { marginTop: spacing.md }]}>{t.checkout.deliveryTime}</Text>
               <View style={styles.slotRow}>
                 {(
                   [
-                    { value: 'today', label: 'Bugun' },
-                    { value: 'tomorrow', label: 'Ertaga' },
-                    { value: 'scheduled', label: 'Tanlangan kun' },
+                    { value: 'today', label: t.checkout.today },
+                    { value: 'tomorrow', label: t.checkout.tomorrow },
+                    { value: 'scheduled', label: t.checkout.scheduled },
                   ] as Array<{ value: 'today' | 'tomorrow' | 'scheduled'; label: string }>
                 ).map((opt) => {
                   const active = deliverySlot === opt.value;
@@ -319,16 +328,14 @@ export default function Checkout(): JSX.Element {
               ) : null}
             </>
           ) : (
-            <Text style={styles.hint}>
-              Buyurtma tasdiqlangach do'kondan olib ketasiz. Manzil kerak emas.
-            </Text>
+            <Text style={styles.hint}>{t.checkout.pickupHint}</Text>
           )}
 
           <Field
-            label="Izoh"
+            label={t.checkout.note}
             value={note}
             onChangeText={setNote}
-            placeholder="Kechqurun 18:00 dan keyin qo'ng'iroq qiling"
+            placeholder={t.checkout.notePlaceholder}
             multiline
           />
 
@@ -341,7 +348,7 @@ export default function Checkout(): JSX.Element {
               <Text style={styles.totalLabel}>{t.cart.delivery}</Text>
               <Text style={styles.totalValue}>
                 {deliveryType === 'pickup' || Number(group.deliveryFee) === 0
-                  ? 'Bepul'
+                  ? t.cart.free
                   : money(group.deliveryFee, group.store.currency)}
               </Text>
             </View>
@@ -355,7 +362,7 @@ export default function Checkout(): JSX.Element {
               </Text>
             </View>
             <Text style={styles.paymentNote}>
-              To'lov {deliveryType === 'pickup' ? "do'konda" : 'yetkazib berilganda'}
+              {deliveryType === 'pickup' ? t.checkout.payAtStore : t.checkout.payOnDelivery}
             </Text>
           </View>
 
