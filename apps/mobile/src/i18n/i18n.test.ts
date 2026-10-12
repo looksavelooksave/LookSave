@@ -60,6 +60,7 @@ describe('tarjimalar', () => {
     'home.badgeBrands', // "PREMIUM" — inglizchada ham shu so'z
     'seller.phName', // "Chilonzor Fashion" — do'kon nomi namunasi, brend yozuvi
     'seller.phPhone', // "+998 90 123 45 67" — telefon formati, har tilda bir xil
+    'seller.radiusLabel', // "RADIUS (KM)" — xalqaro texnik yorliq, uz/en bir xil
   ]);
 
   it('ruscha va inglizcha matnlar o`zbekchadan farq qiladi', () => {

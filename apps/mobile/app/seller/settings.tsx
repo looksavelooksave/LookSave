@@ -24,6 +24,7 @@ import { ApiError } from '../../src/api/client';
 import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { Button, ErrorView, Field, Loading, Screen } from '../../src/components/ui';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
 
@@ -34,14 +35,14 @@ import { goBack } from '../../src/navigation/back';
  * telefondan ishlaydi, veb-paneldan foydalanish kutilmaydi.
  */
 
-const DAYS: { day: number; label: string }[] = [
-  { day: 1, label: 'Dushanba' },
-  { day: 2, label: 'Seshanba' },
-  { day: 3, label: 'Chorshanba' },
-  { day: 4, label: 'Payshanba' },
-  { day: 5, label: 'Juma' },
-  { day: 6, label: 'Shanba' },
-  { day: 7, label: 'Yakshanba' },
+const DAYS: { day: number; labelKey: keyof Dictionary['seller'] }[] = [
+  { day: 1, labelKey: 'day1' },
+  { day: 2, labelKey: 'day2' },
+  { day: 3, labelKey: 'day3' },
+  { day: 4, labelKey: 'day4' },
+  { day: 5, labelKey: 'day5' },
+  { day: 6, labelKey: 'day6' },
+  { day: 7, labelKey: 'day7' },
 ];
 
 function hoursToMap(hours: WorkingHour[]): Record<number, WorkingHour> {
@@ -78,6 +79,7 @@ export default function StoreSettings(): JSX.Element {
    * Aks holda sarlavha soat va batareya ustiga chiqib ketadi.
    */
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
 
   const profile = useQuery({ queryKey: ['store', 'profile'], queryFn: getStoreProfile });
 
@@ -124,7 +126,7 @@ export default function StoreSettings(): JSX.Element {
   const pickLogo = async (): Promise<void> => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Ruxsat kerak', 'Logo tanlash uchun galereyaga ruxsat bering.');
+      Alert.alert(t.photo.permissionTitle, t.seller.logoPermBody);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -142,7 +144,7 @@ export default function StoreSettings(): JSX.Element {
       setForm((prev) => ({ ...prev, logoUrl: url }));
       setSaved(false);
     } catch {
-      setError('Logo yuklanmadi — qaytadan urinib ko`ring');
+      setError(t.seller.logoUploadFailed);
     } finally {
       setUploading(false);
     }
@@ -184,12 +186,22 @@ export default function StoreSettings(): JSX.Element {
       setSaved(true);
       setError(null);
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Saqlanmadi'),
+    onError: (err) => setError(err instanceof ApiError ? err.message : t.look.saveFailed),
   });
 
-  if (profile.isLoading) return <Loading />;
+  if (profile.isLoading) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
   if (profile.isError || !profile.data) {
-    return <ErrorView error={profile.error} onRetry={() => void profile.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView error={profile.error} onRetry={() => void profile.refetch()} />
+      </Screen>
+    );
   }
 
   const store = profile.data;
@@ -221,8 +233,8 @@ export default function StoreSettings(): JSX.Element {
   return (
     <Screen>
       <SellerHeader
-        title="Sozlamalar"
-        subtitle="Do`kon profili va ish vaqti"
+        title={t.seller.settingsTitle}
+        subtitle={t.seller.settingsSubtitle}
         onBack={() => goBack('/seller')}
       />
 
@@ -233,9 +245,9 @@ export default function StoreSettings(): JSX.Element {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.statusCard}>
             <View style={styles.statusCardText}>
-              <Text style={styles.statusLabel}>DO`KON HOLATI</Text>
+              <Text style={styles.statusLabel}>{t.seller.statusLabel}</Text>
               <Text style={styles.statusValue}>
-                {store.status === 'active' ? 'Faol — katalogda ko`rinadi' : store.status}
+                {store.status === 'active' ? t.seller.statusActiveFull : store.status}
               </Text>
             </View>
             <View
@@ -256,12 +268,12 @@ export default function StoreSettings(): JSX.Element {
                   { color: store.status === 'active' ? colors.success : colors.textMuted },
                 ]}
               >
-                {store.status === 'active' ? 'Faol' : 'Nofaol'}
+                {store.status === 'active' ? t.seller.statusActive : t.seller.statusInactive}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.fieldLabel}>DO`KON LOGOSI</Text>
+          <Text style={styles.fieldLabel}>{t.seller.logoLabel}</Text>
           <View style={styles.logoRow}>
             <Pressable
               accessibilityRole="button"
@@ -280,7 +292,7 @@ export default function StoreSettings(): JSX.Element {
             </Pressable>
             <View style={styles.logoActions}>
               <Button
-                title={form.logoUrl ? 'Logoni o`zgartirish' : 'Logo tanlash'}
+                title={form.logoUrl ? t.seller.changeLogo : t.seller.pickLogo}
                 variant="ghost"
                 loading={uploading}
                 onPress={() => void pickLogo()}
@@ -291,23 +303,23 @@ export default function StoreSettings(): JSX.Element {
                   onPress={() => setForm((prev) => ({ ...prev, logoUrl: null }))}
                   hitSlop={8}
                 >
-                  <Text style={styles.logoRemove}>Olib tashlash</Text>
+                  <Text style={styles.logoRemove}>{t.seller.remove}</Text>
                 </Pressable>
               ) : null}
             </View>
           </View>
 
-          <Field label="Do`kon nomi" value={form.name} onChangeText={set('name')} />
+          <Field label={t.seller.fieldName} value={form.name} onChangeText={set('name')} />
           <Field
-            label="Telefon"
+            label={t.auth.phone}
             value={form.phone}
             onChangeText={set('phone')}
             keyboardType="phone-pad"
           />
-          <Field label="Manzil" value={form.address} onChangeText={set('address')} />
-          <Field label="Mo`ljal" value={form.landmark} onChangeText={set('landmark')} />
+          <Field label={t.checkout.address} value={form.address} onChangeText={set('address')} />
+          <Field label={t.checkout.landmark} value={form.landmark} onChangeText={set('landmark')} />
           <Field
-            label="Tavsif"
+            label={t.seller.descLabel}
             value={form.description}
             onChangeText={set('description')}
             multiline
@@ -317,18 +329,16 @@ export default function StoreSettings(): JSX.Element {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Icon name="clock" size={18} color={colors.accent} />
-              <Text style={styles.sectionTitle}>Ish vaqti</Text>
+              <Text style={styles.sectionTitle}>{t.seller.workingHours}</Text>
             </View>
-            <Text style={styles.sectionHint}>
-              Yopilish vaqti ochilishdan kichik bo`lsa — yarim tundan o`tadi (masalan 14:00–02:00).
-            </Text>
+            <Text style={styles.sectionHint}>{t.seller.hoursHint}</Text>
 
-            {DAYS.map(({ day, label }) => {
+            {DAYS.map(({ day, labelKey }) => {
               const hour = hours[day];
               const closed = hour?.closed ?? false;
               return (
                 <View key={day} style={styles.hourRow}>
-                  <Text style={styles.dayLabel}>{label}</Text>
+                  <Text style={styles.dayLabel}>{t.seller[labelKey]}</Text>
                   <TextInput
                     editable={!closed}
                     value={hour?.open ?? '10:00'}
@@ -364,7 +374,7 @@ export default function StoreSettings(): JSX.Element {
                         <Text style={styles.checkboxMark}>✓</Text>
                       ) : null}
                     </View>
-                    <Text style={styles.dayOffLabel}>Dam olish</Text>
+                    <Text style={styles.dayOffLabel}>{t.seller.dayOff}</Text>
                   </Pressable>
                 </View>
               );
@@ -375,7 +385,7 @@ export default function StoreSettings(): JSX.Element {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Icon name="delivery" size={18} color={colors.accent} />
-              <Text style={styles.sectionTitle}>Yetkazib berish</Text>
+              <Text style={styles.sectionTitle}>{t.cart.delivery}</Text>
             </View>
 
             <Pressable
@@ -387,7 +397,7 @@ export default function StoreSettings(): JSX.Element {
               <View style={[styles.checkbox, delivery.enabled && styles.checkboxOn]}>
                 {delivery.enabled ? <Text style={styles.checkboxMark}>✓</Text> : null}
               </View>
-              <Text style={styles.toggleLabel}>Yetkazib beramiz</Text>
+              <Text style={styles.toggleLabel}>{t.seller.deliverOn}</Text>
             </Pressable>
 
             <Pressable
@@ -399,13 +409,13 @@ export default function StoreSettings(): JSX.Element {
               <View style={[styles.checkbox, delivery.pickup && styles.checkboxOn]}>
                 {delivery.pickup ? <Text style={styles.checkboxMark}>✓</Text> : null}
               </View>
-              <Text style={styles.toggleLabel}>Do`kondan olib ketish mumkin</Text>
+              <Text style={styles.toggleLabel}>{t.seller.pickupOn}</Text>
             </Pressable>
 
             {delivery.enabled ? (
               <View style={styles.deliveryGrid}>
                 <View style={styles.deliveryCell}>
-                  <Text style={styles.fieldLabel}>RADIUS (KM)</Text>
+                  <Text style={styles.fieldLabel}>{t.seller.radiusLabel}</Text>
                   <TextInput
                     value={delivery.radiusKm}
                     onChangeText={(value) =>
@@ -418,7 +428,7 @@ export default function StoreSettings(): JSX.Element {
                   />
                 </View>
                 <View style={styles.deliveryCell}>
-                  <Text style={styles.fieldLabel}>NARXI</Text>
+                  <Text style={styles.fieldLabel}>{t.seller.priceLabel}</Text>
                   <TextInput
                     value={delivery.fee}
                     onChangeText={(value) => setDeliveryField('fee', value)}
@@ -429,12 +439,12 @@ export default function StoreSettings(): JSX.Element {
                   />
                 </View>
                 <View style={styles.deliveryCell}>
-                  <Text style={styles.fieldLabel}>BEPUL CHEGARA</Text>
+                  <Text style={styles.fieldLabel}>{t.seller.freeThreshold}</Text>
                   <TextInput
                     value={delivery.freeFrom}
                     onChangeText={(value) => setDeliveryField('freeFrom', value)}
                     keyboardType="decimal-pad"
-                    placeholder="yo`q"
+                    placeholder={t.seller.phNone}
                     placeholderTextColor={colors.textDim}
                     style={styles.numericInput}
                   />
@@ -444,9 +454,13 @@ export default function StoreSettings(): JSX.Element {
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          {saved ? <Text style={styles.saved}>Saqlandi</Text> : null}
+          {saved ? <Text style={styles.saved}>{t.measurements.saved}</Text> : null}
 
-          <Button title="Saqlash" loading={save.isPending} onPress={() => save.mutate()} />
+          <Button
+            title={t.measurements.save}
+            loading={save.isPending}
+            onPress={() => save.mutate()}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
