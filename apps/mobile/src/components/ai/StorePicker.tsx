@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getTryonStores, type TryonStore } from '../../api/endpoints';
+import { useI18n } from '../../i18n';
 import { useLocationStore } from '../../store/locationStore';
 import { colors, fonts, radius, spacing, text } from '../../theme/tokens';
 import { Icon } from '../Icon';
@@ -57,6 +58,7 @@ export function StorePicker({
   gender = null,
 }: StorePickerProps): JSX.Element {
   const insets = useSafeAreaInsets();
+  const t = useI18n((state) => state.t);
   const coords = useLocationStore((state) => state.coords);
   const [mounted, setMounted] = useState(visible);
   const transition = useRef(new Animated.Value(visible ? 1 : 0)).current;
@@ -117,7 +119,7 @@ export function StorePicker({
       <AnimatedPressable
         style={[styles.backdrop, { opacity: transition }]}
         onPress={onClose}
-        accessibilityLabel="Yopish"
+        accessibilityLabel={t.fitting.pickerClose}
       />
 
       <Animated.View
@@ -134,11 +136,11 @@ export function StorePicker({
 
         <View style={styles.head}>
           <View style={styles.headText}>
-            <Text style={styles.title}>Do‘konni almashtirish</Text>
+            <Text style={styles.title}>{t.fitting.pickerTitle}</Text>
             <Text style={styles.hint}>
               {size
-                ? `Faqat ${size} o‘lchami omborda bor do‘konlar`
-                : 'Kiyimlar va buyurtma tanlangan do‘kondan bo‘ladi'}
+                ? t.fitting.pickerHintSize.replace('{size}', size)
+                : t.fitting.pickerHintDefault}
             </Text>
           </View>
           <Pressable onPress={onClose} hitSlop={10} style={styles.close}>
@@ -151,8 +153,8 @@ export function StorePicker({
         ) : list.length === 0 ? (
           <Text style={styles.empty}>
             {size
-              ? `Hech bir do‘konda ${size} o‘lchamidagi kiyim topilmadi.`
-              : 'Hozircha AI kiyintira oladigan do‘kon yo‘q.'}
+              ? t.fitting.pickerEmptySize.replace('{size}', size)
+              : t.fitting.pickerEmptyDefault}
           </Text>
         ) : (
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
@@ -183,7 +185,7 @@ export function StorePicker({
                       {store.name}
                     </Text>
                     <Text style={styles.meta} numberOfLines={1}>
-                      {store.garmentCount} ta kiyim
+                      {t.fitting.pickerGarmentCount.replace('{n}', String(store.garmentCount))}
                       {store.distanceM === null
                         ? ''
                         : ` · ${(store.distanceM / 1000).toFixed(1)} km`}

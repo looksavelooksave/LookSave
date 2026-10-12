@@ -122,23 +122,26 @@ const STRIP_ITEM = 72 + spacing.sm;
  * kiyim beldan hisoblanadi.
  */
 /*
- * Uslub nomlari. Slug bazada (`products.tags`), tarjima shu yerda —
- * sotuvchi formasidagi ro'yxat bilan bir xil bo'lishi shart.
+ * Uslub nomlari. Slug bazada (`products.tags`), tarjima esa i18n lug'atida
+ * (`seller.style*`) — sotuvchi formasidagi ro'yxat bilan bir xil manba.
  */
-const STYLE_LABEL: Record<GarmentStyle, string> = {
-  casual: 'Kundalik',
-  sport: 'Sport',
-  streetwear: 'Streetwear',
-  classic: 'Klassik',
-  minimal: 'Minimal',
+const STYLE_KEY: Record<GarmentStyle, 'styleCasual' | 'styleSport' | 'styleStreetwear' | 'styleClassic' | 'styleMinimal'> = {
+  casual: 'styleCasual',
+  sport: 'styleSport',
+  streetwear: 'styleStreetwear',
+  classic: 'styleClassic',
+  minimal: 'styleMinimal',
 };
 
-const TABS: Array<{ category: string; label: string; icon: IconName; slot: string }> = [
-  { category: 'tshirt', label: 'Futbolka', icon: 'slotTop', slot: 'top' },
-  { category: 'hoodie', label: 'Xudi', icon: 'slotTop', slot: 'top' },
-  { category: 'jacket', label: 'Kurtka', icon: 'slotOuter', slot: 'outer' },
-  { category: 'shirt', label: "Ko'ylak", icon: 'slotTop', slot: 'top' },
-  { category: 'trousers', label: 'Shim', icon: 'slotBottom', slot: 'bottom' },
+/** Tab yorlig'i i18n'dan olinadi (`fitting.tab*`). */
+type FittingTabKey = 'tabTshirt' | 'tabHoodie' | 'tabJacket' | 'tabShirt' | 'tabTrousers' | 'tabFeet';
+
+const TABS: Array<{ category: string; labelKey: FittingTabKey; icon: IconName; slot: string }> = [
+  { category: 'tshirt', labelKey: 'tabTshirt', icon: 'slotTop', slot: 'top' },
+  { category: 'hoodie', labelKey: 'tabHoodie', icon: 'slotTop', slot: 'top' },
+  { category: 'jacket', labelKey: 'tabJacket', icon: 'slotOuter', slot: 'outer' },
+  { category: 'shirt', labelKey: 'tabShirt', icon: 'slotTop', slot: 'top' },
+  { category: 'trousers', labelKey: 'tabTrousers', icon: 'slotBottom', slot: 'bottom' },
   /*
    * ⚠️ OYOQ KIYIMIDA TURKUM YO'Q — ATAYIN.
    *
@@ -147,7 +150,7 @@ const TABS: Array<{ category: string; label: string; icon: IconName; slot: strin
    * ko'rinmasdi. Bo'sh `category` esa serverga faqat SLOT bo'yicha
    * filtrlashni aytadi va beshalasi ham chiqadi.
    */
-  { category: '', label: 'Oyoq kiyim', icon: 'slotFeet', slot: 'feet' },
+  { category: '', labelKey: 'tabFeet', icon: 'slotFeet', slot: 'feet' },
 ];
 
 /** Biror natija hali kelmayotgan bo'lsa ro'yxat qayta so'raladi. */
@@ -162,6 +165,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useI18n((state) => state.t);
+  /** Uslub yorlig'i — sotuvchi formasi bilan bir manba (`seller.style*`). */
+  const styleLabel = (style: GarmentStyle): string => t.seller[STYLE_KEY[style]];
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
 
   const [tab, setTab] = useState('tshirt');
@@ -291,7 +296,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['favorites'] });
     },
-    onError: () => setNotice('Sevimlilarga qo`shib bo`lmadi'),
+    onError: () => setNotice(t.fitting.favFail),
   });
 
   /*
@@ -538,14 +543,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
       for (const line of lines) await addToCart(line.variantId, line.chosenSize);
       return lines.length;
     },
-    onSuccess: (count) => setNotice(`${count} ta mahsulot savatga qo\`shildi`),
+    onSuccess: (count) => setNotice(t.fitting.addedToCart.replace('{n}', String(count))),
     onError: (err) => setNotice(explainError(err, t)),
   });
 
   if (!signedIn) {
     return (
       <Screen>
-        <SignInRequired hint="Kiyintirish avataringizga bog`langan." />
+        <SignInRequired hint={t.fitting.signInHint} />
       </Screen>
     );
   }
@@ -678,7 +683,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         {showBack ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Orqaga"
+            accessibilityLabel={t.fitting.back}
             hitSlop={10}
             onPress={() => goBack('/(tabs)')}
             style={styles.headerButton}
@@ -689,7 +694,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           <View style={styles.headerButton} />
         )}
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Kiyintirish</Text>
+          <Text style={styles.headerTitle}>{t.fitting.title}</Text>
           {/*
             ⚠️ SARLAVHA OSTIDA DO'KON — VA U BOSILADI. Ilgari bu yerda
             «Kiyimni tanlang» degan yozuv turardi: u hech narsa
@@ -700,14 +705,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           <Pressable onPress={() => setStoreOpen(true)} hitSlop={8} style={styles.storeChip}>
             <Icon name="stores" size={12} color={colors.accent} />
             <Text style={styles.storeChipText} numberOfLines={1}>
-              {storeName ?? "Do'kon tanlang"}
+              {storeName ?? t.fitting.storePick}
             </Text>
             <Icon name="next" size={12} color={colors.textDim} />
           </Pressable>
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Avatarni almashtirish"
+          accessibilityLabel={t.fitting.changeAvatar}
           hitSlop={10}
           onPress={() => router.push('/ai/avatar')}
           style={styles.headerButton}
@@ -759,10 +764,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         {currentWorking && !worn ? (
           <View style={styles.workingOverlay} pointerEvents="none">
             <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.workingTitle}>5 daqiqada tayyor bo`ladi</Text>
-            <Text style={styles.workingHint}>
-              Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring
-            </Text>
+            <Text style={styles.workingTitle}>{t.fitting.readyTitle}</Text>
+            <Text style={styles.workingHint}>{t.fitting.readyHint}</Text>
           </View>
         ) : null}
 
@@ -770,7 +773,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
           <Control
             icon="zoom"
-            label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
+            label={zoomed ? t.fitting.zoomOut : t.fitting.zoomIn}
             onPress={() => setZoomed((value) => !value)}
           />
         </View>
@@ -786,12 +789,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Sizga mos uslub"
+          accessibilityLabel={t.fitting.suggestStyle}
           onPress={() => router.push('/ai/look')}
           style={styles.suggestCard}
         >
           <Icon name="looks" size={22} color={colors.accent} />
-          <Text style={styles.suggestText}>Sizga{'\n'}mos uslub</Text>
+          <Text style={styles.suggestText}>{t.fitting.suggestCard}</Text>
         </Pressable>
 
         {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
@@ -813,9 +816,9 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         {currentWorking ? (
           <View style={styles.overlay} pointerEvents="none">
             <ActivityIndicator color={colors.accent} />
-            <Text style={styles.overlayText}>AI kiyintirmoqda…</Text>
+            <Text style={styles.overlayText}>{t.fitting.workingTitle}</Text>
             <Text style={styles.overlayHint}>
-              {stripBase.ready ? 'Har qatlam 10–20 soniya' : 'Avval ostidagi qatlam tayyorlanmoqda'}
+              {stripBase.ready ? t.fitting.workingHintReady : t.fitting.workingHintBase}
             </Text>
           </View>
         ) : null}
@@ -823,17 +826,17 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         {preparingCutout ? (
           <View style={styles.overlay} pointerEvents="none">
             <ActivityIndicator color={colors.accent} />
-            <Text style={styles.overlayText}>Avatar sahnaga tayyorlanmoqda…</Text>
-            <Text style={styles.overlayHint}>Fon bir marta ajratiladi</Text>
+            <Text style={styles.overlayText}>{t.fitting.preparingTitle}</Text>
+            <Text style={styles.overlayHint}>{t.fitting.preparingHint}</Text>
           </View>
         ) : null}
 
         {failed && !currentWorking ? (
           <View style={styles.overlay} pointerEvents="none">
             <Icon name="close" size={26} color={colors.danger} />
-            <Text style={styles.overlayText}>Kiyintirib bo`lmadi</Text>
+            <Text style={styles.overlayText}>{t.fitting.failedTitle}</Text>
             <Text style={styles.overlayHint} numberOfLines={2}>
-              {failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring'}
+              {t.fitting.failedHint}
             </Text>
           </View>
         ) : null}
@@ -878,7 +881,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                   numberOfLines={1}
                   style={[styles.tabText, active && styles.tabTextActive]}
                 >
-                  {item.label}
+                  {t.fitting[item.labelKey]}
                 </Text>
                 {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
                 {dressed ? <View style={styles.tabDressed} /> : null}
@@ -908,12 +911,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                 key={item}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
+                accessibilityLabel={t.fitting.styleAria.replace('{name}', styleLabel(item))}
                 onPress={() => setStyleFilter((value) => (value === item ? null : item))}
                 style={[styles.styleChip, active && styles.styleChipActive]}
               >
                 <Text style={[styles.styleChipText, active && { color: colors.text }]}>
-                  {STYLE_LABEL[item]}
+                  {styleLabel(item)}
                 </Text>
               </Pressable>
             );
@@ -925,9 +928,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         {limitReached ? (
           <View style={styles.banner}>
             <Icon name="clock" size={14} color={colors.warning} />
-            <Text style={styles.bannerText}>
-              Kunlik AI chegarasi tugadi. Tayyor suratlar qoladi, yangilari ertaga.
-            </Text>
+            <Text style={styles.bannerText}>{t.fitting.limitBanner}</Text>
           </View>
         ) : null}
 
@@ -943,28 +944,33 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           <View style={styles.emptyBox}>
             <Text style={styles.emptyStrip}>
               {styleFilter
-                ? `${STYLE_LABEL[styleFilter]} uslubidagi ${activeTab?.label.toLowerCase()} topilmadi`
+                ? t.fitting.emptyStyle
+                    .replace('{style}', styleLabel(styleFilter))
+                    .replace('{tab}', (activeTab ? t.fitting[activeTab.labelKey] : '').toLowerCase())
                 : sizeFilter
-                  ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
-                  : 'Bu turkumda hozircha kiyim yo`q'}
+                  ? t.fitting.emptySize
+                      .replace('{store}', storeName ?? t.fitting.emptyStore)
+                      .replace('{size}', sizeFilter)
+                      .replace('{tab}', (activeTab ? t.fitting[activeTab.labelKey] : '').toLowerCase())
+                  : t.fitting.emptyGeneric}
             </Text>
             <View style={styles.emptyActions}>
               {/* Uslub filtri bo'sh qilgan bo'lsa — birinchi chiqish yo'li shu */}
               {styleFilter ? (
                 <Button
-                  title="Uslub filtrini olib tashlash"
+                  title={t.fitting.clearStyle}
                   variant="ghost"
                   onPress={() => setStyleFilter(null)}
                 />
               ) : null}
               {sizeFilter ? (
                 <Button
-                  title="Barcha o`lchamlarni ko`rsat"
+                  title={t.fitting.showAllSizes}
                   variant="ghost"
                   onPress={() => setOnlyMySize(false)}
                 />
               ) : null}
-              <Button title="Boshqa do`kon tanlash" onPress={() => setStoreOpen(true)} />
+              <Button title={t.fitting.pickOtherStore} onPress={() => setStoreOpen(true)} />
             </View>
           </View>
         ) : (
@@ -1061,8 +1067,8 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                   accessibilityRole="button"
                   accessibilityLabel={
                     favoriteIds.has(current.productId)
-                      ? 'Sevimlilardan olib tashlash'
-                      : 'Sevimlilarga qo`shish'
+                      ? t.fitting.favRemove
+                      : t.fitting.favAdd
                   }
                   accessibilityState={{ selected: favoriteIds.has(current.productId) }}
                   hitSlop={6}
@@ -1090,14 +1096,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                 */}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Ulashish"
+                  accessibilityLabel={t.fitting.shareAria}
                   hitSlop={6}
                   onPress={() => {
                     void Share.share({
                       message: `${current.title} — ${current.store.name}\n${money(
                         current.price,
                         current.currency,
-                      )}\n\nLookSave'da ko'rdim`,
+                      )}\n\n${t.fitting.shareSeen}`,
                     });
                   }}
                   style={styles.roundButton}
@@ -1109,13 +1115,16 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
             {colorOptions.length > 1 ? (
               <>
-                <Text style={styles.label}>Rang</Text>
+                <Text style={styles.label}>{t.fitting.colorLabel}</Text>
                 <View style={styles.colors}>
                   {colorOptions.map((option) => (
                     <Pressable
                       key={option.variantId}
                       accessibilityRole="button"
-                      accessibilityLabel={`Rang: ${option.colorHex ?? 'variant'}`}
+                      accessibilityLabel={t.fitting.colorAria.replace(
+                        '{value}',
+                        option.colorHex ?? 'variant',
+                      )}
                       onPress={() => {
                         putOn(tab, option.variantId);
                       }}
@@ -1140,8 +1149,13 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               <>
                 <View style={styles.sizeHead}>
                   <Text style={styles.label}>
-                    O`lcham
-                    {fitSize ? <Text style={styles.recommend}> · sizga {fitSize}</Text> : null}
+                    {t.fitting.sizeLabel}
+                    {fitSize ? (
+                      <Text style={styles.recommend}>
+                        {' · '}
+                        {t.fitting.sizeRecommend.replace('{size}', fitSize)}
+                      </Text>
+                    ) : null}
                   </Text>
                   {/*
                     Filtr holati ko'rinib tursin: foydalanuvchi ro'yxat
@@ -1160,7 +1174,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                         color={onlyMySize ? colors.accent : colors.textDim}
                       />
                       <Text style={[styles.filterText, onlyMySize && { color: colors.accent }]}>
-                        Faqat mening o`lchamim
+                        {t.fitting.onlyMySize}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -1192,7 +1206,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                     <View
                       key={`sold-${item}`}
                       accessible
-                      accessibilityLabel={`${item} — tugagan`}
+                      accessibilityLabel={t.fitting.soldOutTag.replace('{size}', item)}
                       style={[styles.size, styles.sizeSoldOut]}
                     >
                       <Text style={styles.sizeSoldOutText}>{item}</Text>
@@ -1201,7 +1215,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                 </View>
               </>
             ) : (
-              <Text style={styles.soldOut}>Bu mahsulot omborda tugagan</Text>
+              <Text style={styles.soldOut}>{t.fitting.soldOutProduct}</Text>
             )}
 
             {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -1218,7 +1232,9 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
             {outfitItems.length > 0 ? (
               <View style={styles.outfitCard}>
                 <View style={styles.outfitHead}>
-                  <Text style={styles.outfitTitle}>Komplekt · {outfitItems.length} ta</Text>
+                  <Text style={styles.outfitTitle}>
+                    {t.fitting.outfitTitle.replace('{n}', String(outfitItems.length))}
+                  </Text>
                   <Text style={styles.outfitTotal}>
                     {money(String(outfitTotal), outfitCurrency)}
                   </Text>
@@ -1233,7 +1249,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                       <Pressable
                         key={layer.category}
                         accessibilityRole="button"
-                        accessibilityLabel={`${item.title} — yechish`}
+                        accessibilityLabel={t.fitting.outfitRemove.replace('{title}', item.title)}
                         onPress={() => remove(layer.category)}
                         style={styles.outfitItem}
                       >
@@ -1255,7 +1271,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                 uzun narxda yozuv ikki qatorga tushardi.
               */}
               <Button
-                title={picked ? 'Savatga qo`shish' : 'O`lcham tanlang'}
+                title={picked ? t.fitting.addToCart : t.fitting.pickSize}
                 icon="tryon"
                 trailingIcon={picked ? 'next' : undefined}
                 pill
@@ -1280,7 +1296,10 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               */}
               {outfitItems.length > 1 ? (
                 <Button
-                  title={`Butun komplektni savatga · ${money(String(outfitTotal), outfitCurrency)}`}
+                  title={t.fitting.addOutfit.replace(
+                    '{total}',
+                    money(String(outfitTotal), outfitCurrency),
+                  )}
                   variant="ghost"
                   disabled={cart.isPending}
                   onPress={() => {
@@ -1296,7 +1315,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                       );
 
                     if (lines.length === 0) {
-                      setNotice('Komplektdagi mahsulotlar omborda tugagan');
+                      setNotice(t.fitting.outfitSoldOut);
                       return;
                     }
 
