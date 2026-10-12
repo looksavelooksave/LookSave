@@ -123,12 +123,7 @@ export default function Profile(): JSX.Element {
   const restricted = profile.data?.trust.isRestricted ?? false;
 
   if (!signedIn) {
-    return (
-      <SignInRequired
-        title="Profilingiz"
-        hint="Buyurtmalar, o‘lchamlar va sevimlilar akkauntingizga bog‘lanadi. Katalogni ko‘rish uchun esa kirish shart emas."
-      />
-    );
+    return <SignInRequired title={t.profile.signInTitle} hint={t.profile.signInHint} />;
   }
 
   return (
@@ -220,7 +215,7 @@ export default function Profile(): JSX.Element {
           <Row
             icon="orders"
             label={t.order.myOrders}
-            hint={openOrders > 0 ? `${openOrders} ta faol` : undefined}
+            hint={openOrders > 0 ? t.profile.ordersActive.replace('{n}', String(openOrders)) : undefined}
             onPress={() => router.push('/orders')}
             isRTL={isRTL}
           />
@@ -239,7 +234,11 @@ export default function Profile(): JSX.Element {
           <Row
             icon="slotTop"
             label={t.profile.myMeasurements}
-            hint={height === undefined ? t.profile.noMeasurements : `${height} sm`}
+            hint={
+              height === undefined
+                ? t.profile.noMeasurements
+                : t.profile.heightCm.replace('{n}', String(height))
+            }
             onPress={() => router.push('/settings/measurements')}
             isRTL={isRTL}
           />
@@ -254,8 +253,8 @@ export default function Profile(): JSX.Element {
           */}
           <Row
             icon="camera"
-            label="Yuz surati"
-            hint={profile.data?.faceTextureUrl ? 'Ko`rish va o`chirish' : 'Qo`shilmagan'}
+            label={t.profile.facePhoto}
+            hint={profile.data?.faceTextureUrl ? t.profile.facePhotoView : t.profile.facePhotoNone}
             onPress={() => router.push('/settings/face-photo')}
             isRTL={isRTL}
           />
@@ -267,8 +266,8 @@ export default function Profile(): JSX.Element {
           */}
           <Row
             icon="stores"
-            label={isSeller ? 'Do`konim' : 'Do`kon ochish'}
-            hint={isSeller ? 'Buyurtmalar va panel' : 'Sotuvchi bo`ling'}
+            label={isSeller ? t.profile.myStore : t.profile.openStore}
+            hint={isSeller ? t.profile.storePanelHint : t.profile.becomeSeller}
             onPress={() => router.push('/seller')}
             isRTL={isRTL}
           />
