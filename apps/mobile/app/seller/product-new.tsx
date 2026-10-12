@@ -26,6 +26,7 @@ import { ApiError } from '../../src/api/client';
 import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { Button, Field, Screen } from '../../src/components/ui';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
 
@@ -47,11 +48,7 @@ import { goBack } from '../../src/navigation/back';
 /** Kiyim uchun standart o'lchamlar — eng ko'p ishlatiladigani. */
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-const GENDERS: Array<{ key: 'male' | 'female' | 'unisex'; label: string }> = [
-  { key: 'male', label: 'Erkak' },
-  { key: 'female', label: 'Ayol' },
-  { key: 'unisex', label: 'Uniseks' },
-];
+const GENDERS: Array<'male' | 'female' | 'unisex'> = ['male', 'female', 'unisex'];
 
 /** Daraxtdagi barcha kategoriyalarni yassi ro'yxatga aylantiradi. */
 function flatten(list: Category[]): Category[] {
@@ -63,15 +60,17 @@ function flatten(list: Category[]): Category[] {
  * bo'lishi shart (`packages/validation/src/store-products.ts`).
  * Kiyintirish burchakni shu indeks bo'yicha topadi.
  */
-const IMAGE_SLOTS = ['Old', 'Orqa', 'Yon'] as const;
+const IMAGE_SLOT_KEYS = ['slotFront', 'slotBack', 'slotSide'] as const satisfies ReadonlyArray<
+  keyof Dictionary['seller']
+>;
 
-/** Slug bazada, ko'rinadigan nom shu yerda — tarjima bazaga tushmaydi */
-const STYLE_LABEL: Record<GarmentStyle, string> = {
-  casual: 'Kundalik',
-  sport: 'Sport',
-  streetwear: 'Streetwear',
-  classic: 'Klassik',
-  minimal: 'Minimal',
+/** Slug bazada, ko'rinadigan nom i18n (`t.seller`) dan */
+const STYLE_LABEL: Record<GarmentStyle, keyof Dictionary['seller']> = {
+  casual: 'styleCasual',
+  sport: 'styleSport',
+  streetwear: 'styleStreetwear',
+  classic: 'styleClassic',
+  minimal: 'styleMinimal',
 };
 
 export default function NewProduct(): JSX.Element {
@@ -82,6 +81,7 @@ export default function NewProduct(): JSX.Element {
    */
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
 
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -103,7 +103,7 @@ export default function NewProduct(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['store', 'products'] });
       router.replace('/seller/products');
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Saqlanmadi'),
+    onError: (err) => setError(err instanceof ApiError ? err.message : t.look.saveFailed),
   });
 
   /** Suratni AYNAN o'z o'rniga qo'yadi (bo'sh oraliq qoldirmaydi). */
@@ -126,7 +126,7 @@ export default function NewProduct(): JSX.Element {
   const pickImage = async (slot: number): Promise<void> => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Ruxsat kerak', 'Rasm tanlash uchun galereyaga ruxsat bering.');
+      Alert.alert(t.photo.permissionTitle, t.seller.imgPermBody);
       return;
     }
 
@@ -156,22 +156,18 @@ export default function NewProduct(): JSX.Element {
         const prepared = await prepareGarmentImage(url);
 
         if (prepared.warning) {
-          Alert.alert('Surat mos kelmasligi mumkin', prepared.warning, [
-            { text: 'Baribir qo`shish', onPress: () => putAt(slot, url) },
-            { text: 'Bekor qilish', style: 'cancel' },
+          Alert.alert(t.seller.imgWarnTitle, prepared.warning, [
+            { text: t.seller.addAnyway, onPress: () => putAt(slot, url) },
+            { text: t.common.cancel, style: 'cancel' },
           ]);
           return;
         }
 
         finalUrl = await new Promise<string>((resolve) => {
-          Alert.alert(
-            'Fon olib tashlandi',
-            'Kiyintirish uchun oq fonli variant yaxshiroq natija beradi. Qaysinisini qo`shamiz?',
-            [
-              { text: 'Tozalangani', onPress: () => resolve(prepared.cleanedUrl) },
-              { text: 'Asl surat', onPress: () => resolve(url) },
-            ],
-          );
+          Alert.alert(t.seller.bgRemovedTitle, t.seller.bgRemovedBody, [
+            { text: t.seller.cleaned, onPress: () => resolve(prepared.cleanedUrl) },
+            { text: t.seller.original, onPress: () => resolve(url) },
+          ]);
         });
       } catch {
         // Ishlov bermasa asl surat qoladi — yuklash bekor qilinmaydi
@@ -179,7 +175,7 @@ export default function NewProduct(): JSX.Element {
 
       putAt(slot, finalUrl);
     } catch {
-      Alert.alert('Yuklanmadi', 'Rasmni yuklab bo`lmadi. Internetni tekshiring.');
+      Alert.alert(t.seller.uploadFailedTitle, t.seller.imgUploadFailedBody);
     } finally {
       setUploading(false);
     }
@@ -196,16 +192,16 @@ export default function NewProduct(): JSX.Element {
   const submit = (status: 'draft' | 'pending'): void => {
     setError(null);
 
-    if (title.trim().length < 2) return setError('Mahsulot nomini kiriting');
-    if (!categoryId) return setError('Kategoriyani tanlang');
-    if (!/^\d+(\.\d{1,2})?$/.test(price.trim())) return setError('Narxni raqam bilan kiriting');
+    if (title.trim().length < 2) return setError(t.seller.errTitle);
+    if (!categoryId) return setError(t.seller.errCategory);
+    if (!/^\d+(\.\d{1,2})?$/.test(price.trim())) return setError(t.seller.errPrice);
 
     const chosen = Object.entries(sizes);
-    if (chosen.length === 0) return setError('Kamida bitta o`lcham tanlang');
+    if (chosen.length === 0) return setError(t.seller.errSize);
 
     // Serverdagi qoida — moderatsiyaga kamida 3 rasm
     if (status === 'pending' && images.length < 3) {
-      return setError('Tekshiruvga yuborish uchun kamida 3 ta rasm kerak');
+      return setError(t.seller.err3Images);
     }
 
     create.mutate({
@@ -238,8 +234,8 @@ export default function NewProduct(): JSX.Element {
   return (
     <Screen>
       <SellerHeader
-        title="Yangi mahsulot"
-        subtitle="Katalogga qo`shish"
+        title={t.seller.newTitle}
+        subtitle={t.seller.newSubtitle}
         onBack={() => goBack('/seller/products')}
       />
 
@@ -249,10 +245,8 @@ export default function NewProduct(): JSX.Element {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {/* Rasmlar */}
-          <Text style={styles.label}>Rasmlar</Text>
-          <Text style={styles.hint}>
-            Uchala tomon ham kerak — odam burilganda kiyintirish shu suratlardan oladi
-          </Text>
+          <Text style={styles.label}>{t.seller.imagesLabel}</Text>
+          <Text style={styles.hint}>{t.seller.imagesHint}</Text>
           {/*
             ⚠️ UCHTA BELGILANGAN UYACHA, umumiy gallereya EMAS.
 
@@ -264,13 +258,14 @@ export default function NewProduct(): JSX.Element {
             Tartib `GARMENT_ANGLE_ORDER` bilan bir xil: old, orqa, yon.
           */}
           <View style={styles.images}>
-            {IMAGE_SLOTS.map((slot, index) => {
+            {IMAGE_SLOT_KEYS.map((slotKey, index) => {
               const url = images[index];
+              const slotLabel = t.seller[slotKey];
               return (
-                <View key={slot} style={styles.imageWrap}>
+                <View key={slotKey} style={styles.imageWrap}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`${slot} surati`}
+                    accessibilityLabel={slotLabel}
                     onPress={() => void pickImage(index)}
                     disabled={uploading}
                     style={styles.imageAdd}
@@ -289,7 +284,7 @@ export default function NewProduct(): JSX.Element {
                   {url ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`${slot} suratini olib tashlash`}
+                      accessibilityLabel={slotLabel}
                       onPress={() => setImages((current) => current.filter((_, i) => i !== index))}
                       style={styles.imageRemove}
                     >
@@ -297,15 +292,20 @@ export default function NewProduct(): JSX.Element {
                     </Pressable>
                   ) : null}
 
-                  <Text style={styles.slotLabel}>{slot}</Text>
+                  <Text style={styles.slotLabel}>{slotLabel}</Text>
                 </View>
               );
             })}
           </View>
 
-          <Field label="Nomi" value={title} onChangeText={setTitle} placeholder="Oq futbolka" />
           <Field
-            label="Narxi"
+            label={t.seller.nameLabel}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t.seller.phProductName}
+          />
+          <Field
+            label={t.seller.priceField}
             value={price}
             onChangeText={(value) => setPrice(value.replace(/[^0-9.]/g, ''))}
             keyboardType="decimal-pad"
@@ -313,7 +313,7 @@ export default function NewProduct(): JSX.Element {
           />
 
           {/* Kategoriya */}
-          <Text style={styles.label}>Kategoriya</Text>
+          <Text style={styles.label}>{t.seller.categoryLabel}</Text>
           <View style={styles.chips}>
             {options.map((item) => (
               <Pressable
@@ -330,25 +330,29 @@ export default function NewProduct(): JSX.Element {
           </View>
 
           {/* Jins */}
-          <Text style={styles.label}>Kimga</Text>
+          <Text style={styles.label}>{t.seller.genderLabel}</Text>
           <View style={styles.chips}>
-            {GENDERS.map((item) => (
-              <Pressable
-                key={item.key}
-                accessibilityRole="button"
-                onPress={() => setGender(item.key)}
-                style={[styles.chip, gender === item.key && styles.chipActive]}
-              >
-                <Text style={[styles.chipText, gender === item.key && { color: colors.text }]}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            ))}
+            {GENDERS.map((key) => {
+              const label =
+                key === 'male' ? t.avatar.male : key === 'female' ? t.avatar.female : t.seller.unisex;
+              return (
+                <Pressable
+                  key={key}
+                  accessibilityRole="button"
+                  onPress={() => setGender(key)}
+                  style={[styles.chip, gender === key && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, gender === key && { color: colors.text }]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           {/* Uslub */}
-          <Text style={styles.label}>Uslub</Text>
-          <Text style={styles.hint}>Xaridor kiyintirish ekranida shu bo`yicha filtrlaydi</Text>
+          <Text style={styles.label}>{t.ai.styleLabel}</Text>
+          <Text style={styles.hint}>{t.seller.styleHint}</Text>
           <View style={styles.chips}>
             {GARMENT_STYLES.map((item) => (
               <Pressable
@@ -359,14 +363,14 @@ export default function NewProduct(): JSX.Element {
                 style={[styles.chip, style === item && styles.chipActive]}
               >
                 <Text style={[styles.chipText, style === item && { color: colors.text }]}>
-                  {STYLE_LABEL[item]}
+                  {t.seller[STYLE_LABEL[item]]}
                 </Text>
               </Pressable>
             ))}
           </View>
 
           {/* O'lchamlar */}
-          <Text style={styles.label}>O`lchamlar va qoldiq</Text>
+          <Text style={styles.label}>{t.seller.sizesLabel}</Text>
           <View style={styles.chips}>
             {SIZE_PRESETS.map((size) => (
               <Pressable
@@ -393,7 +397,7 @@ export default function NewProduct(): JSX.Element {
                       setSizes((current) => ({ ...current, [size]: value.replace(/[^0-9]/g, '') }))
                     }
                     keyboardType="number-pad"
-                    placeholder="dona"
+                    placeholder={t.seller.phPcs}
                   />
                 </View>
               ))}
@@ -401,10 +405,10 @@ export default function NewProduct(): JSX.Element {
           ) : null}
 
           <Field
-            label="Tavsif"
+            label={t.seller.descLabel}
             value={description}
             onChangeText={setDescription}
-            placeholder="Mato, kelib chiqishi, parvarish"
+            placeholder={t.seller.phDescDetail}
             multiline
           />
 
@@ -412,12 +416,12 @@ export default function NewProduct(): JSX.Element {
 
           <View style={styles.actions}>
             <Button
-              title="Tekshiruvga yuborish"
+              title={t.seller.submitReview}
               onPress={() => submit('pending')}
               loading={create.isPending}
             />
             <Button
-              title="Qoralama sifatida saqlash"
+              title={t.seller.saveDraft}
               variant="ghost"
               onPress={() => submit('draft')}
               disabled={create.isPending}
