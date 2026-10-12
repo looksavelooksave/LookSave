@@ -7,6 +7,7 @@ import { getFullProfile, updateProfile } from '../../src/api/endpoints';
 import { Icon, type IconName } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, ErrorView, Loading } from '../../src/components/ui';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
@@ -26,15 +27,16 @@ import { goBack } from '../../src/navigation/back';
  * o'chirmagan bo'lardi.
  */
 
-/** Rozilik ekranidagi bandlar bilan bir xil — matn ikki joyda ajralib ketmasin. */
-const FACTS: Array<{ icon: IconName; text: string }> = [
-  { icon: 'premium', text: 'Avatar yasash uchun tashqi AI xizmatiga yuborilgan' },
-  { icon: 'looks', text: 'Serverimizda saqlanadi — havolani bilgan odam ocha oladi' },
-  { icon: 'trash', text: 'O‘chirilganda fayl serverdan ham butunlay yo‘q qilinadi' },
+/** Rozilik ekranidagi bandlar bilan bir xil — matni i18n (`t.facePhoto`) dan. */
+const FACTS: Array<{ icon: IconName; key: keyof Dictionary['facePhoto'] }> = [
+  { icon: 'premium', key: 'fact1' },
+  { icon: 'looks', key: 'fact2' },
+  { icon: 'trash', key: 'fact3' },
 ];
 
 export default function FacePhoto(): JSX.Element {
   const authStatus = useAuthStore((state) => state.status);
+  const t = useI18n((state) => state.t);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [done, setDone] = useState(false);
@@ -58,38 +60,38 @@ export default function FacePhoto(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['avatar'] });
       setDone(true);
     },
-    onError: () => Alert.alert('O‘chirilmadi', 'Tarmoqni tekshirib, qayta urinib ko‘ring.'),
+    onError: () => Alert.alert(t.facePhoto.deleteFailedTitle, t.facePhoto.deleteFailedBody),
   });
 
   if (authStatus !== 'signedIn') {
-    return <SignInRequired title="Yuz surati" hint="Ko‘rish uchun hisobingizga kiring." />;
+    return <SignInRequired title={t.profile.facePhoto} hint={t.facePhoto.signInHint} />;
   }
 
   if (profile.isLoading) return <Loading />;
   if (profile.isError) {
-    return <ErrorView message="Profil yuklanmadi" onRetry={() => void profile.refetch()} />;
+    return <ErrorView message={t.avatar.profileLoadError} onRetry={() => void profile.refetch()} />;
   }
 
   const url = profile.data?.faceTextureUrl ?? null;
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Yuz surati</Text>
+      <Text style={styles.title}>{t.profile.facePhoto}</Text>
 
       {done || !url ? (
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
             <Icon name={done ? 'authentic' : 'camera'} size={22} color={colors.accent} />
           </View>
-          <Text style={styles.emptyTitle}>{done ? 'Surat o‘chirildi' : 'Yuz surati yo‘q'}</Text>
+          <Text style={styles.emptyTitle}>
+            {done ? t.facePhoto.deletedTitle : t.facePhoto.noFaceTitle}
+          </Text>
           <Text style={styles.emptyHint}>
-            {done
-              ? 'Fayl serverdan ham o‘chirildi. Avatar endi faqat o‘lchovlaringizdan yasaladi.'
-              : 'Avatar hozir faqat o‘lchovlaringizdan yasaladi. Xohlasangiz yuz qo‘shishingiz mumkin.'}
+            {done ? t.facePhoto.deletedHint : t.facePhoto.noFaceHint}
           </Text>
 
           {!done ? (
-            <Button title="Yuz skaneriga o‘tish" onPress={() => router.push('/ai/avatar')} />
+            <Button title={t.facePhoto.goToScanner} onPress={() => router.push('/ai/avatar')} />
           ) : null}
         </View>
       ) : (
@@ -100,35 +102,31 @@ export default function FacePhoto(): JSX.Element {
 
           <View style={styles.facts}>
             {FACTS.map((fact) => (
-              <View key={fact.text} style={styles.factRow}>
+              <View key={fact.key} style={styles.factRow}>
                 <Icon name={fact.icon} size={14} color={colors.textMuted} />
-                <Text style={styles.factText}>{fact.text}</Text>
+                <Text style={styles.factText}>{t.facePhoto[fact.key]}</Text>
               </View>
             ))}
           </View>
 
           <Button
-            title="Suratni o‘chirish"
+            title={t.facePhoto.deletePhoto}
             variant="danger"
             loading={remove.isPending}
             onPress={() =>
-              Alert.alert(
-                'Yuz suratini o‘chirish',
-                'Surat serverdan butunlay o‘chadi va avatar uni ishlatmay qo‘yadi. Bu amalni qaytarib bo‘lmaydi.',
-                [
-                  { text: 'Bekor qilish', style: 'cancel' },
-                  {
-                    text: 'O‘chirish',
-                    style: 'destructive',
-                    onPress: () => remove.mutate(),
-                  },
-                ],
-              )
+              Alert.alert(t.facePhoto.deleteConfirmTitle, t.facePhoto.deleteConfirmBody, [
+                { text: t.common.cancel, style: 'cancel' },
+                {
+                  text: t.facePhoto.delete,
+                  style: 'destructive',
+                  onPress: () => remove.mutate(),
+                },
+              ])
             }
           />
 
           <Pressable onPress={() => goBack('/profile')} style={styles.back}>
-            <Text style={styles.backText}>Orqaga</Text>
+            <Text style={styles.backText}>{t.facePhoto.back}</Text>
           </Pressable>
         </>
       )}

@@ -34,6 +34,7 @@ import {
   WeightIcon,
 } from '../../src/components/MeasureIcons';
 import { SignInRequired } from '../../src/components/SignInRequired';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
@@ -47,17 +48,17 @@ type Glyph = (props: { size?: number; color?: string }) => JSX.Element;
 
 const FIELDS: Array<{
   key: keyof Measurements;
-  label: string;
+  labelKey: keyof Dictionary['measurements'];
   hint: string;
-  unit: string;
+  unitKey: keyof Dictionary['measurements'];
   icon: Glyph;
 }> = [
-  { key: 'height', label: "BO'Y", hint: '120–220', unit: 'sm', icon: HeightIcon },
-  { key: 'weight', label: 'VAZN', hint: '30–200', unit: 'kg', icon: WeightIcon },
-  { key: 'chest', label: "KO'KRAK · ENG KENG JOYI", hint: '30–250', unit: 'sm', icon: ChestIcon },
-  { key: 'waist', label: 'BEL · ENG INGICHKA JOYI', hint: '30–250', unit: 'sm', icon: WaistIcon },
-  { key: 'hips', label: 'SON · ENG KENG JOYI', hint: '30–250', unit: 'sm', icon: HipsIcon },
-  { key: 'shoeSize', label: "OYOQ O'LCHAMI", hint: '30–50', unit: 'EU', icon: ShoeIcon },
+  { key: 'height', labelKey: 'heightLabel', hint: '120–220', unitKey: 'unitCm', icon: HeightIcon },
+  { key: 'weight', labelKey: 'weightLabel', hint: '30–200', unitKey: 'unitKg', icon: WeightIcon },
+  { key: 'chest', labelKey: 'chestLabel', hint: '30–250', unitKey: 'unitCm', icon: ChestIcon },
+  { key: 'waist', labelKey: 'waistLabel', hint: '30–250', unitKey: 'unitCm', icon: WaistIcon },
+  { key: 'hips', labelKey: 'hipsLabel', hint: '30–250', unitKey: 'unitCm', icon: HipsIcon },
+  { key: 'shoeSize', labelKey: 'shoeLabel', hint: '30–50', unitKey: 'unitEu', icon: ShoeIcon },
 ];
 
 /** Blendshape qiymati 0…1 — foydalanuvchiga chiziq sifatida ko'rsatiladi. */
@@ -72,19 +73,20 @@ function MorphBar({ label, value }: { label: string; value: number }): JSX.Eleme
   );
 }
 
-const MORPH_LABELS: Array<{ key: keyof MorphTargets; label: string }> = [
-  { key: 'height', label: "Bo'y" },
-  { key: 'weight', label: 'Hajm' },
-  { key: 'shoulderWidth', label: 'Yelka' },
-  { key: 'chest', label: "Ko'krak" },
-  { key: 'waist', label: 'Bel' },
-  { key: 'hips', label: 'Son' },
+const MORPH_LABELS: Array<{ key: keyof MorphTargets; labelKey: keyof Dictionary['measurements'] }> = [
+  { key: 'height', labelKey: 'morphHeight' },
+  { key: 'weight', labelKey: 'morphVolume' },
+  { key: 'shoulderWidth', labelKey: 'morphShoulder' },
+  { key: 'chest', labelKey: 'morphChest' },
+  { key: 'waist', labelKey: 'morphWaist' },
+  { key: 'hips', labelKey: 'morphHips' },
 ];
 
 export default function MeasurementsScreen(): JSX.Element {
   const queryClient = useQueryClient();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useI18n((state) => state.t);
 
   /*
    * ⚠️ QOROVUL BARCHA HOOKLARDAN KEYIN QAYTARADI, lekin holat SHU YERDA
@@ -154,8 +156,8 @@ export default function MeasurementsScreen(): JSX.Element {
     onError: (err) => {
       setError(
         err instanceof ApiError && err.code === 'VALIDATION_ERROR'
-          ? "O'lchamlardan biri chegaradan chiqdi. Qiymatlarni tekshiring."
-          : "Saqlab bo'lmadi",
+          ? t.measurements.validationError
+          : t.measurements.saveFailed,
       );
     },
   });
@@ -169,9 +171,19 @@ export default function MeasurementsScreen(): JSX.Element {
     );
   }
 
-  if (profile.isLoading) return <Loading />;
+  if (profile.isLoading) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
   if (profile.isError || !profile.data) {
-    return <ErrorView message="Profilni yuklab bo'lmadi" onRetry={() => void profile.refetch()} />;
+    return (
+      <Screen>
+        <ErrorView message={t.measurements.profileLoadError} onRetry={() => void profile.refetch()} />
+      </Screen>
+    );
   }
 
   const morphs = save.data?.morphTargets ?? profile.data.morphTargets;
@@ -192,7 +204,7 @@ export default function MeasurementsScreen(): JSX.Element {
           >
             <Icon name="back" size={20} color={colors.text} />
           </Pressable>
-          <Text style={styles.topTitle}>O'lchamlarim</Text>
+          <Text style={styles.topTitle}>{t.profile.myMeasurements}</Text>
           {/* O'ng tomonda muvozanat uchun bo'sh joy — sarlavha markazda tursin */}
           <View style={styles.roundButtonGhost} />
         </View>
@@ -207,10 +219,7 @@ export default function MeasurementsScreen(): JSX.Element {
             <View style={styles.introIcon}>
               <TapeIcon size={30} color={colors.accent} />
             </View>
-            <Text style={styles.introText}>
-              O'lchamlar avatar shaklini belgilaydi — kiyim qanday o'tirishini yaqinroq ko'rasiz.
-              Bo'y majburiy, qolganlari ixtiyoriy.
-            </Text>
+            <Text style={styles.introText}>{t.measurements.intro}</Text>
           </View>
 
           {FIELDS.map((field) => {
@@ -224,7 +233,7 @@ export default function MeasurementsScreen(): JSX.Element {
                 <View style={styles.fieldBody}>
                   <View style={styles.fieldHead}>
                     <Text style={styles.fieldLabel} numberOfLines={1}>
-                      {field.label} ({field.unit})
+                      {t.measurements[field.labelKey]} ({t.measurements[field.unitKey]})
                     </Text>
                     <Text style={styles.fieldRange}>{field.hint}</Text>
                   </View>
@@ -246,7 +255,7 @@ export default function MeasurementsScreen(): JSX.Element {
                       style={styles.input}
                     />
                     <View style={styles.unit}>
-                      <Text style={styles.unitText}>{field.unit}</Text>
+                      <Text style={styles.unitText}>{t.measurements[field.unitKey]}</Text>
                     </View>
                   </View>
                 </View>
@@ -271,19 +280,21 @@ export default function MeasurementsScreen(): JSX.Element {
               style={[styles.saveButton, save.isPending && { opacity: 0.6 }]}
             >
               <Icon name="tryon" size={18} color={colors.text} />
-              <Text style={styles.saveText}>{saved ? 'Saqlandi' : 'Saqlash'}</Text>
+              <Text style={styles.saveText}>
+                {saved ? t.measurements.saved : t.measurements.save}
+              </Text>
             </LinearGradient>
           </Pressable>
 
           <View style={styles.morphs}>
             <View style={styles.morphHead}>
-              <Text style={styles.morphTitle}>Avatar shakli</Text>
+              <Text style={styles.morphTitle}>{t.measurements.avatarShape}</Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push('/tryon')}
                 style={styles.morphLink}
               >
-                <Text style={styles.morphLinkText}>Ko'rish</Text>
+                <Text style={styles.morphLinkText}>{t.measurements.view}</Text>
                 <Icon name="next" size={14} color={colors.accent} />
               </Pressable>
             </View>
@@ -293,14 +304,16 @@ export default function MeasurementsScreen(): JSX.Element {
                 <FitIcon size={26} color={colors.text} />
               </View>
               <Text style={styles.hint}>
-                {isNeutral
-                  ? "Bo'y kiritilmagan — standart shakl ko'rsatiladi. Aylana o'lchamlarini bo'ysiz hisoblab bo'lmaydi."
-                  : "Sizning o'lchamlaringiz asosida avatar shaklingiz yangilanadi."}
+                {isNeutral ? t.measurements.neutralHint : t.measurements.shapeHint}
               </Text>
             </View>
 
             {MORPH_LABELS.map((morph) => (
-              <MorphBar key={morph.key} label={morph.label} value={morphs[morph.key]} />
+              <MorphBar
+                key={morph.key}
+                label={t.measurements[morph.labelKey]}
+                value={morphs[morph.key]}
+              />
             ))}
           </View>
         </ScrollView>
