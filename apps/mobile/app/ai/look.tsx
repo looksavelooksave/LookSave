@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import {
   addToCart,
   createLook,
@@ -101,7 +101,7 @@ export default function AiLookScreen(): JSX.Element {
       setNotice(t.look.saved);
       void queryClient.invalidateQueries({ queryKey: ['looks'] });
     },
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : t.look.saveFailed),
+    onError: (err) => setNotice(explainError(err, t)),
   });
 
   const buy = useMutation({
@@ -121,7 +121,7 @@ export default function AiLookScreen(): JSX.Element {
       setNotice(t.look.addedToCart);
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : t.look.addFailed),
+    onError: (err) => setNotice(explainError(err, t)),
   });
 
   if (!signedIn) {

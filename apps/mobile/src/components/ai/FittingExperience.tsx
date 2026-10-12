@@ -44,6 +44,8 @@ import {
   type TryonRender,
 } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
+import { explainError } from '../../api/explainError';
+import { useI18n } from '../../i18n';
 import { AvatarStage } from '../../components/ai/AvatarStage';
 import { Icon, type IconName } from '../../components/Icon';
 import { SignInRequired } from '../../components/SignInRequired';
@@ -159,6 +161,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
 
   const [tab, setTab] = useState('tshirt');
@@ -419,7 +422,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     },
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
-      else setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi');
+      else setNotice(explainError(err, t));
     },
   });
 
@@ -429,7 +432,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['renders'] }),
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
-      else setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi');
+      else setNotice(explainError(err, t));
     },
   });
 
@@ -536,7 +539,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
       return lines.length;
     },
     onSuccess: (count) => setNotice(`${count} ta mahsulot savatga qo\`shildi`),
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Qo`shilmadi'),
+    onError: (err) => setNotice(explainError(err, t)),
   });
 
   if (!signedIn) {

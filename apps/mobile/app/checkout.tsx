@@ -14,8 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import { ApiError } from '../src/api/client';
-import { translations } from '../src/i18n';
+import { explainError } from '../src/api/explainError';
 import { createOrder, getCart, type CreateOrderInput } from '../src/api/endpoints';
 import { ErrorView, Field, Loading, Screen } from '../src/components/ui';
 import { Icon, type IconName } from '../src/components/Icon';
@@ -42,34 +41,6 @@ const SCHEDULE_DAYS = Array.from({ length: 12 }, (_, i) => {
     wd: UZ_WEEKDAYS[d.getDay()] ?? '',
   };
 });
-
-/**
- * Server xatolari foydalanuvchi tushunadigan matnga o'giriladi (05-mobile §6.12).
- * Har biri nima qilish kerakligini aytadi — quruq "xato yuz berdi" emas.
- */
-function explain(error: unknown): string {
-  const t = translations().errors;
-  if (!(error instanceof ApiError)) return t.generic;
-
-  switch (error.code) {
-    case 'PHONE_NOT_VERIFIED':
-      return t.phoneNotVerified;
-    case 'OUT_OF_RANGE':
-      return t.outOfRange;
-    case 'LIMIT_REACHED':
-      return t.limitReached;
-    case 'BLOCKED':
-    case 'RESTRICTED':
-      return t.blocked;
-    case 'OUT_OF_STOCK':
-      return t.outOfStock;
-    case 'NETWORK':
-      return t.network;
-    default:
-      // Server matni allaqachon foydalanuvchi tilida keladi
-      return error.message;
-  }
-}
 
 export default function Checkout(): JSX.Element {
   const { storeId } = useLocalSearchParams<{ storeId: string }>();
@@ -154,7 +125,7 @@ export default function Checkout(): JSX.Element {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       router.replace(`/order/${order.id}`);
     },
-    onError: (err) => setError(explain(err)),
+    onError: (err) => setError(explainError(err, t)),
   });
 
   if (cart.isLoading) {

@@ -12,7 +12,7 @@ import {
   type ProductStatusFilter,
   type StoreProduct,
 } from '../../src/api/endpoints';
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { SkeletonList } from '../../src/components/Skeleton';
@@ -71,11 +71,7 @@ export default function SellerProducts(): JSX.Element {
   const remove = useMutation({
     mutationFn: deleteStoreProduct,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store', 'products'] }),
-    onError: (err) =>
-      Alert.alert(
-        t.facePhoto.deleteFailedTitle,
-        err instanceof ApiError ? err.message : t.seller.retryGeneric,
-      ),
+    onError: (err) => Alert.alert(t.facePhoto.deleteFailedTitle, explainError(err, t)),
   });
 
   return (
@@ -296,8 +292,7 @@ function SizeInputs({
     mutationFn: (next: Array<{ size: string; stock: number }>) =>
       updateVariantStock(variantId, next),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store'] }),
-    onError: (err) =>
-      Alert.alert(t.look.saveFailed, err instanceof ApiError ? err.message : t.seller.retryGeneric),
+    onError: (err) => Alert.alert(t.look.saveFailed, explainError(err, t)),
   });
 
   /*

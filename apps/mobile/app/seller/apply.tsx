@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { applyForStore, type StoreApplicationInput } from '../../src/api/endpoints';
-import { ApiError, refreshSession } from '../../src/api/client';
+import { refreshSession } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, Field, Screen } from '../../src/components/ui';
@@ -84,7 +85,7 @@ export default function StoreApply(): JSX.Element {
       router.replace('/seller');
     },
     onError: (err) => {
-      setError(err instanceof ApiError ? err.message : t.seller.applyFailed);
+      setError(explainError(err, t));
     },
   });
 

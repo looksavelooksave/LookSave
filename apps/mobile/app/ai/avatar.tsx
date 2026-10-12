@@ -30,7 +30,7 @@ import {
   type Measurements,
   type UserAvatar,
 } from '../../src/api/endpoints';
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { AvatarBuilding } from '../../src/components/ai/AvatarBuilding';
 import { AvatarQueued } from '../../src/components/ai/AvatarQueued';
 import { Icon, type IconName } from '../../src/components/Icon';
@@ -1242,12 +1242,18 @@ function DoneStep({
   const startError = startAvatar.error;
 
   if (startError) {
-    const message = startError instanceof ApiError ? startError.message : t.avatar.avatarFailed;
     /*
      * Yuz surati yo'qligi — eng ko'p uchraydigan sabab va u tuzatiladi.
      * Shuning uchun bu holatda skanerga qaytish tugmasi ko'rsatiladi.
      */
     const needsFace = !profile.data?.faceTextureUrl;
+    /*
+     * ⚠️ XOM SERVER MATNI EMAS. Server xatosi o'zbekcha keladi; uni
+     * `explainError` kod bo'yicha lokalga o'giradi. Yuz kerak bo'lsa
+     * aniq ko'rsatma (`needFaceHint`) ko'rsatiladi — chunki u umumiy
+     * `VALIDATION_ERROR` kodi bilan keladi va kod bo'yicha ajralmaydi.
+     */
+    const message = needsFace ? t.avatar.needFaceHint : explainError(startError, t);
 
     return (
       <View style={styles.card}>
@@ -1283,14 +1289,19 @@ function DoneStep({
   }
 
   if (status === 'failed') {
-    const message = avatar.data?.error ?? startAvatar.data?.error;
+    /*
+     * ⚠️ XOM SERVER XATOSI KO'RSATILMAYDI. `avatar.data.error` serverda
+     * saqlangan matn (o'zbekcha, masalan OpenAI xatosi) — uni to'g'ridan-
+     * to'g'ri chizsak boshqa tilli foydalanuvchi o'zbekcha ko'rardi.
+     * O'rniga lokal, amaliy maslahat beriladi.
+     */
     return (
       <View style={styles.card}>
         <View style={styles.doneIcon}>
           <Icon name="close" size={32} color={colors.danger} />
         </View>
         <Text style={styles.cardTitle}>{t.avatar.avatarFailed}</Text>
-        <Text style={styles.cardHint}>{message ?? t.avatar.failedFallback}</Text>
+        <Text style={styles.cardHint}>{t.avatar.failedFallback}</Text>
         <Button title={t.avatar.retry} onPress={() => startAvatar.mutate()} />
         <RealPhotoLink />
       </View>

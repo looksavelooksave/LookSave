@@ -22,7 +22,7 @@ import {
   uploadStoreImage,
   type Category,
 } from '../../src/api/endpoints';
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { Button, Field, Screen } from '../../src/components/ui';
@@ -103,7 +103,7 @@ export default function NewProduct(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['store', 'products'] });
       router.replace('/seller/products');
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : t.look.saveFailed),
+    onError: (err) => setError(explainError(err, t)),
   });
 
   /** Suratni AYNAN o'z o'rniga qo'yadi (bo'sh oraliq qoldirmaydi). */

@@ -20,7 +20,7 @@ import {
   uploadStoreImage,
   type WorkingHour,
 } from '../../src/api/endpoints';
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { Button, ErrorView, Field, Loading, Screen } from '../../src/components/ui';
@@ -186,7 +186,7 @@ export default function StoreSettings(): JSX.Element {
       setSaved(true);
       setError(null);
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : t.look.saveFailed),
+    onError: (err) => setError(explainError(err, t)),
   });
 
   if (profile.isLoading) {

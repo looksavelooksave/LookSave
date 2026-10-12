@@ -14,7 +14,7 @@ import {
   type StoreOrder,
   type StoreOrderFilter,
 } from '../../src/api/endpoints';
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { Icon } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { SkeletonList } from '../../src/components/Skeleton';
@@ -178,10 +178,7 @@ export default function SellerOrders(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['store'] });
     },
     onError: (err) => {
-      Alert.alert(
-        t.seller.actionFailed,
-        err instanceof ApiError ? err.message : t.seller.retryGeneric,
-      );
+      Alert.alert(t.seller.actionFailed, explainError(err, t));
     },
   });
 

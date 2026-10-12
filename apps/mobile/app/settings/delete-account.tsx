@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { deleteAccount, getDeletionStatus, restoreAccount } from '../../src/api/endpoints';
 import { Button, ErrorView, Field, Loading } from '../../src/components/ui';
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { useI18n } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
@@ -39,7 +39,7 @@ export default function DeleteAccount(): JSX.Element {
       router.replace('/(auth)/welcome');
     },
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : t.errors.generic);
+      setError(explainError(err, t));
     },
   });
 

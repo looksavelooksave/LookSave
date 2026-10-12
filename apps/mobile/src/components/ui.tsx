@@ -13,6 +13,7 @@ import {
 
 import { Icon, type IconName } from './Icon';
 import { ApiError } from '../api/client';
+import { explainError } from '../api/explainError';
 import { useI18n } from '../i18n';
 import { colors, radius, spacing, text } from '../theme/tokens';
 
@@ -88,7 +89,13 @@ export function ErrorView({
   const t = useI18n((state) => state.t);
 
   const isNetwork = error instanceof ApiError && error.code === 'NETWORK';
-  const text = isNetwork ? t.errors.network : (message ?? t.errors.generic);
+  /*
+   * ⚠️ XOM SERVER MATNI EMAS. `message` — chaqiruvchi bergan LOKAL matn
+   * (allaqachon tarjima qilingan). Berilmasa va `error` bo'lsa, uni kod
+   * bo'yicha `explainError` lokalga o'giradi — serverning o'zbekcha matni
+   * ekranga tushmaydi. Hech biri bo'lmasa umumiy xabar.
+   */
+  const text = message ?? (error !== undefined ? explainError(error, t) : t.errors.generic);
 
   return (
     <View style={styles.center}>

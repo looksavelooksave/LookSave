@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { ApiError } from '../../src/api/client';
+import { explainError } from '../../src/api/explainError';
 import { Icon } from '../../src/components/Icon';
 import { goBack } from '../../src/navigation/back';
 import { useI18n } from '../../src/i18n';
@@ -45,7 +45,7 @@ export default function SignIn(): JSX.Element {
       await signIn(phone.replace(/\s/g, ''), password);
       router.replace('/(tabs)');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t.errors.generic);
+      setError(explainError(err, t));
     } finally {
       setBusy(false);
     }
