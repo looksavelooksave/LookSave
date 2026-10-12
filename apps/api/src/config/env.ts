@@ -162,6 +162,29 @@ const envSchema = z.object({
   OPENAI_IMAGE_MODEL: z.string().default('gpt-image-2.5-sunburst'),
 
   /*
+   * ⚠️ CHIQISH SIFATI — ENG KATTA SIFAT RICHAGI, VA U PUL TURADI.
+   *
+   * `gpt-image-2.5` da besh pog'ona bor: `low` < `medium` < `high` <
+   * `xhigh` < `max`. Yuqoriroq pog'ona matoni, chokni, naqshni va yuzni
+   * aniqroq chizadi — ya'ni aynan try-on sifatini ko'taradi — lekin har
+   * chaqiruvda chiqish tokenini (demak dollarni) oshiradi.
+   *
+   * Sukut `high` da qoldirilgan: tajriba bilan hisob orasidagi muvozanat.
+   * Prod'da `OPENAI_IMAGE_QUALITY=xhigh` qo'yib sifatni ko'tarib ko'rish
+   * mumkin — REDEPLOY shart emas, chunki bu qiymat `buildImageOptions`
+   * orqali `generationFingerprint` ichiga kiradi: o'zgarsa eski kesh
+   * avtomatik mos kelmay qoladi va natijalar yangi sifatda qaytadan
+   * yasaladi (`integrations/openai.ts`).
+   *
+   * ⚠️ `gpt-image-1` faqat `low|medium|high|auto` ni qabul qiladi —
+   * unga `xhigh`/`max` yuborilsa 400. Enum ularni ataylab qoldiradi,
+   * lekin modelga mosligini sozlovchi tekshirmaydi.
+   */
+  OPENAI_IMAGE_QUALITY: z
+    .enum(['low', 'medium', 'high', 'xhigh', 'max', 'auto'])
+    .default('high'),
+
+  /*
    * ⚠️ KUNLIK CHEGARA — PUL HIMOYASI. Har bir yasalgan surat pul turadi,
    * kesh esa faqat TAKRORIY so'rovni to'sadi: foydalanuvchi har safar yangi
    * kiyimni so'rasa har biri alohida to'lanadi. Chegarasiz bitta hisob bir

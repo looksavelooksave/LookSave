@@ -134,11 +134,21 @@ export function buildImageOptions(model: string): Record<string, string> {
      */
     size: '1024x1536',
     /*
-     * 2.5 da `xhigh` va `max` ham bor. `high` da qoldirilgan: sifat
-     * chiqish tokenlarini ko'paytiradi, ya'ni to'g'ridan-to'g'ri pul.
-     * Yuz aniqligi baribir sifatdan emas, KIRISH aniqligidan keladi.
+     * ⚠️ CHIQISH SIFATI ENDI SOZLAMADAN (`OPENAI_IMAGE_QUALITY`), sukut
+     * `high`. 2.5 da `xhigh` va `max` ham bor va ular matoni/naqshni
+     * aniqroq chizadi, lekin chiqish tokenini (pulni) oshiradi — shuning
+     * uchun qiymat prod'da sozlanadi, bu yerda qotirilmaydi.
+     *
+     * ⚠️ BU MAYDON `generationFingerprint` ICHIGA KIRADI: qiymat o'zgarsa
+     * kesh avtomatik yangilanadi, ya'ni `xhigh` ga ko'tarilsa eski `high`
+     * natijalar qaytmaydi, yangisi yasaladi. Shuning uchun u sozlamadan
+     * o'qilishi SHART — qotirilsa kesh cho'kib qolardi.
+     *
+     * ⚠️ Yuz aniqligi baribir sifatdan emas, KIRISH aniqligidan keladi
+     * (`cropFace`, `input_fidelity`). Sifat matoni va naqshni yaxshilaydi,
+     * yuzni emas.
      */
-    quality: 'high',
+    quality: env().OPENAI_IMAGE_QUALITY,
     // ⚠️ PNG — so'rovga ko'ra. JPEG'dan bir necha barobar og'ir (ko'proq
     // trafik), lekin yo'qotishsiz. R2 kaliti/turi ham `.png`/`image/png`
     // bo'lishi SHART (render.ts storeResult, avatar.ts storeAvatar) —

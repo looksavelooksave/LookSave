@@ -159,7 +159,13 @@ describe('chiqish sozlamalari', () => {
     expect(width / height).toBeLessThanOrEqual(3);
   });
 
-  it('sifat va son o`zgarmaydi', () => {
+  it('sifat sozlamadan keladi (sukut `high`), son esa qotiq', () => {
+    /*
+     * ⚠️ SIFAT ENDI `OPENAI_IMAGE_QUALITY` DAN. Sinov muhiti uni
+     * bermaydi, shuning uchun sukut `high` kutiladi — ya'ni eski xatti-
+     * harakat o'zgarmaydi. Prod'da `xhigh`/`max` qo'yilganda qiymat shu
+     * yerdan o'tadi va retseptga ham tushadi (quyidagi sinov).
+     */
     expect(sunburst.quality).toBe('high');
     expect(sunburst.n).toBe('1');
   });
@@ -247,6 +253,17 @@ describe('generatsiya retsepti — kesh kaliti', () => {
      */
     expect(generationFingerprint('gpt-image-1')).toMatch(/input_fidelity=high/);
     expect(generationFingerprint('gpt-image-2.5-sunburst')).not.toMatch(/input_fidelity/);
+  });
+
+  it('chiqish sifati retseptga tushadi — ko`tarilsa kesh yangilanadi', () => {
+    /*
+     * ⚠️ NEGA MUHIM. `OPENAI_IMAGE_QUALITY` ni `high` dan `xhigh` ga
+     * ko'tarish — natijani HAQIQATAN o'zgartiradi (matoni/naqshni aniqroq
+     * chizadi). Agar u retseptga tushmasa, eski `high` natijalar keshdan
+     * qaytaverardi va yangi sifat UMUMAN ko'rinmasdi — pul ketar, farq
+     * yo'q. Shuning uchun `quality` kalit retsept satrida bo'lishi SHART.
+     */
+    expect(generationFingerprint('gpt-image-2.5-sunburst')).toMatch(/quality=high/);
   });
 
   it('maydonlar saralangan — tartibi o`zgarsa kesh kuyib ketmasin', () => {
