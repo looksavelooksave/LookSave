@@ -17,6 +17,7 @@ import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
 import { SkeletonList } from '../../src/components/Skeleton';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { money } from '../../src/theme/format';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { goBack } from '../../src/navigation/back';
@@ -36,19 +37,19 @@ import { goBack } from '../../src/navigation/back';
  * `product.images[0]` da qulagan edi.
  */
 
-const FILTERS: Array<{ key: ProductStatusFilter; label: string }> = [
-  { key: 'all', label: 'Hammasi' },
-  { key: 'active', label: 'Faol' },
-  { key: 'draft', label: 'Qoralama' },
-  { key: 'pending', label: 'Tekshiruvda' },
+const FILTERS: Array<{ key: ProductStatusFilter; labelKey: keyof Dictionary['seller'] }> = [
+  { key: 'all', labelKey: 'filterAll' },
+  { key: 'active', labelKey: 'statusActive' },
+  { key: 'draft', labelKey: 'statusDraft' },
+  { key: 'pending', labelKey: 'statusPending' },
 ];
 
-const STATUS_LABEL: Record<string, { text: string; color: string }> = {
-  active: { text: 'Faol', color: colors.success },
-  draft: { text: 'Qoralama', color: colors.textDim },
-  pending: { text: 'Tekshiruvda', color: colors.warning },
-  rejected: { text: 'Rad etilgan', color: colors.danger },
-  archived: { text: 'Arxiv', color: colors.textDim },
+const STATUS_LABEL: Record<string, { textKey: keyof Dictionary['seller']; color: string }> = {
+  active: { textKey: 'statusActive', color: colors.success },
+  draft: { textKey: 'statusDraft', color: colors.textDim },
+  pending: { textKey: 'statusPending', color: colors.warning },
+  rejected: { textKey: 'statusRejected', color: colors.danger },
+  archived: { textKey: 'statusArchived', color: colors.textDim },
 };
 
 export default function SellerProducts(): JSX.Element {
@@ -59,6 +60,7 @@ export default function SellerProducts(): JSX.Element {
    */
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const [filter, setFilter] = useState<ProductStatusFilter>('all');
 
   const products = useQuery({
@@ -70,14 +72,21 @@ export default function SellerProducts(): JSX.Element {
     mutationFn: deleteStoreProduct,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store', 'products'] }),
     onError: (err) =>
-      Alert.alert('O`chirilmadi', err instanceof ApiError ? err.message : 'Qaytadan urining'),
+      Alert.alert(
+        t.facePhoto.deleteFailedTitle,
+        err instanceof ApiError ? err.message : t.seller.retryGeneric,
+      ),
   });
 
   return (
     <Screen>
       <SellerHeader
-        title="Mahsulotlar"
-        subtitle={products.data ? `${products.data.items.length} ta ko\`rsatilmoqda` : undefined}
+        title={t.seller.productsTitle}
+        subtitle={
+          products.data
+            ? t.seller.showing.replace('{n}', String(products.data.items.length))
+            : undefined
+        }
         onBack={() => goBack('/seller')}
       />
 
@@ -96,11 +105,13 @@ export default function SellerProducts(): JSX.Element {
                 end={{ x: 1, y: 1 }}
                 style={styles.filter}
               >
-                <Text style={[styles.filterText, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.filterText, { color: colors.text }]}>
+                  {t.seller[item.labelKey]}
+                </Text>
               </LinearGradient>
             ) : (
               <View style={styles.filter}>
-                <Text style={styles.filterText}>{item.label}</Text>
+                <Text style={styles.filterText}>{t.seller[item.labelKey]}</Text>
               </View>
             )}
           </Pressable>
@@ -124,11 +135,11 @@ export default function SellerProducts(): JSX.Element {
           ListEmptyComponent={
             <Empty
               icon="slotTop"
-              title="Mahsulot yo`q"
-              hint="Birinchi mahsulotni qo`shing — u katalogda ko`rinadi."
+              title={t.seller.pEmptyTitle}
+              hint={t.seller.pEmptyHint}
               action={
                 <Button
-                  title="Mahsulot qo`shish"
+                  title={t.seller.addProduct}
                   onPress={() => router.push('/seller/product-new')}
                 />
               }
@@ -138,10 +149,10 @@ export default function SellerProducts(): JSX.Element {
             <ProductRow
               product={item}
               onDelete={() =>
-                Alert.alert('Mahsulotni o`chirish', item.title, [
-                  { text: 'Bekor qilish', style: 'cancel' },
+                Alert.alert(t.seller.deleteProductTitle, item.title, [
+                  { text: t.common.cancel, style: 'cancel' },
                   {
-                    text: 'O`chirish',
+                    text: t.facePhoto.delete,
                     style: 'destructive',
                     onPress: () => remove.mutate(item.id),
                   },
@@ -153,7 +164,7 @@ export default function SellerProducts(): JSX.Element {
       ) : null}
 
       <View style={styles.fab}>
-        <Button title="Mahsulot qo`shish" onPress={() => router.push('/seller/product-new')} />
+        <Button title={t.seller.addProduct} onPress={() => router.push('/seller/product-new')} />
       </View>
     </Screen>
   );
@@ -166,7 +177,10 @@ function ProductRow({
   product: StoreProduct;
   onDelete: () => void;
 }): JSX.Element {
-  const status = STATUS_LABEL[product.status] ?? { text: product.status, color: colors.textDim };
+  const t = useI18n((state) => state.t);
+  const meta = STATUS_LABEL[product.status];
+  const statusText = meta ? t.seller[meta.textKey] : product.status;
+  const statusColor = meta?.color ?? colors.textDim;
 
   return (
     <View style={styles.card}>
@@ -187,11 +201,11 @@ function ProductRow({
           <View
             style={[
               styles.statusPill,
-              { borderColor: `${status.color}55`, backgroundColor: `${status.color}1A` },
+              { borderColor: `${statusColor}55`, backgroundColor: `${statusColor}1A` },
             ]}
           >
-            <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-            <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
           </View>
         </View>
 
@@ -228,6 +242,7 @@ function ProductRow({
  */
 function StockEditor({ productId, total }: { productId: string; total: number }): JSX.Element {
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const [open, setOpen] = useState(false);
 
   const detail = useQuery({
@@ -246,8 +261,8 @@ function StockEditor({ productId, total }: { productId: string; total: number })
         onPress={() => setOpen(true)}
         style={styles.stockToggle}
       >
-        <Text style={styles.stockLabel}>Qoldiq: {total} dona</Text>
-        <Text style={styles.stockEdit}>O`zgartirish</Text>
+        <Text style={styles.stockLabel}>{t.seller.stockOf.replace('{n}', String(total))}</Text>
+        <Text style={styles.stockEdit}>{t.seller.edit}</Text>
       </Pressable>
     );
   }
@@ -255,7 +270,7 @@ function StockEditor({ productId, total }: { productId: string; total: number })
   if (detail.isLoading || !variant) {
     return (
       <View style={styles.stock}>
-        <Text style={styles.stockLabel}>Yuklanmoqda…</Text>
+        <Text style={styles.stockLabel}>{`${t.common.loading}…`}</Text>
       </View>
     );
   }
@@ -272,6 +287,7 @@ function SizeInputs({
   sizes: Array<{ size: string; stock: number }>;
   queryClient: ReturnType<typeof useQueryClient>;
 }): JSX.Element {
+  const t = useI18n((state) => state.t);
   const [values, setValues] = useState<Record<string, string>>(
     Object.fromEntries(sizes.map((s) => [s.size, String(s.stock)])),
   );
@@ -281,7 +297,7 @@ function SizeInputs({
       updateVariantStock(variantId, next),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store'] }),
     onError: (err) =>
-      Alert.alert('Saqlanmadi', err instanceof ApiError ? err.message : 'Qaytadan urining'),
+      Alert.alert(t.look.saveFailed, err instanceof ApiError ? err.message : t.seller.retryGeneric),
   });
 
   /*
@@ -300,7 +316,7 @@ function SizeInputs({
 
   return (
     <View style={styles.stock}>
-      <Text style={styles.stockLabel}>Qoldiq</Text>
+      <Text style={styles.stockLabel}>{t.seller.stock}</Text>
       <View style={styles.stockRow}>
         {sizes.map((item) => (
           <View key={item.size} style={styles.stockItem}>
