@@ -90,18 +90,17 @@ export default function SignIn(): JSX.Element {
             >
               <Icon name="back" size={24} color={colors.text} />
             </Pressable>
-            <Text style={styles.tagline}>Your world{'\n'}in one app</Text>
+            <Text style={styles.tagline}>{t.auth.tagline}</Text>
           </View>
 
           {/* ── Sarlavha ── */}
           <View style={styles.titleRow}>
-            <Text style={styles.titleWhite}>Sign </Text>
-            <Text style={styles.titlePurple}>in</Text>
+            <Text style={styles.titleWhite}>{t.auth.signIn}</Text>
           </View>
-          <Text style={styles.subtitle}>Welcome back! Glad to see you again 💜</Text>
+          <Text style={styles.subtitle}>{t.auth.signInSubtitle}</Text>
 
           {/* ── PHONE ── */}
-          <Text style={styles.label}>PHONE</Text>
+          <Text style={styles.label}>{t.auth.phone}</Text>
           <View style={styles.field}>
             <Image source={IMG_PHONE} style={styles.fieldIcon} resizeMode="contain" />
             <TextInput
@@ -117,7 +116,7 @@ export default function SignIn(): JSX.Element {
           </View>
 
           {/* ── PASSWORD ── */}
-          <Text style={styles.label}>PASSWORD</Text>
+          <Text style={styles.label}>{t.auth.password}</Text>
           <View style={styles.field}>
             <View style={styles.lockBox}>
               <Icon name="authentic" size={20} color={colors.accent} />
@@ -129,7 +128,7 @@ export default function SignIn(): JSX.Element {
               secureTextEntry={!showPass}
               autoComplete="current-password"
               textContentType="password"
-              placeholder="Enter your password"
+              placeholder={t.auth.passwordPlaceholder}
               placeholderTextColor={colors.textDim}
             />
             <Pressable onPress={() => setShowPass((v) => !v)} hitSlop={10}>
@@ -139,7 +138,7 @@ export default function SignIn(): JSX.Element {
 
           {/* Forgot password */}
           <Pressable style={styles.forgotWrap} accessibilityRole="button">
-            <Text style={styles.forgotText}>Forgot password?</Text>
+            <Text style={styles.forgotText}>{t.auth.forgotPassword}</Text>
           </Pressable>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -157,17 +156,14 @@ export default function SignIn(): JSX.Element {
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <Text style={styles.submitText}>{busy ? 'Yuklanmoqda...' : t.auth.signIn}</Text>
+            <Text style={styles.submitText}>{busy ? `${t.common.loading}…` : t.auth.signIn}</Text>
             <View style={styles.submitArrow}>
               <Icon name="next" size={18} color={colors.text} />
             </View>
           </Pressable>
 
           {/* Hint */}
-          <Text style={styles.hint}>
-            Parolni unutdingizmi? Hozircha qo&apos;llab-quvvatlash xizmatiga yozing — tiklash tez
-            orada qo&apos;shiladi.
-          </Text>
+          <Text style={styles.hint}>{t.auth.forgotHint}</Text>
 
           <View style={{ flex: 1, minHeight: 80 }} />
 
@@ -175,13 +171,13 @@ export default function SignIn(): JSX.Element {
           <View style={styles.bottomRow}>
             <View style={styles.betterBadge}>
               <View style={styles.betterDot} />
-              <Text style={styles.betterText}>Better{'\n'}Together</Text>
+              <Text style={styles.betterText}>{t.auth.betterTogether}</Text>
             </View>
 
             <View style={styles.sloganCol}>
-              <Text style={styles.sloganText}>Simple</Text>
-              <Text style={styles.sloganText}>Secure</Text>
-              <Text style={styles.sloganText}>Reliable</Text>
+              <Text style={styles.sloganText}>{t.auth.sloganSimple}</Text>
+              <Text style={styles.sloganText}>{t.auth.sloganSecure}</Text>
+              <Text style={styles.sloganText}>{t.auth.sloganReliable}</Text>
             </View>
           </View>
         </ScrollView>

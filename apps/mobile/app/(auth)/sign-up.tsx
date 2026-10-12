@@ -63,10 +63,10 @@ export default function SignUp(): JSX.Element {
     } catch (err) {
       setError(
         err instanceof ApiError && err.code === 'ALREADY_EXISTS'
-          ? "Bu raqam bilan akkaunt bor. Kirish sahifasiga o'ting."
+          ? t.auth.errAlreadyExists
           : err instanceof ApiError
             ? err.message
-            : "Ro'yxatdan o'tib bo'lmadi",
+            : t.auth.errSignUpFailed,
       );
     } finally {
       setBusy(false);
@@ -110,16 +110,12 @@ export default function SignUp(): JSX.Element {
 
           {/* Sarlavha */}
           <View style={styles.titleRow}>
-            <Text style={styles.titleWhite}>Sign </Text>
-            <Text style={styles.titlePurple}>up</Text>
+            <Text style={styles.titleWhite}>{t.auth.signUp}</Text>
           </View>
-          <Text style={styles.subtitle}>
-            Telefon raqami buyurtmalar uchun ishlatiladi — sotuvchi shu raqamga qo&apos;ng&apos;iroq
-            qiladi.
-          </Text>
+          <Text style={styles.subtitle}>{t.auth.signUpSubtitle}</Text>
 
           {/* PHONE */}
-          <Text style={styles.label}>PHONE</Text>
+          <Text style={styles.label}>{t.auth.phone}</Text>
           <View style={[styles.field, fieldErrors['phone'] ? styles.fieldErr : null]}>
             <View style={styles.imgClip}>
               <Image source={IMG_PHONE} style={styles.imgIcon} resizeMode="cover" />
@@ -138,7 +134,7 @@ export default function SignUp(): JSX.Element {
           {fieldErrors['phone'] ? <Text style={styles.fErr}>{fieldErrors['phone']}</Text> : null}
 
           {/* FULL NAME */}
-          <Text style={styles.label}>FULL NAME</Text>
+          <Text style={styles.label}>{t.auth.fullName}</Text>
           <View style={[styles.field, fieldErrors['fullName'] ? styles.fieldErr : null]}>
             <View style={styles.imgClip}>
               <Image source={IMG_NAME} style={styles.imgIcon} resizeMode="cover" />
@@ -157,7 +153,7 @@ export default function SignUp(): JSX.Element {
           ) : null}
 
           {/* PASSWORD */}
-          <Text style={styles.label}>PASSWORD</Text>
+          <Text style={styles.label}>{t.auth.password}</Text>
           <View style={[styles.field, fieldErrors['password'] ? styles.fieldErr : null]}>
             <View style={styles.lockBox}>
               <Icon name="authentic" size={18} color={colors.accent} />
@@ -168,7 +164,7 @@ export default function SignUp(): JSX.Element {
               onChangeText={setPassword}
               secureTextEntry={!showPass}
               autoComplete="new-password"
-              placeholder="Kamida 8 belgi"
+              placeholder={t.auth.passwordMinPlaceholder}
               placeholderTextColor={colors.textDim}
             />
             <Pressable onPress={() => setShowPass((v) => !v)} hitSlop={10}>
@@ -194,7 +190,7 @@ export default function SignUp(): JSX.Element {
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <Text style={styles.submitText}>{busy ? 'Yuklanmoqda...' : t.auth.start}</Text>
+            <Text style={styles.submitText}>{busy ? `${t.common.loading}…` : t.auth.start}</Text>
             <View style={styles.submitArrow}>
               <Icon name="next" size={18} color={colors.text} />
             </View>
@@ -206,7 +202,7 @@ export default function SignUp(): JSX.Element {
             accessibilityRole="button"
           >
             <Text style={styles.signinText}>
-              Akkauntingiz bormi? <Text style={{ color: colors.accent }}>Kirish</Text>
+              {t.auth.haveAccountQ} <Text style={{ color: colors.accent }}>{t.auth.signIn}</Text>
             </Text>
           </Pressable>
         </ScrollView>
