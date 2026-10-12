@@ -25,6 +25,7 @@ import { Icon, type IconName } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
 import { recommendSize } from '@looksave/validation';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { useAiFlowStore } from '../../src/store/aiFlowStore';
 import { money } from '../../src/theme/format';
@@ -49,13 +50,16 @@ import { goBack } from '../../src/navigation/back';
  * ko'rsatiladi va kiyintirish tanlangandan keyin bo'ladi.
  */
 
-/** Slot nomlari — deckdagi tartibda: ustki → tashqi → pastki → oyoq → aksessuar */
-const SLOT_LABEL: Record<string, { label: string; icon: IconName }> = {
-  top: { label: 'Ustki', icon: 'slotTop' },
-  outer: { label: 'Kurtka', icon: 'slotOuter' },
-  bottom: { label: 'Pastki', icon: 'slotBottom' },
-  feet: { label: 'Oyoq kiyim', icon: 'slotFeet' },
-  wrist: { label: 'Aksessuar', icon: 'premium' },
+/**
+ * Slot nomlari — deckdagi tartibda: ustki → tashqi → pastki → oyoq → aksessuar.
+ * Yorliq matni i18n (`t.look`) dan, bu yerda faqat kalit va ikonka.
+ */
+const SLOT_LABEL: Record<string, { key: keyof Dictionary['look']; icon: IconName }> = {
+  top: { key: 'slotTop', icon: 'slotTop' },
+  outer: { key: 'slotOuter', icon: 'slotOuter' },
+  bottom: { key: 'slotBottom', icon: 'slotBottom' },
+  feet: { key: 'slotFeet', icon: 'slotFeet' },
+  wrist: { key: 'slotWrist', icon: 'premium' },
 };
 
 const { width: SCREEN } = Dimensions.get('window');
@@ -64,6 +68,7 @@ const CARD_GAP = spacing.md;
 export default function AiLookScreen(): JSX.Element {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
 
   const occasion = useAiFlowStore((state) => state.occasion);
@@ -93,10 +98,10 @@ export default function AiLookScreen(): JSX.Element {
         })),
       }),
     onSuccess: () => {
-      setNotice('Komplekt saqlandi');
+      setNotice(t.look.saved);
       void queryClient.invalidateQueries({ queryKey: ['looks'] });
     },
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Saqlanmadi'),
+    onError: (err) => setNotice(err instanceof ApiError ? err.message : t.look.saveFailed),
   });
 
   const buy = useMutation({
@@ -113,16 +118,16 @@ export default function AiLookScreen(): JSX.Element {
       }
     },
     onSuccess: () => {
-      setNotice('Komplekt savatga qo`shildi');
+      setNotice(t.look.addedToCart);
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
-    onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Qo`shilmadi'),
+    onError: (err) => setNotice(err instanceof ApiError ? err.message : t.look.addFailed),
   });
 
   if (!signedIn) {
     return (
       <Screen>
-        <SignInRequired hint="AI komplekt sizning o`lchamlaringizga qarab yig`iladi." />
+        <SignInRequired hint={t.look.signInHint} />
       </Screen>
     );
   }
@@ -132,7 +137,7 @@ export default function AiLookScreen(): JSX.Element {
       <Screen>
         <View style={styles.loading}>
           <ActivityIndicator color={colors.accent} />
-          <Text style={styles.loadingText}>AI komplekt yig`moqda…</Text>
+          <Text style={styles.loadingText}>{t.look.building}</Text>
           <Text style={styles.loadingHint}>
             {occasion} · {style}
           </Text>
@@ -144,7 +149,7 @@ export default function AiLookScreen(): JSX.Element {
   if (looks.isError) {
     return (
       <Screen>
-        <ErrorView message="Komplekt yasalmadi" onRetry={() => void looks.refetch()} />
+        <ErrorView message={t.look.buildFailed} onRetry={() => void looks.refetch()} />
       </Screen>
     );
   }
@@ -156,9 +161,9 @@ export default function AiLookScreen(): JSX.Element {
       <Screen>
         <Empty
           icon="looks"
-          title="Bu tanlovga komplekt topilmadi"
-          hint="Katalogda ustki va pastki kiyim yetarli emas. Boshqa tadbir yoki uslubni tanlab ko`ring."
-          action={<Button title="Tanlovni o`zgartirish" onPress={() => goBack('/ai')} />}
+          title={t.look.emptyTitle}
+          hint={t.look.emptyHint}
+          action={<Button title={t.look.changeChoice} onPress={() => goBack('/ai')} />}
         />
       </Screen>
     );
@@ -179,7 +184,7 @@ export default function AiLookScreen(): JSX.Element {
           <Icon name="back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>AI komplektlar</Text>
+          <Text style={styles.headerTitle}>{t.look.title}</Text>
           <Text style={styles.headerHint}>
             {occasion} · {style}
           </Text>
@@ -232,17 +237,17 @@ export default function AiLookScreen(): JSX.Element {
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Komplekt narxi</Text>
+          <Text style={styles.totalLabel}>{t.look.price}</Text>
           <Text style={styles.total}>{current ? money(current.total, current.currency) : '—'}</Text>
         </View>
 
         <Button
-          title="Savatga qo`shish"
+          title={t.look.addToCart}
           loading={buy.isPending}
           onPress={() => current && buy.mutate(current)}
         />
         <Button
-          title="Keyinga saqlash"
+          title={t.look.saveForLater}
           variant="ghost"
           loading={save.isPending}
           onPress={() => current && save.mutate(current)}
@@ -254,7 +259,10 @@ export default function AiLookScreen(): JSX.Element {
 
 /** Komplektdagi bitta buyum. */
 function LookRow({ item }: { item: Garment }): JSX.Element {
-  const meta = SLOT_LABEL[item.slot] ?? { label: item.slot, icon: 'looks' as IconName };
+  const t = useI18n((state) => state.t);
+  const meta = SLOT_LABEL[item.slot];
+  const slotLabel = meta ? t.look[meta.key] : item.slot;
+  const slotIcon = meta?.icon ?? ('looks' as IconName);
 
   return (
     <View style={styles.row}>
@@ -262,8 +270,8 @@ function LookRow({ item }: { item: Garment }): JSX.Element {
 
       <View style={styles.rowText}>
         <View style={styles.rowSlot}>
-          <Icon name={meta.icon} size={13} color={colors.accent} />
-          <Text style={styles.slotLabel}>{meta.label}</Text>
+          <Icon name={slotIcon} size={13} color={colors.accent} />
+          <Text style={styles.slotLabel}>{slotLabel}</Text>
         </View>
         <Text style={styles.rowTitle} numberOfLines={2}>
           {item.title}

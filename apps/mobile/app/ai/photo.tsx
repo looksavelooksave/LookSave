@@ -10,6 +10,7 @@ import { Icon, type IconName } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
 import { Button } from '../../src/components/ui';
 import { getFullProfile, uploadBodyPhoto } from '../../src/api/endpoints';
+import { useI18n, type Dictionary } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,33 +29,23 @@ import { goBack } from '../../src/navigation/back';
  * bilgan holda yozilgan.
  */
 
-const RULES: Array<{ icon: IconName; title: string; hint: string }> = [
-  {
-    icon: 'profile',
-    title: 'To`liq gavda',
-    hint: 'Boshdan oyoqgacha ko`rinsin — kesilgan surat ishlamaydi',
-  },
-  {
-    icon: 'tryon',
-    title: 'Tik turing',
-    hint: 'Qo`llar yon tomonda, tanaga yopishmagan holda',
-  },
-  {
-    icon: 'looks',
-    title: 'Sodda fon',
-    hint: 'Bir tekis devor eng yaxshisi — naqshli fon chalg`itadi',
-  },
-  {
-    icon: 'favorite',
-    title: 'Tor kiyim',
-    hint: 'Keng kiyim gavda shaklini yashiradi va o`lcham noto`g`ri chiqadi',
-  },
+/** Talablar — matni i18n (`t.photo`) dan, bu yerda faqat ikonka va kalit. */
+const RULES: Array<{
+  icon: IconName;
+  titleKey: keyof Dictionary['photo'];
+  hintKey: keyof Dictionary['photo'];
+}> = [
+  { icon: 'profile', titleKey: 'rule1Title', hintKey: 'rule1Hint' },
+  { icon: 'tryon', titleKey: 'rule2Title', hintKey: 'rule2Hint' },
+  { icon: 'looks', titleKey: 'rule3Title', hintKey: 'rule3Hint' },
+  { icon: 'favorite', titleKey: 'rule4Title', hintKey: 'rule4Hint' },
 ];
 
 export default function BodyPhotoScreen(): JSX.Element {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useI18n((state) => state.t);
   const authStatus = useAuthStore((state) => state.status);
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -74,17 +65,14 @@ export default function BodyPhotoScreen(): JSX.Element {
     },
     onError: () => {
       setPreview(null);
-      Alert.alert('Surat yuklanmadi', 'Internetni tekshirib qaytadan urinib ko`ring.');
+      Alert.alert(t.photo.uploadFailedTitle, t.photo.uploadFailedBody);
     },
   });
 
   if (authStatus !== 'signedIn') {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
-        <SignInRequired
-          title="Kirish kerak"
-          hint="AI kiyintirish suratingizga bog`langan, shuning uchun akkaunt kerak."
-        />
+        <SignInRequired title={t.auth.requiredTitle} hint={t.photo.signInHint} />
       </View>
     );
   }
@@ -107,10 +95,8 @@ export default function BodyPhotoScreen(): JSX.Element {
 
     if (!permission.granted) {
       Alert.alert(
-        'Ruxsat kerak',
-        from === 'camera'
-          ? 'Surat olish uchun kameraga ruxsat bering.'
-          : 'Surat tanlash uchun galereyaga ruxsat bering.',
+        t.photo.permissionTitle,
+        from === 'camera' ? t.photo.cameraPermission : t.photo.libraryPermission,
       );
       return;
     }
@@ -152,7 +138,7 @@ export default function BodyPhotoScreen(): JSX.Element {
         >
           <Icon name="back" size={20} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Suratingiz</Text>
+        <Text style={styles.headerTitle}>{t.photo.title}</Text>
         <View style={styles.back} />
       </View>
 
@@ -170,7 +156,7 @@ export default function BodyPhotoScreen(): JSX.Element {
             >
               <View style={styles.emptyInner}>
                 <Icon name="camera" size={34} color={colors.accent} />
-                <Text style={styles.emptyText}>Surat hali yo`q</Text>
+                <Text style={styles.emptyText}>{t.photo.noPhoto}</Text>
               </View>
             </LinearGradient>
           )}
@@ -178,7 +164,7 @@ export default function BodyPhotoScreen(): JSX.Element {
           {upload.isPending ? (
             <View style={styles.busy}>
               <ActivityIndicator color={colors.accent} />
-              <Text style={styles.busyText}>Yuklanmoqda…</Text>
+              <Text style={styles.busyText}>{`${t.common.loading}…`}</Text>
             </View>
           ) : null}
         </View>
@@ -186,13 +172,13 @@ export default function BodyPhotoScreen(): JSX.Element {
         {/* Talablar */}
         <View style={styles.rules}>
           {RULES.map((rule) => (
-            <View key={rule.title} style={styles.rule}>
+            <View key={rule.titleKey} style={styles.rule}>
               <View style={styles.ruleIcon}>
                 <Icon name={rule.icon} size={16} color={colors.accent} />
               </View>
               <View style={styles.ruleText}>
-                <Text style={styles.ruleTitle}>{rule.title}</Text>
-                <Text style={styles.ruleHint}>{rule.hint}</Text>
+                <Text style={styles.ruleTitle}>{t.photo[rule.titleKey]}</Text>
+                <Text style={styles.ruleHint}>{t.photo[rule.hintKey]}</Text>
               </View>
             </View>
           ))}
@@ -210,18 +196,15 @@ export default function BodyPhotoScreen(): JSX.Element {
           hech narsani o'zgartirmaydi. Muhimi ikkita fakt — qayerga
           ketadi va qanday o'chiriladi.
         */}
-        <Text style={styles.privacy}>
-          Surat kiyintirish uchun tashqi AI xizmatiga yuboriladi va serverimizda saqlanadi. Uni
-          Profil → Yuz surati bo‘limida o‘chirishingiz mumkin.
-        </Text>
+        <Text style={styles.privacy}>{t.photo.privacy}</Text>
 
         <Button
-          title={shown ? 'Boshqa surat olish' : 'Surat olish'}
+          title={shown ? t.photo.retakePhoto : t.photo.takePhoto}
           onPress={() => void pick('camera')}
           disabled={upload.isPending}
         />
         <Button
-          title="Galereyadan tanlash"
+          title={t.photo.fromGallery}
           variant="ghost"
           onPress={() => void pick('library')}
           disabled={upload.isPending}
@@ -233,7 +216,7 @@ export default function BodyPhotoScreen(): JSX.Element {
         */}
         {existing && !upload.isPending ? (
           <Pressable onPress={() => router.replace('/ai/fitting')} hitSlop={8}>
-            <Text style={styles.skip}>Shu surat bilan davom etish</Text>
+            <Text style={styles.skip}>{t.photo.continueWithThis}</Text>
           </Pressable>
         ) : null}
       </View>
