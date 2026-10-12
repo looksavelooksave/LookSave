@@ -255,6 +255,18 @@ const uz = {
     slide3Body:
       "Atrofingizdagi do'konlar, to'g'ridan-to'g'ri sotuvchiga buyurtma va yetkazib berish.",
   },
+  ai: {
+    subtitle: 'Shaxsiy AI stilistingiz',
+    lead: 'Uslubingiz, kayfiyatingiz yoki tadbir haqida ayting — AI siz uchun mos komplekt yasaydi.',
+    howTitle: 'Qanday ishlaydi?',
+    how1: 'Tanlovingizni aytasiz',
+    how2: 'AI komplekt yasaydi',
+    how3: 'Yoqqanini tanlaysiz',
+    occasionLabel: 'Tadbir',
+    styleLabel: 'Uslub',
+    moodLabel: 'Kayfiyat',
+    makeOutfit: 'AI komplekt yasasin',
+  },
 } as const;
 
 /**
@@ -501,6 +513,18 @@ const ru: Dictionary = {
     slide3Title: 'Из ближайших магазинов',
     slide3Body: 'Магазины рядом, заказ напрямую продавцу и доставка.',
   },
+  ai: {
+    subtitle: 'Ваш персональный ИИ-стилист',
+    lead: 'Расскажите о стиле, настроении или событии — ИИ соберёт подходящий образ.',
+    howTitle: 'Как это работает?',
+    how1: 'Вы делитесь выбором',
+    how2: 'ИИ собирает образ',
+    how3: 'Вы выбираете, что нравится',
+    occasionLabel: 'Событие',
+    styleLabel: 'Стиль',
+    moodLabel: 'Настроение',
+    makeOutfit: 'Пусть ИИ соберёт образ',
+  },
 };
 
 const en: Dictionary = {
@@ -736,6 +760,18 @@ const en: Dictionary = {
     slide3Title: 'From stores near you',
     slide3Body: 'Nearby stores, order straight from the seller, and delivery.',
   },
+  ai: {
+    subtitle: 'Your personal AI stylist',
+    lead: 'Tell us your style, mood or occasion — AI builds a matching outfit for you.',
+    howTitle: 'How it works?',
+    how1: 'You share your choices',
+    how2: 'AI builds an outfit',
+    how3: 'You pick what you like',
+    occasionLabel: 'Occasion',
+    styleLabel: 'Style',
+    moodLabel: 'Mood',
+    makeOutfit: 'Let AI create an outfit',
+  },
 };
 
 const ar: Dictionary = {
@@ -967,6 +1003,18 @@ const ar: Dictionary = {
     slide2Body: 'أفاتار شخصي من طولك ومقاساتك — شاهد كيف تبدو الملابس قبل الطلب.',
     slide3Title: 'من متاجر قريبة منك',
     slide3Body: 'متاجر قريبة، واطلب مباشرة من البائع مع التوصيل.',
+  },
+  ai: {
+    subtitle: 'مصمم أزيائك الذكي الخاص',
+    lead: 'أخبرنا عن أسلوبك أو مزاجك أو المناسبة — وسيصمم الذكاء الاصطناعي إطلالة مناسبة.',
+    howTitle: 'كيف يعمل؟',
+    how1: 'تشارك اختياراتك',
+    how2: 'الذكاء الاصطناعي يصمم الإطلالة',
+    how3: 'تختار ما يعجبك',
+    occasionLabel: 'المناسبة',
+    styleLabel: 'الأسلوب',
+    moodLabel: 'المزاج',
+    makeOutfit: 'دع الذكاء الاصطناعي يصمم إطلالة',
   },
 };
 

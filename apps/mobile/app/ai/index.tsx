@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HologramFigure } from '../../src/components/ai/HologramFigure';
 import { Icon, type IconName } from '../../src/components/Icon';
 import { Button } from '../../src/components/ui';
+import { useI18n } from '../../src/i18n';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
 import { MOODS, OCCASIONS, STYLES, useAiFlowStore } from '../../src/store/aiFlowStore';
 import { goBack } from '../../src/navigation/back';
@@ -28,11 +29,8 @@ import { goBack } from '../../src/navigation/back';
  * joyni egallab kichrayadi.
  */
 
-const HOW_IT_WORKS: Array<{ icon: IconName; title: string }> = [
-  { icon: 'looks', title: 'Tanlovingizni aytasiz' },
-  { icon: 'tryon', title: 'AI komplekt yasaydi' },
-  { icon: 'favorite', title: 'Yoqqanini tanlaysiz' },
-];
+/** Ikonkalar — matni i18n'dan render paytida qo'shiladi (`how1..how3`). */
+const HOW_ICONS: IconName[] = ['looks', 'tryon', 'favorite'];
 
 /**
  * Bitta tanlov qatori — bosilganda keyingi qiymatga o'tadi.
@@ -74,6 +72,13 @@ function Choice<T extends string>({
 export default function AiDesigner(): JSX.Element {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useI18n((state) => state.t);
+
+  const howItWorks: Array<{ icon: IconName; title: string }> = [
+    { icon: HOW_ICONS[0]!, title: t.ai.how1 },
+    { icon: HOW_ICONS[1]!, title: t.ai.how2 },
+    { icon: HOW_ICONS[2]!, title: t.ai.how3 },
+  ];
 
   const occasion = useAiFlowStore((state) => state.occasion);
   const style = useAiFlowStore((state) => state.style);
@@ -105,11 +110,9 @@ export default function AiDesigner(): JSX.Element {
         <Text style={styles.title}>
           <Text style={styles.titleAccent}>AI</Text> DESIGNER
         </Text>
-        <Text style={styles.subtitle}>Shaxsiy AI stilistingiz</Text>
+        <Text style={styles.subtitle}>{t.ai.subtitle}</Text>
 
-        <Text style={styles.lead}>
-          Uslubingiz, kayfiyatingiz yoki tadbir haqida ayting — AI siz uchun mos komplekt yasaydi.
-        </Text>
+        <Text style={styles.lead}>{t.ai.lead}</Text>
 
         {/*
           Gologramma to'liq ko'rsatiladi — rasm ichida kartalar va kiyim
@@ -121,9 +124,9 @@ export default function AiDesigner(): JSX.Element {
 
         {/* Qanday ishlaydi */}
         <View style={styles.howCard}>
-          <Text style={styles.howTitle}>Qanday ishlaydi?</Text>
+          <Text style={styles.howTitle}>{t.ai.howTitle}</Text>
           <View style={styles.howRow}>
-            {HOW_IT_WORKS.map((step, index) => (
+            {howItWorks.map((step, index) => (
               <View key={step.title} style={styles.howStep}>
                 <View style={styles.howIcon}>
                   <Icon name={step.icon} size={18} color={colors.accent} />
@@ -162,13 +165,13 @@ export default function AiDesigner(): JSX.Element {
           the occasion».
         */}
         <View style={styles.choices}>
-          <Choice label="Tadbir" value={occasion} options={OCCASIONS} onPick={setOccasion} />
-          <Choice label="Uslub" value={style} options={STYLES} onPick={setStyle} />
-          <Choice label="Kayfiyat" value={mood} options={MOODS} onPick={setMood} />
+          <Choice label={t.ai.occasionLabel} value={occasion} options={OCCASIONS} onPick={setOccasion} />
+          <Choice label={t.ai.styleLabel} value={style} options={STYLES} onPick={setStyle} />
+          <Choice label={t.ai.moodLabel} value={mood} options={MOODS} onPick={setMood} />
         </View>
 
         <View style={styles.cta}>
-          <Button title="AI komplekt yasasin" onPress={() => router.push('/ai/look')} />
+          <Button title={t.ai.makeOutfit} onPress={() => router.push('/ai/look')} />
         </View>
       </View>
     </View>
