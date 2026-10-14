@@ -3,7 +3,7 @@
     "name": "LookSave",
     "slug": "looksave",
     "scheme": "looksave",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "_comment_newArch": "expo-gl yangi arxitekturada (Fabric/bridgeless) sirtini ekranga ulay olmaydi: kontekst yaratiladi, bufer to'g'ri o'lchamda, kadrlar chiziladi — lekin ekran bo'sh qoladi. Shu sabab eski arxitektura. Qaytarishdan oldin expo-gl yangilanганini tekshiring.",
@@ -21,7 +21,7 @@
         "NSLocationWhenInUseUsageDescription": "Yaqin atrofdagi do'konlarni va ularning mahsulotlarini xaritada ko'rsatish uchun joylashuvingizdan foydalanamiz.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "23"
+      "buildNumber": "26"
     },
     "android": {
       "package": "com.looksave.looksave",
