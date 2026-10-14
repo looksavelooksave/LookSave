@@ -1,0 +1,1404 @@
+{
+  "ownerPhone": "+998936558959",
+  "stores": [
+    {
+      "name": "Milano Moda",
+      "slug": "milano-moda",
+      "city": "Toshkent",
+      "address": "Yunusobod tumani, Amir Temur ko'chasi 108",
+      "landmark": "Yunusobod metrosi yonida",
+      "phone": "+998901110201",
+      "lat": 41.3615,
+      "lng": 69.2897,
+      "description": "Erkaklar uchun ko'ylak, futbolka va kurtkalar",
+      "products": [
+        {
+          "title": "Blue & Black Check Shirt",
+          "description": "The Blue & Black Check Shirt is a stylish and comfortable men's shirt featuring a classic check pattern. Made from high-quality fabric, it's suitable for both casual and semi-formal occasions.",
+          "categorySlug": "shirt",
+          "gender": "male",
+          "basePrice": "378000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/4.webp"
+          ],
+          "tags": [
+            "classic"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 8
+            },
+            {
+              "size": "M",
+              "stock": 7
+            },
+            {
+              "size": "L",
+              "stock": 6
+            },
+            {
+              "size": "XL",
+              "stock": 5
+            }
+          ],
+          "oldPrice": "446000",
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        },
+        {
+          "title": "Futbolka",
+          "description": null,
+          "categorySlug": "tshirt",
+          "gender": "male",
+          "basePrice": "315000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/gigabyte-aorus-men-tshirt/4.webp"
+          ],
+          "tags": [
+            "casual"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 3
+            },
+            {
+              "size": "M",
+              "stock": 14
+            },
+            {
+              "size": "L",
+              "stock": 13
+            },
+            {
+              "size": "XL",
+              "stock": 12
+            }
+          ],
+          "oldPrice": "318000"
+        },
+        {
+          "title": "Man Plaid Shirt",
+          "description": "The Man Plaid Shirt is a timeless and versatile men's shirt with a classic plaid pattern. Its comfortable fit and casual style make it a wardrobe essential for various occasions.",
+          "categorySlug": "shirt",
+          "gender": "male",
+          "basePrice": "441000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-plaid-shirt/4.webp"
+          ],
+          "tags": [
+            "classic"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 10
+            },
+            {
+              "size": "M",
+              "stock": 9
+            },
+            {
+              "size": "L",
+              "stock": 8
+            },
+            {
+              "size": "XL",
+              "stock": 7
+            }
+          ],
+          "oldPrice": "548000"
+        },
+        {
+          "title": "Man Short Sleeve Shirt",
+          "description": "The Man Short Sleeve Shirt is a breezy and stylish option for warm days. With a comfortable fit and short sleeves, it's perfect for a laid-back yet polished look.",
+          "categorySlug": "shirt",
+          "gender": "male",
+          "basePrice": "252000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/man-short-sleeve-shirt/4.webp"
+          ],
+          "tags": [
+            "classic"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 5
+            },
+            {
+              "size": "M",
+              "stock": 4
+            },
+            {
+              "size": "L",
+              "stock": 3
+            },
+            {
+              "size": "XL",
+              "stock": 14
+            }
+          ],
+          "oldPrice": "270000"
+        },
+        {
+          "title": "Men Check Shirt",
+          "description": "The Men Check Shirt is a classic and versatile shirt featuring a stylish check pattern. Suitable for various occasions, it adds a smart and polished touch to your wardrobe.",
+          "categorySlug": "shirt",
+          "gender": "male",
+          "basePrice": "353000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shirts/men-check-shirt/4.webp"
+          ],
+          "tags": [
+            "classic"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 12
+            },
+            {
+              "size": "M",
+              "stock": 11
+            },
+            {
+              "size": "L",
+              "stock": 10
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ],
+          "oldPrice": "398000"
+        },
+        {
+          "title": "Mens Casual Premium Slim Fit T-Shirts",
+          "description": "Slim-fitting style, contrast raglan long sleeve, three-button henley placket, light weight & soft fabric for breathable and comfortable wearing. And Solid stitched shirts with round neck made for durability and a great fit for casual fashion wear and diehard baseball fans. The He",
+          "categorySlug": "tshirt",
+          "gender": "male",
+          "basePrice": "281000",
+          "images": [
+            "https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_t.png",
+            "https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_t.png",
+            "https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_t.png"
+          ],
+          "tags": [
+            "casual"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 5
+            },
+            {
+              "size": "M",
+              "stock": 4
+            },
+            {
+              "size": "L",
+              "stock": 3
+            },
+            {
+              "size": "XL",
+              "stock": 14
+            }
+          ]
+        },
+        {
+          "title": "Mens Cotton Jacket",
+          "description": "great outerwear jackets for Spring/Autumn/Winter, suitable for many occasions, such as working, hiking, camping, mountain/rock climbing, cycling, traveling or other outdoors. Good gift choice for you or your family member. A warm hearted love to Father, husband or son in this tha",
+          "categorySlug": "jacket",
+          "gender": "male",
+          "basePrice": "705000",
+          "images": [
+            "https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_t.png",
+            "https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_t.png",
+            "https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_t.png"
+          ],
+          "tags": [
+            "streetwear"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 12
+            },
+            {
+              "size": "M",
+              "stock": 11
+            },
+            {
+              "size": "L",
+              "stock": 10
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "title": "Mens Casual Slim Fit",
+          "description": "The color could be slightly different between on the screen and in practice. / Please note that body builds vary by person, therefore, detailed size information should be reviewed below on the product description.",
+          "categorySlug": "shirt",
+          "gender": "male",
+          "basePrice": "201000",
+          "images": [
+            "https://fakestoreapi.com/img/71YXzeOuslL._AC_UY879_t.png",
+            "https://fakestoreapi.com/img/71YXzeOuslL._AC_UY879_t.png",
+            "https://fakestoreapi.com/img/71YXzeOuslL._AC_UY879_t.png"
+          ],
+          "tags": [
+            "classic"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 7
+            },
+            {
+              "size": "M",
+              "stock": 6
+            },
+            {
+              "size": "L",
+              "stock": 5
+            },
+            {
+              "size": "XL",
+              "stock": 4
+            }
+          ]
+        }
+      ],
+      "logoUrl": "https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/1.webp",
+      "currency": "UZS"
+    },
+    {
+      "name": "Qadam Oyoq Kiyim",
+      "slug": "qadam-shoes",
+      "city": "Toshkent",
+      "address": "Chilonzor tumani, Bunyodkor shoh ko'chasi 12",
+      "landmark": "Chilonzor metrosi",
+      "phone": "+998901110202",
+      "lat": 41.2756,
+      "lng": 69.2039,
+      "description": "Erkak va ayollar uchun krossovka, tufli, botinka",
+      "products": [
+        {
+          "title": "Qora krossovka",
+          "description": null,
+          "categorySlug": "sneakers",
+          "gender": "male",
+          "basePrice": "1890000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 7
+            },
+            {
+              "size": "41",
+              "stock": 6
+            },
+            {
+              "size": "42",
+              "stock": 5
+            },
+            {
+              "size": "43",
+              "stock": 4
+            },
+            {
+              "size": "44",
+              "stock": 3
+            }
+          ],
+          "oldPrice": "1971000",
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        },
+        {
+          "title": "Krossovka",
+          "description": null,
+          "categorySlug": "sneakers",
+          "gender": "male",
+          "basePrice": "1008000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/nike-baseball-cleats/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 14
+            },
+            {
+              "size": "41",
+              "stock": 13
+            },
+            {
+              "size": "42",
+              "stock": 12
+            },
+            {
+              "size": "43",
+              "stock": 11
+            },
+            {
+              "size": "44",
+              "stock": 10
+            }
+          ],
+          "oldPrice": "1230000"
+        },
+        {
+          "title": "Krossovka 2",
+          "description": null,
+          "categorySlug": "sneakers",
+          "gender": "male",
+          "basePrice": "1134000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/puma-future-rider-trainers/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 9
+            },
+            {
+              "size": "41",
+              "stock": 8
+            },
+            {
+              "size": "42",
+              "stock": 7
+            },
+            {
+              "size": "43",
+              "stock": 6
+            },
+            {
+              "size": "44",
+              "stock": 5
+            }
+          ],
+          "oldPrice": "1184000"
+        },
+        {
+          "title": "Sports Sneakers Off White & Red",
+          "description": "The Sports Sneakers in Off White and Red combine style and functionality, making them a fashionable choice for sports enthusiasts. The red and off-white color combination adds a bold and energetic touch.",
+          "categorySlug": "sneakers",
+          "gender": "male",
+          "basePrice": "1512000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-&-red/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 4
+            },
+            {
+              "size": "41",
+              "stock": 3
+            },
+            {
+              "size": "42",
+              "stock": 14
+            },
+            {
+              "size": "43",
+              "stock": 13
+            },
+            {
+              "size": "44",
+              "stock": 12
+            }
+          ],
+          "oldPrice": "1591000",
+          "colorHex": "#FFFFFF",
+          "colorName": {
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
+          }
+        },
+        {
+          "title": "Sports Sneakers Off White Red",
+          "description": "Another variant of the Sports Sneakers in Off White Red, featuring a unique design. These sneakers offer style and comfort for casual occasions.",
+          "categorySlug": "sneakers",
+          "gender": "male",
+          "basePrice": "1386000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/3.webp",
+            "https://cdn.dummyjson.com/product-images/mens-shoes/sports-sneakers-off-white-red/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 11
+            },
+            {
+              "size": "41",
+              "stock": 10
+            },
+            {
+              "size": "42",
+              "stock": 9
+            },
+            {
+              "size": "43",
+              "stock": 8
+            },
+            {
+              "size": "44",
+              "stock": 7
+            }
+          ],
+          "colorHex": "#FFFFFF",
+          "colorName": {
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
+          }
+        },
+        {
+          "title": "Black & Brown Slipper",
+          "description": "The Black & Brown Slipper is a comfortable and stylish choice for casual wear. Featuring a blend of black and brown colors, it adds a touch of sophistication to your relaxation.",
+          "categorySlug": "sneakers",
+          "gender": "female",
+          "basePrice": "349000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/3.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/black-&-brown-slipper/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 14
+            },
+            {
+              "size": "41",
+              "stock": 13
+            },
+            {
+              "size": "42",
+              "stock": 12
+            },
+            {
+              "size": "43",
+              "stock": 11
+            },
+            {
+              "size": "44",
+              "stock": 10
+            }
+          ],
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        },
+        {
+          "title": "Tufli",
+          "description": null,
+          "categorySlug": "dress-shoes",
+          "gender": "female",
+          "basePrice": "1008000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/3.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/calvin-klein-heel-shoes/4.webp"
+          ],
+          "tags": [
+            "classic"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 9
+            },
+            {
+              "size": "41",
+              "stock": 8
+            },
+            {
+              "size": "42",
+              "stock": 7
+            },
+            {
+              "size": "43",
+              "stock": 6
+            },
+            {
+              "size": "44",
+              "stock": 5
+            }
+          ],
+          "oldPrice": "1041000"
+        },
+        {
+          "title": "Golden Shoes Woman",
+          "description": "The Golden Shoes for Women are a glamorous choice for special occasions. Featuring a golden hue and stylish design, they add a touch of luxury to your outfit.",
+          "categorySlug": "sneakers",
+          "gender": "female",
+          "basePrice": "630000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/3.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/golden-shoes-woman/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 4
+            },
+            {
+              "size": "41",
+              "stock": 3
+            },
+            {
+              "size": "42",
+              "stock": 14
+            },
+            {
+              "size": "43",
+              "stock": 13
+            },
+            {
+              "size": "44",
+              "stock": 12
+            }
+          ],
+          "oldPrice": "732000"
+        },
+        {
+          "title": "Pampi Shoes",
+          "description": "Pampi Shoes offer a blend of comfort and style for everyday use. With a versatile design, they are suitable for various casual occasions, providing a trendy and relaxed look.",
+          "categorySlug": "sneakers",
+          "gender": "female",
+          "basePrice": "378000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/3.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/pampi-shoes/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 11
+            },
+            {
+              "size": "41",
+              "stock": 10
+            },
+            {
+              "size": "42",
+              "stock": 9
+            },
+            {
+              "size": "43",
+              "stock": 8
+            },
+            {
+              "size": "44",
+              "stock": 7
+            }
+          ],
+          "oldPrice": "440000"
+        },
+        {
+          "title": "Red Shoes",
+          "description": "The Red Shoes make a bold statement with their vibrant red color. Whether for a party or a casual outing, these shoes add a pop of color and style to your wardrobe.",
+          "categorySlug": "sneakers",
+          "gender": "female",
+          "basePrice": "441000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/3.webp",
+            "https://cdn.dummyjson.com/product-images/womens-shoes/red-shoes/4.webp"
+          ],
+          "tags": [
+            "sport"
+          ],
+          "sizes": [
+            {
+              "size": "40",
+              "stock": 6
+            },
+            {
+              "size": "41",
+              "stock": 5
+            },
+            {
+              "size": "42",
+              "stock": 4
+            },
+            {
+              "size": "43",
+              "stock": 3
+            },
+            {
+              "size": "44",
+              "stock": 14
+            }
+          ],
+          "oldPrice": "536000",
+          "colorHex": "#C0392B",
+          "colorName": {
+            "uz": "Qizil",
+            "ru": "Красный",
+            "en": "Red"
+          }
+        }
+      ],
+      "logoUrl": "https://cdn.dummyjson.com/product-images/mens-shoes/nike-air-jordan-1-red-and-black/1.webp",
+      "currency": "UZS"
+    },
+    {
+      "name": "Vaqt Aksessuar",
+      "slug": "vaqt-accessories",
+      "city": "Toshkent",
+      "address": "Mirzo Ulug'bek tumani, Buyuk Ipak Yo'li 45",
+      "landmark": "Oybek metrosi",
+      "phone": "+998901110203",
+      "lat": 41.3275,
+      "lng": 69.3412,
+      "description": "Soat, ko'zoynak va premium aksessuarlar",
+      "products": [
+        {
+          "title": "Brown Leather Belt Watch",
+          "description": "The Brown Leather Belt Watch is a stylish timepiece with a classic design. Featuring a genuine leather strap and a sleek dial, it adds a touch of sophistication to your look.",
+          "categorySlug": "watch",
+          "gender": "male",
+          "basePrice": "1134000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 9
+            }
+          ],
+          "oldPrice": "1206000",
+          "colorHex": "#6B4A2B",
+          "colorName": {
+            "uz": "Jigarrang",
+            "ru": "Коричневый",
+            "en": "Brown"
+          }
+        },
+        {
+          "title": "Longines Master Collection",
+          "description": "The Longines Master Collection is an elegant and refined watch known for its precision and craftsmanship. With a timeless design, it's a symbol of luxury and sophistication.",
+          "categorySlug": "watch",
+          "gender": "male",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-watches/longines-master-collection/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/longines-master-collection/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/longines-master-collection/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 10
+            }
+          ]
+        },
+        {
+          "title": "Qora qo'l soati",
+          "description": null,
+          "categorySlug": "watch",
+          "gender": "male",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-date-black-dial/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-date-black-dial/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-date-black-dial/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 11
+            }
+          ],
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        },
+        {
+          "title": "Qo'l soati",
+          "description": null,
+          "categorySlug": "watch",
+          "gender": "male",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-moonphase/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-moonphase/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-cellini-moonphase/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 12
+            }
+          ]
+        },
+        {
+          "title": "Qo'l soati 2",
+          "description": null,
+          "categorySlug": "watch",
+          "gender": "male",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 13
+            }
+          ]
+        },
+        {
+          "title": "Qo'l soati 3",
+          "description": null,
+          "categorySlug": "watch",
+          "gender": "male",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-submariner-watch/1.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-submariner-watch/2.webp",
+            "https://cdn.dummyjson.com/product-images/mens-watches/rolex-submariner-watch/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 14
+            }
+          ]
+        },
+        {
+          "title": "Black Sun Glasses",
+          "description": "The Black Sun Glasses are a classic and stylish choice, featuring a sleek black frame and tinted lenses. They provide both UV protection and a fashionable look.",
+          "categorySlug": "glasses",
+          "gender": "unisex",
+          "basePrice": "378000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/sunglasses/black-sun-glasses/1.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/black-sun-glasses/2.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/black-sun-glasses/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 10
+            }
+          ],
+          "oldPrice": "398000",
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        },
+        {
+          "title": "Classic Sun Glasses",
+          "description": "The Classic Sun Glasses offer a timeless design with a neutral frame and UV-protected lenses. These sunglasses are versatile and suitable for various occasions.",
+          "categorySlug": "glasses",
+          "gender": "unisex",
+          "basePrice": "315000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/sunglasses/classic-sun-glasses/1.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/classic-sun-glasses/2.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/classic-sun-glasses/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 11
+            }
+          ],
+          "oldPrice": "331000"
+        },
+        {
+          "title": "Green and Black Glasses",
+          "description": "The Green and Black Glasses feature a bold combination of green and black colors, adding a touch of vibrancy to your eyewear collection. They are both stylish and eye-catching.",
+          "categorySlug": "glasses",
+          "gender": "unisex",
+          "basePrice": "441000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/sunglasses/green-and-black-glasses/1.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/green-and-black-glasses/2.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/green-and-black-glasses/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 12
+            }
+          ],
+          "oldPrice": "445000",
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        },
+        {
+          "title": "Party Glasses",
+          "description": "The Party Glasses are designed to add flair to your party outfit. With unique shapes or colorful frames, they're perfect for adding a playful touch to your look during celebrations.",
+          "categorySlug": "glasses",
+          "gender": "unisex",
+          "basePrice": "252000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/sunglasses/party-glasses/1.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/party-glasses/2.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/party-glasses/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 13
+            }
+          ],
+          "oldPrice": "284000"
+        },
+        {
+          "title": "Sunglasses",
+          "description": "The Sunglasses offer a classic and simple design with a focus on functionality. These sunglasses provide essential UV protection while maintaining a timeless look.",
+          "categorySlug": "glasses",
+          "gender": "unisex",
+          "basePrice": "290000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/1.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/2.webp",
+            "https://cdn.dummyjson.com/product-images/sunglasses/sunglasses/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 14
+            }
+          ],
+          "oldPrice": "294000"
+        }
+      ],
+      "logoUrl": "https://cdn.dummyjson.com/product-images/mens-watches/brown-leather-belt-watch/1.webp",
+      "currency": "UZS"
+    },
+    {
+      "name": "Ayol Butik",
+      "slug": "ayol-butik",
+      "city": "Toshkent",
+      "address": "Yakkasaroy tumani, Shota Rustaveli ko'chasi 24",
+      "landmark": "Yakkasaroy bozori yonida",
+      "phone": "+998901110204",
+      "lat": 41.285,
+      "lng": 69.255,
+      "description": "Ayollar uchun futbolka, kurtka, hudi va soat",
+      "products": [
+        {
+          "title": "BIYLACLESEN Women's 3-in-1 Snowboard Jacket Winter Coats",
+          "description": "Note:The Jackets is US standard size, Please choose size as your usual wear Material: 100% Polyester; Detachable Liner Fabric: Warm Fleece. Detachable Functional Liner: Skin Friendly, Lightweigt and Warm.Stand Collar Liner jacket, keep you warm in cold weather. Zippered Pockets: ",
+          "categorySlug": "jacket",
+          "gender": "female",
+          "basePrice": "718000",
+          "images": [
+            "https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png",
+            "https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png",
+            "https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png"
+          ],
+          "tags": [
+            "streetwear"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 12
+            },
+            {
+              "size": "M",
+              "stock": 11
+            },
+            {
+              "size": "L",
+              "stock": 10
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "title": "Lock and Love Women's Removable Hooded Faux Leather Moto Biker Jacket",
+          "description": "100% POLYURETHANE(shell) 100% POLYESTER(lining) 75% POLYESTER 25% COTTON (SWEATER), Faux leather material for style and comfort / 2 pockets of front, 2-For-One Hooded denim style faux leather jacket, Button detail on waist / Detail stitching at sides, HAND WASH ONLY / DO NOT BLEA",
+          "categorySlug": "hoodie",
+          "gender": "female",
+          "basePrice": "377000",
+          "images": [
+            "https://fakestoreapi.com/img/81XH0e8fefL._AC_UY879_t.png",
+            "https://fakestoreapi.com/img/81XH0e8fefL._AC_UY879_t.png",
+            "https://fakestoreapi.com/img/81XH0e8fefL._AC_UY879_t.png"
+          ],
+          "tags": [
+            "streetwear"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 7
+            },
+            {
+              "size": "M",
+              "stock": 6
+            },
+            {
+              "size": "L",
+              "stock": 5
+            },
+            {
+              "size": "XL",
+              "stock": 4
+            }
+          ]
+        },
+        {
+          "title": "Rain Jacket Women Windbreaker Striped Climbing Raincoats",
+          "description": "Lightweight perfet for trip or casual wear---Long sleeve with hooded, adjustable drawstring waist design. Button and zipper front closure raincoat, fully stripes Lined and The Raincoat has 2 side pockets are a good size to hold all kinds of things, it covers the hips, and the hoo",
+          "categorySlug": "jacket",
+          "gender": "female",
+          "basePrice": "504000",
+          "images": [
+            "https://fakestoreapi.com/img/71HblAHs5xL._AC_UY879_-2t.png",
+            "https://fakestoreapi.com/img/71HblAHs5xL._AC_UY879_-2t.png",
+            "https://fakestoreapi.com/img/71HblAHs5xL._AC_UY879_-2t.png"
+          ],
+          "tags": [
+            "streetwear"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 14
+            },
+            {
+              "size": "M",
+              "stock": 13
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 11
+            }
+          ]
+        },
+        {
+          "title": "DANVOUY Womens T Shirt Casual Cotton Short",
+          "description": "95%Cotton,5%Spandex, Features: Casual, Short Sleeve, Letter Print,V-Neck,Fashion Tees, The fabric is soft and has some stretch., Occasion: Casual/Office/Beach/School/Home/Street. Season: Spring,Summer,Autumn,Winter.",
+          "categorySlug": "tshirt",
+          "gender": "female",
+          "basePrice": "164000",
+          "images": [
+            "https://fakestoreapi.com/img/61pHAEJ4NML._AC_UX679_t.png",
+            "https://fakestoreapi.com/img/61pHAEJ4NML._AC_UX679_t.png",
+            "https://fakestoreapi.com/img/61pHAEJ4NML._AC_UX679_t.png"
+          ],
+          "tags": [
+            "casual"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 11
+            },
+            {
+              "size": "M",
+              "stock": 10
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 8
+            }
+          ]
+        },
+        {
+          "title": "IWC Ingenieur Automatic Steel",
+          "description": "The IWC Ingenieur Automatic Steel watch is a durable and sophisticated timepiece. With a stainless steel case and automatic movement, it combines precision and style for watch enthusiasts.",
+          "categorySlug": "watch",
+          "gender": "female",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-watches/iwc-ingenieur-automatic-steel/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/iwc-ingenieur-automatic-steel/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/iwc-ingenieur-automatic-steel/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "title": "Qo'l soati 4",
+          "description": null,
+          "categorySlug": "watch",
+          "gender": "female",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-watches/rolex-cellini-moonphase/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/rolex-cellini-moonphase/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/rolex-cellini-moonphase/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 7
+            }
+          ]
+        },
+        {
+          "title": "Qo'l soati 5",
+          "description": null,
+          "categorySlug": "watch",
+          "gender": "female",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-watches/rolex-datejust-women/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/rolex-datejust-women/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/rolex-datejust-women/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 8
+            }
+          ]
+        },
+        {
+          "title": "Watch Gold for Women",
+          "description": "The Gold Women's Watch is a stunning accessory that combines luxury and style. Featuring a gold-plated case and a chic design, it adds a touch of glamour to any outfit.",
+          "categorySlug": "watch",
+          "gender": "female",
+          "basePrice": "4900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-watches/watch-gold-for-women/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/watch-gold-for-women/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/watch-gold-for-women/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "title": "Women's Wrist Watch",
+          "description": "The Women's Wrist Watch is a versatile and fashionable timepiece for everyday wear. With a comfortable strap and a simple yet elegant design, it complements various styles.",
+          "categorySlug": "watch",
+          "gender": "female",
+          "basePrice": "1638000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-watches/women's-wrist-watch/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/women's-wrist-watch/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-watches/women's-wrist-watch/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 10
+            }
+          ],
+          "oldPrice": "1874000"
+        }
+      ],
+      "logoUrl": "https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png",
+      "currency": "UZS"
+    },
+    {
+      "name": "Sumka Gallery",
+      "slug": "sumka-gallery",
+      "city": "Toshkent",
+      "address": "Shayxontohur tumani, Navoiy ko'chasi 30",
+      "landmark": "Chorsu bozori yaqinida",
+      "phone": "+998901110205",
+      "lat": 41.32,
+      "lng": 69.22,
+      "description": "Ayollar sumkalari",
+      "products": [
+        {
+          "title": "Blue Women's Handbag",
+          "description": "The Blue Women's Handbag is a stylish and spacious accessory for everyday use. With a vibrant blue color and multiple compartments, it combines fashion and functionality.",
+          "categorySlug": "bag",
+          "gender": "female",
+          "basePrice": "630000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 8
+            }
+          ],
+          "oldPrice": "767000",
+          "colorHex": "#1E3A5F",
+          "colorName": {
+            "uz": "Ko'k",
+            "ru": "Синий",
+            "en": "Blue"
+          }
+        },
+        {
+          "title": "Sumka",
+          "description": null,
+          "categorySlug": "bag",
+          "gender": "female",
+          "basePrice": "1638000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-bags/heshe-women's-leather-bag/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/heshe-women's-leather-bag/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/heshe-women's-leather-bag/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 9
+            }
+          ],
+          "oldPrice": "1704000"
+        },
+        {
+          "title": "Sumka 2",
+          "description": null,
+          "categorySlug": "bag",
+          "gender": "female",
+          "basePrice": "2900000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-bags/prada-women-bag/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/prada-women-bag/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/prada-women-bag/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 10
+            }
+          ]
+        },
+        {
+          "title": "White Faux Leather Backpack",
+          "description": "The White Faux Leather Backpack is a trendy and practical backpack for the modern woman. With a sleek white design and ample storage space, it's perfect for both casual and on-the-go styles.",
+          "categorySlug": "bag",
+          "gender": "female",
+          "basePrice": "504000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-bags/white-faux-leather-backpack/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/white-faux-leather-backpack/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/white-faux-leather-backpack/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 11
+            }
+          ],
+          "oldPrice": "594000",
+          "colorHex": "#FFFFFF",
+          "colorName": {
+            "uz": "Oq",
+            "ru": "Белый",
+            "en": "White"
+          }
+        },
+        {
+          "title": "Women Handbag Black",
+          "description": "The Women Handbag in Black is a classic and versatile accessory that complements various outfits. With a timeless black color and functional design, it's a must-have in every woman's wardrobe.",
+          "categorySlug": "bag",
+          "gender": "female",
+          "basePrice": "756000",
+          "images": [
+            "https://cdn.dummyjson.com/product-images/womens-bags/women-handbag-black/1.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/women-handbag-black/2.webp",
+            "https://cdn.dummyjson.com/product-images/womens-bags/women-handbag-black/3.webp"
+          ],
+          "tags": [
+            "minimal"
+          ],
+          "sizes": [
+            {
+              "size": "onesize",
+              "stock": 12
+            }
+          ],
+          "oldPrice": "855000",
+          "colorHex": "#111111",
+          "colorName": {
+            "uz": "Qora",
+            "ru": "Чёрный",
+            "en": "Black"
+          }
+        }
+      ],
+      "logoUrl": "https://cdn.dummyjson.com/product-images/womens-bags/blue-women's-handbag/1.webp",
+      "currency": "UZS"
+    }
+  ]
+}
