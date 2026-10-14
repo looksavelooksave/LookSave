@@ -72,7 +72,7 @@ Tayyorgarlik `docs/08-deployment.md` §2 da: `deploy` foydalanuvchisi, `ufw`,
 Docker, swap.
 
 ```bash
-# DNS: A yozuvi  api.looksave.app → <VPS IP>   (Cloudflare'da "DNS only")
+# DNS: A yozuvi  api.looksave.uz → <VPS IP>   (Cloudflare'da "DNS only")
 
 cd /home/deploy
 git clone https://github.com/umidjon-devvloper/LookSave.git looksave
@@ -88,7 +88,7 @@ nano .env
 
 docker compose up -d
 ./scripts/migrate.sh
-curl https://api.looksave.app/health
+curl https://api.looksave.uz/health
 ```
 
 ### Bu bosqichda kutilayotgan xato
@@ -100,7 +100,7 @@ curl https://api.looksave.app/health
 
 **Caddy sertifikat olmaydi.** Sabablari, ehtimollik tartibida:
 
-1. DNS hali tarqalmagan — `dig api.looksave.app` bilan tekshiring
+1. DNS hali tarqalmagan — `dig api.looksave.uz` bilan tekshiring
 2. Cloudflare'da "proxied" (to'q sariq bulut) yoqilgan — **DNS only** qiling.
    Caddy TLS'ni o'zi hal qiladi; Cloudflare proksisi orqasida rate limiting
    ham buziladi (barcha so'rov bitta IP'dan ko'rinadi)
@@ -142,7 +142,7 @@ va `DATABASE_URL` da mos emasligi ehtimoli yuqori.
 docker compose up -d api
 
 curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
-  -d "url=https://api.looksave.app/v1/telegram/webhook" \
+  -d "url=https://api.looksave.uz/v1/telegram/webhook" \
   -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
 ```
 
@@ -172,7 +172,7 @@ Bucket yarating, S3 API kalitini oling, `.env` ga yozing:
 ```json
 [
   {
-    "AllowedOrigins": ["https://store.looksave.app", "http://localhost:5173"],
+    "AllowedOrigins": ["https://store.looksave.uz", "http://localhost:5173"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["content-type", "cache-control"],
     "MaxAgeSeconds": 3600
@@ -291,7 +291,7 @@ lekin unga **alohida kalit** kerak — mobil kalitlari web'da ishlamaydi.
 ```
 Cloud Console → Enable "Maps JavaScript API"
 Credentials → API key → HTTP referrers:
-    https://panel.looksave.app/*
+    https://store.looksave.uz/*
     http://localhost:5173/*
 API restrictions → faqat "Maps JavaScript API"
 ```

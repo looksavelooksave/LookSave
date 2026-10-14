@@ -1142,9 +1142,9 @@ Ilova: komplektni avatarga kiydiradi
 
 | Panel | Domen | Tarkib |
 |---|---|---|
-| Landing | `looksave.app` | Marketing, do'konlar uchun taklif, ilova havolalari |
-| Do'kon kabineti | `store.looksave.app` | Dashboard, mahsulot, buyurtma, analitika, balans, 3D so'rov |
-| Admin | `admin.looksave.app` | Do'kon tasdiqlash, moderatsiya, 3D navbat, komissiya, umumiy analitika |
+| Landing | `looksave.uz` | Marketing, do'konlar uchun taklif, ilova havolalari |
+| Do'kon kabineti | `store.looksave.uz` | Dashboard, mahsulot, buyurtma, analitika, balans, 3D so'rov |
+| Admin | `admin.looksave.uz` | Do'kon tasdiqlash, moderatsiya, 3D navbat, komissiya, umumiy analitika |
 
 ---
 
@@ -1168,11 +1168,11 @@ services:
 ### Domenlar
 
 ```
-api.looksave.app     → Node backend
-cdn.looksave.app     → Cloudflare R2 (custom domain)
-store.looksave.app   → do'kon kabineti
-admin.looksave.app   → admin panel
-looksave.app         → landing
+api.looksave.uz     → Node backend
+cdn.looksave.uz     → Cloudflare R2 (custom domain)
+store.looksave.uz   → do'kon kabineti
+admin.looksave.uz   → admin panel
+looksave.uz         → landing
 ```
 
 ### Tashqi servislar

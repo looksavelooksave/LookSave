@@ -138,7 +138,7 @@ function PublishForm({
           label="GLB (lod0)"
           value={form.glbUrl}
           onChange={(v) => set({ glbUrl: v })}
-          placeholder="https://cdn.looksave.app/…"
+          placeholder="https://cdn.looksave.uz/…"
         />
         <Field label="lod1" value={form.lod1} onChange={(v) => set({ lod1: v })} />
         <Field label="lod2" value={form.lod2} onChange={(v) => set({ lod2: v })} />

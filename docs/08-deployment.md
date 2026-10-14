@@ -219,10 +219,10 @@ networks:
 
 ```
 {
-	email admin@looksave.app
+	email admin@looksave.uz
 }
 
-api.looksave.app {
+api.looksave.uz {
 	reverse_proxy api:3000 {
 		# SSE uchun buferlash o'chiriladi (07-web-panels.md, 4.4)
 		flush_interval -1
@@ -264,7 +264,7 @@ Caddy TLS sertifikatini avtomatik oladi va yangilaydi — hech narsa qilish kera
 # ── Umumiy ──
 NODE_ENV=production
 PORT=3000
-API_URL=https://api.looksave.app
+API_URL=https://api.looksave.uz
 GH_OWNER=umidjon
 API_TAG=latest
 
@@ -284,7 +284,7 @@ R2_SECRET_ACCESS_KEY=
 R2_BUCKET_ASSETS=looksave-assets
 R2_BUCKET_BACKUPS=looksave-backups
 R2_ENDPOINT=https://<account>.r2.cloudflarestorage.com
-CDN_BASE_URL=https://cdn.looksave.app
+CDN_BASE_URL=https://cdn.looksave.uz
 
 # ── SMS ──
 SMS_PROVIDER=eskiz                 # eskiz | twilio
@@ -322,7 +322,7 @@ DEFAULT_COMMISSION_RATE=0            # Faza 1-2 da 0 (K-12)
 BLOCKLIST_ESCALATION_THRESHOLD=3
 
 # ── CORS ──
-CORS_ORIGINS=https://store.looksave.app,https://admin.looksave.app,https://looksave.app
+CORS_ORIGINS=https://store.looksave.uz,https://admin.looksave.uz,https://looksave.uz
 ```
 
 ```bash
@@ -337,7 +337,7 @@ chmod 600 .env
 
 ```bash
 # 1) DNS: A yozuvlari VPS IP ga
-#    api.looksave.app  →  <IP>
+#    api.looksave.uz  →  <IP>
 
 # 2) Repozitoriy
 cd /home/deploy
@@ -357,7 +357,7 @@ docker compose up -d
 ./scripts/migrate.sh
 
 # 6) Tekshirish
-curl https://api.looksave.app/health
+curl https://api.looksave.uz/health
 docker compose ps
 docker compose logs -f api
 ```
@@ -510,7 +510,7 @@ jobs:
             docker compose pull api
             docker compose up -d --no-deps api
             sleep 10
-            curl -fsS https://api.looksave.app/health || exit 1
+            curl -fsS https://api.looksave.uz/health || exit 1
             docker image prune -f
 ```
 
@@ -524,7 +524,7 @@ Pages GitHub'ga ulanadi, `main` ga push bo'lganda avtomatik build qiladi:
 Build command:      npm run build --workspace=apps/store-panel
 Build output:       apps/store-panel/dist
 Root directory:     /
-Environment:        VITE_API_URL=https://api.looksave.app
+Environment:        VITE_API_URL=https://api.looksave.uz
 ```
 
 Rollback — Pages panelida bir bosish.

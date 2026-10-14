@@ -51,8 +51,8 @@ export function Footer({ locale }: { locale: Locale }): JSX.Element {
       title: "Do'konlar uchun",
       icon: 'cart',
       links: [
-        { to: 'https://store.looksave.app', label: 'Sotuvchi kabineti', external: true },
-        { to: 'https://store.looksave.app/apply', label: "Do'kon ochish", external: true },
+        { to: 'https://store.looksave.uz', label: 'Sotuvchi kabineti', external: true },
+        { to: 'https://store.looksave.uz/apply', label: "Do'kon ochish", external: true },
       ],
     },
     {

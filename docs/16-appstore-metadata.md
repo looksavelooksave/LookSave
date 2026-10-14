@@ -8,12 +8,11 @@ etilishining oldini olish uchun yozilgan.
 > Ishga tushirishdan oldin maxfiylik matni va shartlar yurist tomonidan
 > tasdiqlanishi shart (xuddi `apps/web/src/routes/privacy.tsx` dagidek).
 
-> ⚠️ **Hal qilinishi kerak — aloqa domeni.** Kod bazasida ikki domen aralashgan:
-> backend va sayt `looksave.uz` da (jonli), lekin `Footer.tsx` va `privacy.tsx`
-> hali `looksave.app` pochtasini ko'rsatadi (`.app` o'lik). Quyida hamma joyda
-> `looksave.uz` ishlatildi. App Store Connect'ga kiritishdan oldin
-> **haqiqiy support/privacy pochtasini tasdiqlang** va saytdagi eski `.app`
-> havolalarini yangilang.
+> ⚠️ **Tasdiqlanishi kerak — pochta qutilari.** Butun kod bazasi `.app` dan
+> `.uz` ga ko'chirildi (URL'lar va emaillar: `privacy@looksave.uz`,
+> `admin@looksave.uz`). App Store Connect'ga kiritishdan oldin bu pochta
+> qutilari **haqiqatan xat qabul qilishini** tekshiring — App Review va
+> foydalanuvchilar shu manzilga yozadi.
 
 ---
 

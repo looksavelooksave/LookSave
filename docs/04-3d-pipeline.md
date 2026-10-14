@@ -572,7 +572,7 @@ set -euo pipefail
 
 NAME="$1"
 DIR="dist/$NAME"
-BASE="https://cdn.looksave.app/models/$NAME"
+BASE="https://cdn.looksave.uz/models/$NAME"
 
 for f in lod0 lod1 lod2; do
   aws s3 cp "$DIR/$f.glb" "s3://looksave-assets/models/$NAME/$f.glb" \

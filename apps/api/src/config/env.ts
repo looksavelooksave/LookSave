@@ -79,7 +79,7 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().default(''),
   TELEGRAM_WEBHOOK_SECRET: z.string().default(''),
   TELEGRAM_BOT_USERNAME: z.string().default('LookSaveBot'),
-  STORE_PANEL_URL: z.string().url().default('https://store.looksave.app'),
+  STORE_PANEL_URL: z.string().url().default('https://store.looksave.uz'),
 
   // ── developer_ai paneli (operator navbati) ──
   /**
@@ -102,7 +102,7 @@ const envSchema = z.object({
   DEVELOPER_AI_AUTO_USERS: z.string().default(''),
   /** Yangi ish haqida xabar boradigan Telegram chat (operatorlar guruhi). */
   DEVELOPER_AI_TELEGRAM_CHAT_ID: z.string().default(''),
-  DEVELOPER_AI_PANEL_URL: z.string().url().default('https://ai.looksave.app'),
+  DEVELOPER_AI_PANEL_URL: z.string().url().default('https://developer.looksave.uz'),
 
   // Expo Push. Bo'sh bo'lsa push o'chirilgan deb hisoblanadi.
   EXPO_ACCESS_TOKEN: z.string().default(''),
@@ -130,7 +130,7 @@ const envSchema = z.object({
    * bo'ladi.
    */
   R2_BUCKET_PRIVATE: z.string().default(''),
-  CDN_BASE_URL: z.string().url().default('https://cdn.looksave.app'),
+  CDN_BASE_URL: z.string().url().default('https://cdn.looksave.uz'),
 
   // ── AI (OpenAI) ──
   /*

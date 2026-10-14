@@ -31,16 +31,16 @@ describe('mahsulot sxemasi', () => {
   it('nashr qilishda kamida 3 rasm kerak', () => {
     const two = product({
       status: 'pending',
-      images: ['https://cdn.looksave.app/a.webp', 'https://cdn.looksave.app/b.webp'],
+      images: ['https://cdn.looksave.uz/a.webp', 'https://cdn.looksave.uz/b.webp'],
     });
     expect(createProductSchema.safeParse(two).success).toBe(false);
 
     const three = product({
       status: 'pending',
       images: [
-        'https://cdn.looksave.app/a.webp',
-        'https://cdn.looksave.app/b.webp',
-        'https://cdn.looksave.app/c.webp',
+        'https://cdn.looksave.uz/a.webp',
+        'https://cdn.looksave.uz/b.webp',
+        'https://cdn.looksave.uz/c.webp',
       ],
     });
     expect(createProductSchema.safeParse(three).success).toBe(true);

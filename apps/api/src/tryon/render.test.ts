@@ -92,7 +92,7 @@ describe('gallereya holati sxemasi', () => {
 
 describe('surat manzili sxemasi', () => {
   it('to`g`ri manzil qabul qilinadi', () => {
-    expect(bodyPhotoSchema.safeParse({ url: 'https://cdn.looksave.app/body/a.jpg' }).success).toBe(
+    expect(bodyPhotoSchema.safeParse({ url: 'https://cdn.looksave.uz/body/a.jpg' }).success).toBe(
       true,
     );
   });
@@ -102,7 +102,7 @@ describe('surat manzili sxemasi', () => {
   });
 
   it('haddan tashqari uzun manzil rad etiladi', () => {
-    const long = `https://cdn.looksave.app/${'a'.repeat(500)}.jpg`;
+    const long = `https://cdn.looksave.uz/${'a'.repeat(500)}.jpg`;
     expect(bodyPhotoSchema.safeParse({ url: long }).success).toBe(false);
   });
 });

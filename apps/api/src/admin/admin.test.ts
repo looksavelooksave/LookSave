@@ -19,7 +19,7 @@ describe('3D nashr qoidalari', () => {
   it('GLB va QA bilan nashr qilinadi', () => {
     const result = assetUpdateSchema.safeParse({
       status: 'ready',
-      glbUrl: 'https://cdn.looksave.app/m/1.glb',
+      glbUrl: 'https://cdn.looksave.uz/m/1.glb',
       qaResult: QA,
     });
     expect(result.success).toBe(true);
@@ -28,7 +28,7 @@ describe('3D nashr qoidalari', () => {
   it('QA natijasisiz nashr qilib bo`lmaydi', () => {
     const result = assetUpdateSchema.safeParse({
       status: 'ready',
-      glbUrl: 'https://cdn.looksave.app/m/1.glb',
+      glbUrl: 'https://cdn.looksave.uz/m/1.glb',
     });
     expect(result.success).toBe(false);
   });
@@ -40,7 +40,7 @@ describe('3D nashr qoidalari', () => {
   it('checklist belgilanmasa nashr qilib bo`lmaydi — bitta sifatsiz model tajribani buzadi', () => {
     const result = assetUpdateSchema.safeParse({
       status: 'ready',
-      glbUrl: 'https://cdn.looksave.app/m/1.glb',
+      glbUrl: 'https://cdn.looksave.uz/m/1.glb',
       qaResult: { ...QA, checklistPassed: false },
     });
     expect(result.success).toBe(false);

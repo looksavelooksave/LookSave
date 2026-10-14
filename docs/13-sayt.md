@@ -1,4 +1,4 @@
-# 13 — Sayt (`looksave.app`)
+# 13 — Sayt (`looksave.uz`)
 
 **Stack:** React Router v7 (framework mode) · Vite · React 18 · TypeScript · Tailwind CSS · TanStack Query · three.js
 **Bog'liq:** [15-sayt-dizayn.md](./15-sayt-dizayn.md) · [06-dizayn.md](./06-dizayn.md) · [05-mobile.md](./05-mobile.md) · [03-api-spec.md](./03-api-spec.md) · [07-web-panels.md](./07-web-panels.md) · [12-tz.md](./12-tz.md) §4.3
@@ -22,8 +22,8 @@ shunday**, va qachon tayyor deb hisoblanadi.
 | Sabab | Nima yutiladi |
 |---|---|
 | **Qidiruvdan kirish** | Ilova App Store'da qidiriladi. Sayt Google'da topiladi: «Dubai denim jacket try on» → mahsulot sahifasi. Ilovada bunday kanal umuman yo'q |
-| **Havola ulashiladi** | Do'kon mahsulotini WhatsApp'ga tashlaydi. `looksave.app/p/...` ochiladi — ilova o'rnatish shart emas |
-| **Investorlar va do'konlar** | Deckdan keyin birinchi qadam — sayt. `store.looksave.app` ga ariza shu yerdan boshlanadi |
+| **Havola ulashiladi** | Do'kon mahsulotini WhatsApp'ga tashlaydi. `looksave.uz/p/...` ochiladi — ilova o'rnatish shart emas |
+| **Investorlar va do'konlar** | Deckdan keyin birinchi qadam — sayt. `store.looksave.uz` ga ariza shu yerdan boshlanadi |
 | **Desktopda kiyintirish** | 3D katta ekranda ancha yaxshi ko'rinadi. Telefonda 6 dyuym, brauzerda 27 |
 | **iOS'siz foydalanuvchi** | Android build hali yo'q. Sayt — yagona kirish yo'li |
 
@@ -40,8 +40,8 @@ sahifalar. To'rt til: `uz`, `ru`, `en`, `ar` (arabcha RTL).
 
 | Bor | Yo'q |
 |---|---|
-| Marketing sahifalari (bosh, qanday ishlaydi, do'konlar uchun) | Do'kon kabineti — `store.looksave.app` da qoladi |
-| Katalog, filtr, qidiruv, kolleksiya, brend | Admin panel — `admin.looksave.app` da qoladi |
+| Marketing sahifalari (bosh, qanday ishlaydi, do'konlar uchun) | Do'kon kabineti — `store.looksave.uz` da qoladi |
+| Katalog, filtr, qidiruv, kolleksiya, brend | Admin panel — `admin.looksave.uz` da qoladi |
 | Mahsulot sahifasi, o'lcham maslahati | Onlayn to'lov — K-10 kuchda: to'lov offline |
 | 3D kiyintirish studiyasi (bepul, tez) | Native ilova funksiyalari: push, kamera skaneri |
 | AI kiyintirish (avatar + render) | |
@@ -140,7 +140,7 @@ geo bo'yicha yo'naltirish (302, keshlanmaydi).
 **Xatolar:** `404` (kategoriya taklifi bilan), `500`, `/offline`.
 
 ⚠️ **Sotuvchi kabineti bu yerda qayta qurilmaydi.** `/for-stores` →
-`store.looksave.app` ga havola. Ikki panelni parallel yuritish — 07-hujjat
+`store.looksave.uz` ga havola. Ikki panelni parallel yuritish — 07-hujjat
 allaqachon rad etgan yo'l.
 
 ---
@@ -381,7 +381,7 @@ ketsa ish davom etadi, qaytganda natija turadi.
 ## 9. Auth — BFF sessiya
 
 ```
-brauzer ──(httpOnly cookie)──▶ SSR server ──(Bearer JWT)──▶ api.looksave.app
+brauzer ──(httpOnly cookie)──▶ SSR server ──(Bearer JWT)──▶ api.looksave.uz
 ```
 
 | Element | Qaror |
@@ -507,8 +507,8 @@ Barcha to'rt tilda tarjima qilinadi — tarjimasiz huquqiy matn kuchsiz.
 | Element | Qaror |
 |---|---|
 | Xosting | Cloudflare Workers (S-03). Panellar allaqachon Cloudflare'da |
-| Domen | `looksave.app` + `www` → asosiyga yo'naltiriladi |
-| API | `api.looksave.app` — VPS'da, Caddy orqali (bor). SSR server u bilan server-server gaplashadi |
+| Domen | `looksave.uz` + `www` → asosiyga yo'naltiriladi |
+| API | `api.looksave.uz` — VPS'da, Caddy orqali (bor). SSR server u bilan server-server gaplashadi |
 | CORS | Kerak emas: brauzer faqat o'z domeni bilan gaplashadi (BFF) |
 | Sarlavhalar | `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`, va **CSP** (`script-src 'self'`) |
 | Kesh | HTML — `no-cache`; xesh nomli aktivlar — `immutable, max-age=31536000`; katalog javoblari — chekkada 60 s |
@@ -601,7 +601,7 @@ limited), `how-it-works`, `for-stores`, `download`.
 
 - [ ] Bosh sahifa bo'limlari ilovadagi `(tabs)/index.tsx` tartibiga mos
 - [ ] Hero: `poster` darrov, 3D keyin — bo'sh quti hech qachon ko'rinmaydi
-- [ ] `for-stores` → `store.looksave.app/apply` ga o'tadi
+- [ ] `for-stores` → `store.looksave.uz/apply` ga o'tadi
 - [ ] To'rt tilda to'liq tarjima
 
 #### WEB-04 · Huquqiy, SEO, ulashish (2–3 kun)
@@ -610,7 +610,7 @@ limited), `how-it-works`, `for-stores`, `download`.
 - [ ] `hreflang` (4 + `x-default`), `canonical`, `sitemap.xml`, `robots.txt`
 - [ ] Havola Telegram, WhatsApp, X'da karta bilan chiqadi
 - [ ] Cookie banneri; rad etilsa analitika yuklanmaydi
-- [ ] **Deploy:** `looksave.app` ochiq, `08-deployment.md` yangilangan
+- [ ] **Deploy:** `looksave.uz` ochiq, `08-deployment.md` yangilangan
 
 ### Reliz R2 · «Katalog» — ko'rish va kiyib ko'rish (~3 hafta)
 
@@ -698,7 +698,7 @@ Bitta ro'yxat — relizlardan mustaqil, yakuniy holat:
 - [ ] Eng katta bo'lak gzip < 200 KB, LCP < 2 s, Lighthouse ≥ 92
 - [ ] Mehmon: ko'radi, kiyib ko'radi, savatga soladi. Kirgan: buyurtma beradi
 - [ ] `/privacy` da yuz surati bandi bor
-- [ ] `looksave.app` ochiq, CI deploy qiladi, rollback bir bosishda
+- [ ] `looksave.uz` ochiq, CI deploy qiladi, rollback bir bosishda
 
 ---
 
@@ -719,7 +719,7 @@ Bitta ro'yxat — relizlardan mustaqil, yakuniy holat:
 ## 21. Bu ishga kirmaydi
 
 - Onlayn to'lov — K-10 kuchda, alohida qaror va litsenziya kerak
-- Do'kon kabinetini saytga ko'chirish — `store.looksave.app` da qoladi
+- Do'kon kabinetini saytga ko'chirish — `store.looksave.uz` da qoladi
 - Blog, yangiliklar, kontent tizimi — bozor tasdiqlanganidan keyin
 - Native ilova funksiyalari: push, kamera skaneri, offline rejim
 - Tailwind v4 ga o'tish — uchala ilovaga tegadi, alohida ish

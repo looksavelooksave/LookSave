@@ -34,7 +34,7 @@ describe('natija', () => {
   it('faqat manzil qabul qilinadi', () => {
     expect(taskResultSchema.safeParse({ resultUrl: 'avatar/abc.jpg' }).success).toBe(false);
     expect(
-      taskResultSchema.safeParse({ resultUrl: 'https://cdn.looksave.app/avatar/a.jpg' }).success,
+      taskResultSchema.safeParse({ resultUrl: 'https://cdn.looksave.uz/avatar/a.jpg' }).success,
     ).toBe(true);
   });
 });

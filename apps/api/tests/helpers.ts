@@ -106,7 +106,7 @@ export async function createStoreFixture(options: { stock?: number } = {}): Prom
     `INSERT INTO products (store_id, category_id, title, slot, gender, base_price, currency,
                            status, images)
      VALUES ($1, $2, 'Test mahsulot', 'top', 'unisex', '100000.00', 'UZS', 'active',
-             '["https://cdn.looksave.app/a.webp"]')
+             '["https://cdn.looksave.uz/a.webp"]')
      RETURNING id`,
     [storeId, categoryId],
   );

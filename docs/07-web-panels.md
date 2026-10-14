@@ -7,8 +7,8 @@ Ikkita alohida ilova, bitta umumiy komponent kutubxonasi:
 
 | Panel | Domen | Kim uchun |
 |---|---|---|
-| Do'kon kabineti | `store.looksave.app` | Do'kon egasi va xodimlari |
-| Admin panel | `admin.looksave.app` | LookSave jamoasi |
+| Do'kon kabineti | `store.looksave.uz` | Do'kon egasi va xodimlari |
+| Admin panel | `admin.looksave.uz` | LookSave jamoasi |
 
 ---
 

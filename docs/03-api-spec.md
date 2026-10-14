@@ -1,6 +1,6 @@
 # 03 — API spetsifikatsiyasi
 
-**Base URL:** `https://api.looksave.app/v1`
+**Base URL:** `https://api.looksave.uz/v1`
 **Format:** JSON, UTF-8
 **Bog'liq:** [01-arxitektura.md](./01-arxitektura.md) · [02-database.md](./02-database.md)
 
@@ -271,7 +271,7 @@ Bu shart hujjatda yo'q edi, implementatsiyada qo'shildi (`auth/deletion.ts` dagi
       "height": 0.62, "weight": 0.48, "shoulderWidth": 0.55,
       "waist": 0.40, "chest": 0.51, "hips": 0.44
     },
-    "faceTextureUrl": "https://cdn.looksave.app/faces/…webp",
+    "faceTextureUrl": "https://cdn.looksave.uz/faces/…webp",
     "faceScanStatus": "ready",
     "trust": { "isRestricted": false, "openOrders": 1 }
   }
@@ -321,7 +321,7 @@ Try-On ekrani ochilganda birinchi chaqiriladi.
 ```json
 {
   "data": {
-    "bodyGlbUrl": "https://cdn.looksave.app/avatar/male-base-v3.glb",
+    "bodyGlbUrl": "https://cdn.looksave.uz/avatar/male-base-v3.glb",
     "skeletonVersion": "v3",
     "morphTargets": { "height": 0.62, "…": "…" },
     "faceTextureUrl": "https://cdn…",
@@ -896,7 +896,7 @@ POST /store/uploads/presign
 {
   "data": {
     "uploadUrl": "https://…r2.cloudflarestorage.com/…?X-Amz-Signature=…",
-    "publicUrl": "https://cdn.looksave.app/products/…webp",
+    "publicUrl": "https://cdn.looksave.uz/products/…webp",
     "expiresIn": 900
   }
 }

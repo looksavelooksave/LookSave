@@ -255,7 +255,7 @@ narsa.
 | **Kategoriyalar** | ERKAKLAR / AYOLLAR / LIMITED — uchta katta karta, fon rasm + scrim + katta harfli nom |
 | **Qanday ishlaydi** | Uch qadam, raqamlangan (bu haqiqiy ketma-ketlik) |
 | **Kiyintirish** | 3D demo bloki + «o'z avataringizda ko'ring» CTA |
-| **Do'konlar uchun** | Qisqa blok + `store.looksave.app` ga havola |
+| **Do'konlar uchun** | Qisqa blok + `store.looksave.uz` ga havola |
 
 **Web'ga xos:** hero'da 3D **darrov yuklanmaydi** — poster rasm turadi,
 `IntersectionObserver` yoki bosish bilan canvas keladi (322 KB, 13-sayt §12).
@@ -1430,7 +1430,7 @@ API o'qiydi:                                ^^^^^^^^^^^^ — yana veb-server
 ```
 
 Ya'ni o'zgarish **behuda** bo'lardi. Hop sonini 2 ga ko'tarish esa
-teshik ochadi: mobil ilova `api.looksave.app` ga **to'g'ridan-to'g'ri**
+teshik ochadi: mobil ilova `api.looksave.uz` ga **to'g'ridan-to'g'ri**
 boradi, demak bu yo'l ochiq va haqiqiy — mijozning o'zi yozgan XFF
 g'olib chiqib, har kim o'zining cheklovini chetlab o'tardi. O'lchandi:
 `trust proxy 2` da soxta IP bilan chelak har safar yangilanadi.

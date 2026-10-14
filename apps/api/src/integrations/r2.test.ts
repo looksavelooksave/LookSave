@@ -12,10 +12,10 @@ import { hasPrivateBucket, isOwnCdnUrl, isPrivateKey, keyFromCdnUrl, presignRead
  * amalda faylni joyida qoldirardi (12-tz.md D-42).
  *
  * Test muhitida `CDN_BASE_URL` berilmagan — `env.ts` dagi standart
- * qiymat (`https://cdn.looksave.app`) ishlatiladi.
+ * qiymat (`https://cdn.looksave.uz`) ishlatiladi.
  */
 
-const CDN = 'https://cdn.looksave.app';
+const CDN = 'https://cdn.looksave.uz';
 
 describe('keyFromCdnUrl', () => {
   it('oddiy havoladan kalit ajratadi', () => {
@@ -39,14 +39,14 @@ describe('keyFromCdnUrl', () => {
   });
 
   /*
-   * ⚠️ Prefiks o'xshashligi yetarli emas. `cdn.looksave.app.evil.com`
+   * ⚠️ Prefiks o'xshashligi yetarli emas. `cdn.looksave.uz.evil.com`
    * satr sifatida bizning manzil bilan boshlanadi, lekin boshqa domen.
    * `isOwnCdnUrl` oxiriga `/` qo'shib solishtiradi — shu tekshiruv
    * bo'lmasa begona havola "o'ziniki" deb qabul qilinardi.
    */
   it('o`xshash domenni o`ziniki deb hisoblamaydi', () => {
-    expect(isOwnCdnUrl('https://cdn.looksave.app.evil.com/a.jpg')).toBe(false);
-    expect(keyFromCdnUrl('https://cdn.looksave.app.evil.com/a.jpg')).toBeNull();
+    expect(isOwnCdnUrl('https://cdn.looksave.uz.evil.com/a.jpg')).toBe(false);
+    expect(keyFromCdnUrl('https://cdn.looksave.uz.evil.com/a.jpg')).toBeNull();
   });
 });
 

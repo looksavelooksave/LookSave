@@ -48,7 +48,7 @@ unlink - Ulanishni uzish
 curl -X POST "https://api.telegram.org/bot${TOKEN}/setWebhook" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://api.looksave.app/v1/telegram/webhook",
+    "url": "https://api.looksave.uz/v1/telegram/webhook",
     "secret_token": "'"${TELEGRAM_WEBHOOK_SECRET}"'",
     "allowed_updates": ["message","callback_query"],
     "drop_pending_updates": true
@@ -153,7 +153,7 @@ ${order.note ? `\n💬 <i>${order.note}</i>` : ''}
         ],
         [
           { text: '📞 Qo\'ng\'iroq', url: `tel:${order.contactPhone}` },
-          { text: '📋 Panel',      url: `https://store.looksave.app/orders/${order.id}` },
+          { text: '📋 Panel',      url: `https://store.looksave.uz/orders/${order.id}` },
         ],
         ...(order.address ? [[
           { text: '🗺 Xaritada',
@@ -372,7 +372,7 @@ Va eng muhimi: **tasdiqlangan raqam qayta so'ralmaydi** (03-api-spec.md, 7-bo'li
 
 ```
 Cloudflare → R2 → Create bucket
-  • looksave-assets    (ommaviy, custom domain: cdn.looksave.app)
+  • looksave-assets    (ommaviy, custom domain: cdn.looksave.uz)
   • looksave-backups   (yopiq)
 
 R2 → Manage API Tokens → Create
@@ -380,7 +380,7 @@ R2 → Manage API Tokens → Create
   • Faqat shu ikki bucket
 ```
 
-Custom domen ulash: `cdn.looksave.app` → R2 bucket. Cloudflare CDN avtomatik oldiga qo'shiladi.
+Custom domen ulash: `cdn.looksave.uz` → R2 bucket. Cloudflare CDN avtomatik oldiga qo'shiladi.
 
 ### 4.2 Presign (rasm yuklash)
 
@@ -426,10 +426,10 @@ export async function presignUpload(opts: {
 [
   {
     "AllowedOrigins": [
-      "https://looksave.app",
-      "https://www.looksave.app",
-      "https://store.looksave.app",
-      "https://admin.looksave.app",
+      "https://looksave.uz",
+      "https://www.looksave.uz",
+      "https://store.looksave.uz",
+      "https://admin.looksave.uz",
       "http://localhost:5175",
       "http://localhost:5173",
       "http://localhost:5174"
@@ -504,7 +504,7 @@ export async function geocode(address: string, region: 'uz' | 'ae') {
 | iOS | Bundle ID `app.looksave.mobile` | Maps SDK for iOS |
 | Android | Package + SHA-1 | Maps SDK for Android |
 | Server | IP (VPS) | Geocoding API |
-| Web | Referrer `*.looksave.app` | Maps JavaScript API |
+| Web | Referrer `*.looksave.uz` | Maps JavaScript API |
 
 **Places API hech qaysi kalitda yoqilmaydi** (K-05). Do'konlar bizning bazamizda.
 

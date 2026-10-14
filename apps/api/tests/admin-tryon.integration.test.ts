@@ -111,7 +111,7 @@ describe('admin moderatsiyasi', () => {
     const noQa = await request(app)
       .patch(`/v1/admin/3d-queue/${assetId}`)
       .set(admin)
-      .send({ status: 'ready', glbUrl: 'https://cdn.looksave.app/m.glb' });
+      .send({ status: 'ready', glbUrl: 'https://cdn.looksave.uz/m.glb' });
     expect(noQa.status).toBe(422);
 
     const unchecked = await request(app)
@@ -119,7 +119,7 @@ describe('admin moderatsiyasi', () => {
       .set(admin)
       .send({
         status: 'ready',
-        glbUrl: 'https://cdn.looksave.app/m.glb',
+        glbUrl: 'https://cdn.looksave.uz/m.glb',
         qaResult: {
           fpsHighEnd: 60,
           fpsMidRange: 38,
@@ -136,7 +136,7 @@ describe('admin moderatsiyasi', () => {
       .set(admin)
       .send({
         status: 'ready',
-        glbUrl: 'https://cdn.looksave.app/m.glb',
+        glbUrl: 'https://cdn.looksave.uz/m.glb',
         hideBodyParts: ['body_torso'],
         hasMorphs: true,
         qaResult: {
@@ -181,7 +181,7 @@ describe('Try-On', () => {
 
     await pool.query(
       `INSERT INTO assets_3d (variant_id, status, glb_url, has_morphs)
-       VALUES ($1, 'ready', 'https://cdn.looksave.app/m.glb', true)`,
+       VALUES ($1, 'ready', 'https://cdn.looksave.uz/m.glb', true)`,
       [fixture.variantId],
     );
 
@@ -191,7 +191,7 @@ describe('Try-On', () => {
     );
 
     expect(found).toBeDefined();
-    expect(found.glbUrl).toBe('https://cdn.looksave.app/m.glb');
+    expect(found.glbUrl).toBe('https://cdn.looksave.uz/m.glb');
     // Pul string bo'lib qoladi
     expect(found.price).toBe('100000.00');
   });

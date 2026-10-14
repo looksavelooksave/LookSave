@@ -90,7 +90,7 @@ export default function Privacy(): JSX.Element {
         <section>
           <h2 className="text-h2 font-semibold text-foreground">Bog'lanish</h2>
           <p className="mt-3">
-            Savol yoki so'rov bo'lsa: <span className="text-foreground">privacy@looksave.app</span>
+            Savol yoki so'rov bo'lsa: <span className="text-foreground">privacy@looksave.uz</span>
           </p>
         </section>
       </div>

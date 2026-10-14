@@ -62,7 +62,7 @@ cd /home/deploy
 git clone git@github.com:umidjon-devvloper/LookSave.git looksave
 cd looksave/infra
 
-# 1) DNS: A yozuvi  api.looksave.app → <VPS IP>   (Cloudflare'da "DNS only")
+# 1) DNS: A yozuvi  api.looksave.uz → <VPS IP>   (Cloudflare'da "DNS only")
 
 # 2) Sirlar
 cp .env.example .env
@@ -81,7 +81,7 @@ docker compose up -d
 ./scripts/migrate.sh
 
 # 5) Tekshirish
-curl https://api.looksave.app/health
+curl https://api.looksave.uz/health
 docker compose ps
 docker compose logs -f api
 ```

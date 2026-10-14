@@ -39,15 +39,13 @@ import { env } from '../src/config/env';
  * yana o'sha xatoga tushish.
  */
 const ORIGINS = [
-  'https://looksave.app',
+  'https://looksave.uz',
   // ⚠️ www ham kerak — bucketda qo'lda qo'yilgan edi va ro'yxatda bo'lmagani
   // uchun `--apply` uni jimgina o'chirib yuborardi
-  'https://www.looksave.app',
-  'https://store.looksave.app',
-  'https://admin.looksave.app',
+  'https://www.looksave.uz',
+  'https://store.looksave.uz',
+  'https://admin.looksave.uz',
   // developer_ai paneli — operator natija suratini to'g'ridan-to'g'ri yuklaydi
-  'https://ai.looksave.app',
-  // Panel haqiqatda shu domenda (2026-09-18) — .app emas, .uz
   'https://developer.looksave.uz',
   'http://localhost:5173',
   'http://localhost:5174',
