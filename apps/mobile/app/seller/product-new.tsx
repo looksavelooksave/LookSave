@@ -89,7 +89,14 @@ export default function NewProduct(): JSX.Element {
   const [gender, setGender] = useState<'male' | 'female' | 'unisex'>('unisex');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [style, setStyle] = useState<GarmentStyle | null>(null);
-  const [images, setImages] = useState<string[]>([]);
+  /*
+   * ⚠️ FIXED-LENGTH, null-padded. Oldin `string[]` edi va `filter(Boolean)`
+   * bo'sh slotlarni siqib tashlardi — natijada sotuvchi "Orqa" (indeks 1)
+   * ni tanlasa, rasm indeks 0 ga ko'chib "Old" deb yorliqlanardi. Server
+   * ham, UI ham noto'g'ri burchakni ko'rsatardi. Endi slot pozitsiyasi
+   * saqlanadi; submit vaqtida siqib yuboriladi (gap bo'lsa xato).
+   */
+  const [images, setImages] = useState<(string | null)[]>([null, null, null]);
   const [sizes, setSizes] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,13 +113,12 @@ export default function NewProduct(): JSX.Element {
     onError: (err) => setError(explainError(err, t)),
   });
 
-  /** Suratni AYNAN o'z o'rniga qo'yadi (bo'sh oraliq qoldirmaydi). */
+  /** Suratni AYNAN o'z slotiga qo'yadi — pozitsiyani SAQLAYDI (null-padded). */
   const putAt = (slot: number, url: string): void =>
     setImages((current) => {
       const next = [...current];
       next[slot] = url;
-      // Oraliqda bo'sh o'rin qolmasin: sxema `z.string().url()` kutadi
-      return next.filter((item): item is string => Boolean(item));
+      return next;
     });
 
   /*
@@ -199,8 +205,21 @@ export default function NewProduct(): JSX.Element {
     const chosen = Object.entries(sizes);
     if (chosen.length === 0) return setError(t.seller.errSize);
 
+    /*
+     * Slot pozitsiyasi ma'noga ega: [0] old, [1] orqa, [2] yon.
+     * Oraliqda bo'sh slot bo'lsa (masalan: old va yon tanlangan, orqa yo'q)
+     * — serverga yuborilsa, yon suratini orqa deb yorliqlab qo'yardi.
+     * Gap bo'lsa to'xtatamiz va aniq xato ko'rsatamiz.
+     */
+    const firstEmpty = images.findIndex((item) => !item);
+    const lastFilled = images.reduce((max, item, i) => (item ? i : max), -1);
+    if (firstEmpty !== -1 && lastFilled > firstEmpty) {
+      return setError(t.seller.err3Images);
+    }
+    const filledImages = images.filter((item): item is string => Boolean(item));
+
     // Serverdagi qoida — moderatsiyaga kamida 3 rasm
-    if (status === 'pending' && images.length < 3) {
+    if (status === 'pending' && filledImages.length < 3) {
       return setError(t.seller.err3Images);
     }
 
@@ -218,7 +237,7 @@ export default function NewProduct(): JSX.Element {
        */
       tags: style ? [style] : [],
       basePrice: Number(price).toFixed(2),
-      images,
+      images: filledImages,
       status,
       variants: [
         {
@@ -285,7 +304,13 @@ export default function NewProduct(): JSX.Element {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={slotLabel}
-                      onPress={() => setImages((current) => current.filter((_, i) => i !== index))}
+                      onPress={() =>
+                        setImages((current) => {
+                          const next = [...current];
+                          next[index] = null;
+                          return next;
+                        })
+                      }
                       style={styles.imageRemove}
                     >
                       <Icon name="close" size={12} color={colors.text} />
