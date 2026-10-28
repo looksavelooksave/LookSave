@@ -221,10 +221,11 @@ export interface RequestOptions {
  * tashqaridan "ilova qotib qoldi" bo'lib ko'rinadi, sababi esa hech qayerda
  * yozilmaydi.
  *
- * 15 soniya — mobil tarmoqda sekin javob bilan haqiqiy uzilishni ajratish
- * uchun yetarli chegara.
+ * 25 soniya — 3G/sekin uyali tarmoqda haqiqiy uzilishni ajratish uchun.
+ * Oldin 15s edi: mobil operatorlarda birinchi so'rov (DNS + TLS qo'l
+ * siqish) 15s dan oshib ketgandi va "Internet ulanmadi" chiqib qolardi.
  */
-const REQUEST_TIMEOUT_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 25_000;
 
 async function withTimeout(run: (signal: AbortSignal) => Promise<Response>): Promise<Response> {
   const controller = new AbortController();
@@ -234,6 +235,32 @@ async function withTimeout(run: (signal: AbortSignal) => Promise<Response>): Pro
     return await run(controller.signal);
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Birinchi so'rov tarmoq xatosi bilan tushib qolsa (DNS hali tayyor emas,
+ * uyali ulanish uyg'ongan, Wi-Fi almashgan) — jim bir marta qayta urinib
+ * ko'ramiz. Mutatsiyalar (POST/PUT/DELETE) bu yerga tushmaydi: ularni
+ * ikki marta yuborish xavfli.
+ */
+const RETRY_BACKOFF_MS = 600;
+
+function isIdempotent(method: string): boolean {
+  return method === 'GET';
+}
+
+async function fetchWithRetry(
+  input: string,
+  init: RequestInit,
+  retryable: boolean,
+): Promise<Response> {
+  try {
+    return await withTimeout((signal) => fetch(input, { ...init, signal }));
+  } catch (err) {
+    if (!retryable) throw err;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_BACKOFF_MS));
+    return withTimeout((signal) => fetch(input, { ...init, signal }));
   }
 }
 
@@ -247,13 +274,14 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   let response: Response;
   try {
-    response = await withTimeout((signal) =>
-      fetch(`${apiUrl()}/v1${path}`, {
+    response = await fetchWithRetry(
+      `${apiUrl()}/v1${path}`,
+      {
         method,
         headers,
-        signal,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      }),
+      },
+      isIdempotent(method) && !options.idempotencyKey,
     );
   } catch {
     throw new ApiError('NETWORK', 'Internetga ulanib bo`lmadi', 0);
@@ -285,9 +313,12 @@ export async function apiList<T>(
   const headers: Record<string, string> = { 'Accept-Language': language };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
-  const response = await withTimeout((signal) =>
-    fetch(`${apiUrl()}/v1${path}`, { headers, signal }),
-  );
+  let response: Response;
+  try {
+    response = await fetchWithRetry(`${apiUrl()}/v1${path}`, { headers }, true);
+  } catch {
+    throw new ApiError('NETWORK', 'Internetga ulanib bo`lmadi', 0);
+  }
   const payload = (await response.json()) as ApiSuccess<T[]> | ApiFailure;
 
   if ('error' in payload) {
