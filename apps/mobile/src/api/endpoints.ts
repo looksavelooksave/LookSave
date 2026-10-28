@@ -42,11 +42,10 @@ async function putFileToPresigned(
  */
 async function shrinkForUpload(uri: string, maxWidth = 1280): Promise<string> {
   try {
-    const out = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: maxWidth } }],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
-    );
+    const out = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: maxWidth } }], {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
     return out.uri;
   } catch {
     return uri;
@@ -172,6 +171,7 @@ export interface Brand {
   id: string;
   slug: string;
   name: string;
+  username: string | null;
   logoUrl: string | null;
   isPartner: boolean;
 }
@@ -192,9 +192,7 @@ export interface MarketplaceBanner {
 }
 
 /** Market kolleksiyasida har 6 mahsulotdan keyin ko'rsatiladigan bannerlar. */
-export const getMarketplaceBanners = (
-  audience: BannerAudience,
-): Promise<MarketplaceBanner[]> =>
+export const getMarketplaceBanners = (audience: BannerAudience): Promise<MarketplaceBanner[]> =>
   api<MarketplaceBanner[]>(`/marketplace/banners?audience=${audience}`);
 
 // ── Savat ──
@@ -350,6 +348,8 @@ export const getOrder = (id: string): Promise<OrderDetail> => api<OrderDetail>(`
 export interface StoreDetail {
   id: string;
   name: string;
+  /** Do'konning @handle'i; qo'yilmagan bo'lsa `null` */
+  username: string | null;
   description: string | null;
   logoUrl: string | null;
   address: string;
@@ -382,6 +382,10 @@ export interface Measurements {
   chest?: number;
   waist?: number;
   hips?: number;
+  /** Tanlangan ustki kiyim razmeri (XS … 3XL) */
+  topSize?: string;
+  /** Tanlangan shim razmeri (XS … 3XL) */
+  bottomSize?: string;
   shoeSize?: number;
   shoeSizeSystem?: string;
 }
@@ -1186,6 +1190,31 @@ export const getStoreProfile = (): Promise<StoreProfile> => api<StoreProfile>('/
 
 export const updateStoreProfile = (input: UpdateStoreBody): Promise<StoreProfile> =>
   api<StoreProfile>('/store/profile', { method: 'PATCH', body: input });
+
+// ── Sotuvchi brendi (@username bilan) ──
+
+export interface StoreBrand {
+  id: string;
+  name: string;
+  slug: string;
+  username: string | null;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+export interface StoreBrandInput {
+  name: string;
+  username: string;
+  logoUrl?: string | null;
+  description?: string | null;
+}
+
+/** Sotuvchining o'z brendi — hali yaratmagan bo'lsa null */
+export const getMyBrand = (): Promise<StoreBrand | null> => api<StoreBrand | null>('/store/brand');
+
+/** Brendni yaratadi yoki yangilaydi (band @username bo'lsa xato qaytadi) */
+export const saveMyBrand = (input: StoreBrandInput): Promise<StoreBrand> =>
+  api<StoreBrand>('/store/brand', { method: 'PUT', body: input });
 
 /**
  * Do'kon rasmini R2 ga yuklaydi.

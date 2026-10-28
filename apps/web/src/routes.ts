@@ -63,6 +63,12 @@ export default [
     // ── Huquqiy (10-roadmap §4: 18-haftaga majburiy) ──
     route('privacy', 'routes/privacy.tsx'),
     route('terms', 'routes/terms.tsx'),
+    /*
+     * ⚠️ SUPPORT — App Store Connect uchun Support URL sifatida beriladi
+     * (App Review'ning majburiy talabi). Sahifada hisobni o'chirish yo'li
+     * ham bor — Guideline 5.1.1(v) shuni talab qiladi.
+     */
+    route('support', 'routes/support.tsx'),
 
     // Til ichidagi topilmagan yo'llar
     route('*', 'routes/not-found.tsx'),

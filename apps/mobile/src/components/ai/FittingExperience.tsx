@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,9 +20,12 @@ import {
   GARMENT_STYLES,
   type GarmentStyle,
   indexRenders,
+  layerRank,
   nextPending,
+  matchSize,
   recommendSize,
   renderKey,
+  resolveAtFrontChain,
   resolveOutfit,
   topReady,
 } from '@looksave/validation';
@@ -38,14 +41,11 @@ import {
   requestAvatarCutout,
   removeFavorite,
   requestRender,
-  requestRenderBatch,
   type AvatarAngle,
   type Garment,
   type TryonRender,
 } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
-import { explainError } from '../../api/explainError';
-import { useI18n } from '../../i18n';
 import { AvatarStage } from '../../components/ai/AvatarStage';
 import { Icon, type IconName } from '../../components/Icon';
 import { SignInRequired } from '../../components/SignInRequired';
@@ -54,7 +54,7 @@ import { Button, Screen } from '../../components/ui';
 import { useAiFlowStore } from '../../store/aiFlowStore';
 import { useAuthStore } from '../../store/authStore';
 import { money } from '../../theme/format';
-import { colors, radius, spacing, text } from '../../theme/tokens';
+import { colors, fonts, radius, spacing, text } from '../../theme/tokens';
 import { PhotoSwipe } from './PhotoSwipe';
 import { StorePicker } from './StorePicker';
 import { goBack } from '../../navigation/back';
@@ -122,26 +122,23 @@ const STRIP_ITEM = 72 + spacing.sm;
  * kiyim beldan hisoblanadi.
  */
 /*
- * Uslub nomlari. Slug bazada (`products.tags`), tarjima esa i18n lug'atida
- * (`seller.style*`) — sotuvchi formasidagi ro'yxat bilan bir xil manba.
+ * Uslub nomlari. Slug bazada (`products.tags`), tarjima shu yerda —
+ * sotuvchi formasidagi ro'yxat bilan bir xil bo'lishi shart.
  */
-const STYLE_KEY: Record<GarmentStyle, 'styleCasual' | 'styleSport' | 'styleStreetwear' | 'styleClassic' | 'styleMinimal'> = {
-  casual: 'styleCasual',
-  sport: 'styleSport',
-  streetwear: 'styleStreetwear',
-  classic: 'styleClassic',
-  minimal: 'styleMinimal',
+const STYLE_LABEL: Record<GarmentStyle, string> = {
+  casual: 'Kundalik',
+  sport: 'Sport',
+  streetwear: 'Streetwear',
+  classic: 'Klassik',
+  minimal: 'Minimal',
 };
 
-/** Tab yorlig'i i18n'dan olinadi (`fitting.tab*`). */
-type FittingTabKey = 'tabTshirt' | 'tabHoodie' | 'tabJacket' | 'tabShirt' | 'tabTrousers' | 'tabFeet';
-
-const TABS: Array<{ category: string; labelKey: FittingTabKey; icon: IconName; slot: string }> = [
-  { category: 'tshirt', labelKey: 'tabTshirt', icon: 'slotTop', slot: 'top' },
-  { category: 'hoodie', labelKey: 'tabHoodie', icon: 'slotTop', slot: 'top' },
-  { category: 'jacket', labelKey: 'tabJacket', icon: 'slotOuter', slot: 'outer' },
-  { category: 'shirt', labelKey: 'tabShirt', icon: 'slotTop', slot: 'top' },
-  { category: 'trousers', labelKey: 'tabTrousers', icon: 'slotBottom', slot: 'bottom' },
+const TABS: Array<{ category: string; label: string; icon: IconName; slot: string }> = [
+  { category: 'tshirt', label: 'Futbolka', icon: 'slotTop', slot: 'top' },
+  { category: 'hoodie', label: 'Xudi', icon: 'slotTop', slot: 'top' },
+  { category: 'jacket', label: 'Kurtka', icon: 'slotOuter', slot: 'outer' },
+  { category: 'shirt', label: "Ko'ylak", icon: 'slotTop', slot: 'top' },
+  { category: 'trousers', label: 'Shim', icon: 'slotBottom', slot: 'bottom' },
   /*
    * ⚠️ OYOQ KIYIMIDA TURKUM YO'Q — ATAYIN.
    *
@@ -150,7 +147,7 @@ const TABS: Array<{ category: string; labelKey: FittingTabKey; icon: IconName; s
    * ko'rinmasdi. Bo'sh `category` esa serverga faqat SLOT bo'yicha
    * filtrlashni aytadi va beshalasi ham chiqadi.
    */
-  { category: '', labelKey: 'tabFeet', icon: 'slotFeet', slot: 'feet' },
+  { category: '', label: 'Oyoq kiyim', icon: 'slotFeet', slot: 'feet' },
 ];
 
 /** Biror natija hali kelmayotgan bo'lsa ro'yxat qayta so'raladi. */
@@ -164,9 +161,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const t = useI18n((state) => state.t);
-  /** Uslub yorlig'i — sotuvchi formasi bilan bir manba (`seller.style*`). */
-  const styleLabel = (style: GarmentStyle): string => t.seller[STYLE_KEY[style]];
   const signedIn = useAuthStore((state) => state.status) === 'signedIn';
 
   const [tab, setTab] = useState('tshirt');
@@ -182,7 +176,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const [styleFilter, setStyleFilter] = useState<GarmentStyle | null>(null);
   // Burchak «front» da qoladi — aylantirish tugmasi olib tashlangan
-  const [angle] = useState<AvatarAngle>('front');
+  /*
+   * Ko'rish burchagi — «Yaqinlashtir» ostidagi Old/Yon/Orqa tugmalari.
+   * Kiyim natijalari uch panelli varaqdan bo'linib har burchakda
+   * saqlanadi (`submitDress`), ya'ni almashtirish darhol — qayta so'rovsiz.
+   */
+  const [angle, setAngle] = useState<AvatarAngle>('front');
   const [notice, setNotice] = useState<string | null>(null);
   const [storeOpen, setStoreOpen] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
@@ -210,18 +209,6 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const [seen, setSeen] = useState<Record<string, Garment>>({});
 
-  /**
-   * Foydalanuvchi ATAYLAB yechgan turkumlar.
-   *
-   * ⚠️ USIZ «YECHISH» ISHLAMASDI. Turkum ochilganda birinchi kiyim
-   * o'zi kiyiladi (quyidagi effekt); yechilgan turkum belgilanmasa
-   * o'sha effekt uni darhol qaytadan kiydirardi va tugma buzuq
-   * ko'rinardi.
-   *
-   * Belgi turkumga qayta kiyim tanlanganda olib tashlanadi.
-   */
-  const [dismissed, setDismissed] = useState<string[]>([]);
-
   const stripRef = useRef<FlatList<Garment>>(null);
 
   const outfit = useAiFlowStore((state) => state.outfit);
@@ -231,16 +218,27 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const storeName = useAiFlowStore((state) => state.storeName);
   const setStore = useAiFlowStore((state) => state.setStore);
 
-  /** Kiyintirish — belgini ham tozalaydi, aks holda effekt uni qaytarardi */
+  /**
+   * Kiyintirish — AI faqat shu yerdan (kiyim bosilganda) ishga tushadi.
+   *
+   * ⚠️ AVTOMATIK OLD BURCHAKKA O'TAMIZ (2026-09-26). AI generatsiyasi
+   * faqat `angle === 'front'` da ishga tushadi (yon/orqa varaqdan
+   * kesiladi, alohida kredit sarflamaslik uchun). Foydalanuvchi Yon yoki
+   * Orqa burchakda turib kiyim bossa, sahna qotib qolardi: hech narsa
+   * generatsiyaga ketmasdi va vizual signal ham chiqmasdi. Endi bosish
+   * bilan sahna Old ga qaytadi — foydalanuvchi kiyintirish jarayonini
+   * ko'radi. Tayyor bo'lgach yon/orqa ham keshda bo'ladi (server 3
+   * burchakni bitta varaqdan kesadi) va tegishli tugmani bosib yana
+   * yonga o'tsa bo'ladi.
+   */
   const putOn = (category: string, variantId: string): void => {
-    setDismissed((current) => current.filter((item) => item !== category));
     wear(category, variantId);
     setSize(null);
     setNotice(null);
+    if (angle !== 'front') setAngle('front');
   };
 
   const remove = (category: string): void => {
-    setDismissed((current) => (current.includes(category) ? current : [...current, category]));
     takeOff(category);
     setSize(null);
     setNotice(null);
@@ -296,7 +294,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['favorites'] });
     },
-    onError: () => setNotice(t.fitting.favFail),
+    onError: () => setNotice('Sevimlilarga qo`shib bo`lmadi'),
   });
 
   /*
@@ -331,23 +329,45 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 
   const sizeFilter = onlyMySize ? fitSize : null;
 
+  const fetchGarments = (size: string | null) =>
+    getGarments({
+      // Bo'sh turkum — «faqat slot bo'yicha» degani (oyoq kiyim tabi)
+      category: tab || undefined,
+      slot: tab ? undefined : (activeTab?.slot ?? 'feet'),
+      style: styleFilter,
+      storeId,
+      size,
+      gender,
+      limit: 30,
+    });
+
   const garments = useQuery({
     queryKey: ['garments', tab, storeId, sizeFilter, gender, styleFilter],
-    queryFn: () =>
-      getGarments({
-        // Bo'sh turkum — «faqat slot bo'yicha» degani (oyoq kiyim tabi)
-        category: tab || undefined,
-        slot: tab ? undefined : (activeTab?.slot ?? 'feet'),
-        style: styleFilter,
-        storeId,
-        size: sizeFilter,
-        gender,
-        limit: 30,
-      }),
+    queryFn: () => fetchGarments(sizeFilter),
     enabled: ready,
   });
 
-  const items = useMemo(() => garments.data ?? [], [garments.data]);
+  /*
+   * ⚠️ MOS RAZMER YO'Q — HOZIRGIDEK ISHLAYVERADI (2026-09-25, so'rovga ko'ra).
+   * Do'konda mijozning razmeridagi kiyim bo'lmasa ro'yxat bo'sh qolmaydi:
+   * razmersiz qayta so'raladi va hamma kiyim ko'rsatiladi, tepada esa
+   * «sizning razmeringiz yo'q» izohi turadi. Kiyintirish baribir ishlaydi —
+   * mijoz kiyimni o'zida ko'radi, razmerni esa mahsulot sahifasida tanlaydi.
+   */
+  const needFallback =
+    Boolean(sizeFilter) && garments.isSuccess && (garments.data?.length ?? 0) === 0;
+  const fallback = useQuery({
+    queryKey: ['garments', tab, storeId, null, gender, styleFilter],
+    queryFn: () => fetchGarments(null),
+    enabled: ready && needFallback,
+  });
+  const usingFallback = needFallback && (fallback.data?.length ?? 0) > 0;
+
+  const items = useMemo(
+    () => (usingFallback ? (fallback.data ?? []) : (garments.data ?? [])),
+    [usingFallback, fallback.data, garments.data],
+  );
+  const itemsLoading = garments.isLoading || (needFallback && fallback.isLoading);
 
   // Ro'yxatga tushgan har kiyim keshga yoziladi — komplekt jamlanmasi uchun
   useEffect(() => {
@@ -372,16 +392,73 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     queryKey: ['renders', 'outfit', angle, outfitIds.join(',')],
     queryFn: () => getRenders(outfitIds, angle, null, 'all'),
     enabled: ready && outfitIds.length > 0,
-    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 2500 : false),
+    // Tayyor bo'lgan render tezroq ko'rinsin; ilovaga qaytganda ham yangilanadi
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1000 : false),
+    refetchOnWindowFocus: true,
+    // Keshdagi burchak ma'lumoti darhol ishlatilsin (almashganda tarmoq kutmaslik)
+    staleTime: 30_000,
   });
 
-  const resolved = useMemo(
-    () => resolveOutfit(outfit, indexRenders(outfitRenders.data ?? [])),
-    [outfit, outfitRenders.data],
+  /*
+   * ⚠️ FRONT ZANJIRI HAR JOYDA (2026-09-26). Server operator 3 panelli
+   * varaqni chizib, qo'shimcha burchaklar (yon · orqa) yozuvlariga
+   * ONA-RENDER (=FRONT so'rovda ishlatilgan) BAZASINI yozadi. Ya'ni
+   * yon renderining kaliti (variantId, FRONT_base). Ilgari mobile
+   * yon burchakda YON zanjirini qurardi — birinchi qatlam yon renderi
+   * boshqa id oladi va keyingi qatlamlar «bu bazadagi yon» ni topa
+   * olmasdi (haqiqatda ular FRONT bazasi bilan yozilgan). Endi:
+   *
+   * - `frontRenders` — FRONT so'rovidan olingan indeks (yon burchakda
+   *   `frontFallback` dan, old burchakda `outfitRenders` dan). BAZA
+   *   ZANJIRI shundan tiklanadi.
+   * - `frontResolved` — komplekt FRONT zanjiri; `stripBase` shundan.
+   * - `resolved` — sahna uchun. Old: bir xil chiqadi. Yon/Orqa: FRONT
+   *   zanjiri yuriladi, har qatlamning shu bazadagi YON renderi
+   *   izlanadi — zanjir uzilmaydi.
+   */
+  const frontFallback = useQuery({
+    queryKey: ['renders', 'outfit', 'front-fallback', outfitIds.join(',')],
+    queryFn: () => getRenders(outfitIds, 'front', null, 'all'),
+    enabled: ready && angle !== 'front' && outfitIds.length > 0,
+  });
+
+  const frontRenders = useMemo(
+    () =>
+      indexRenders(
+        angle === 'front' ? (outfitRenders.data ?? []) : (frontFallback.data ?? []),
+      ),
+    [angle, outfitRenders.data, frontFallback.data],
   );
 
-  /** Joriy turkumdagi kiyimlar qaysi surat ustiga kiydiriladi */
-  const stripBase = useMemo(() => baseForCategory(resolved, tab), [resolved, tab]);
+  /** FRONT zanjiri — `stripBase` va yon/orqa render izlashi uchun. */
+  const frontResolved = useMemo(
+    () => resolveOutfit(outfit, frontRenders),
+    [outfit, frontRenders],
+  );
+
+  /**
+   * Yon/orqa uchun old zaxirasi — STRICTLY joriy tab qatlami.
+   *
+   * ⚠️ `topReady` EMAS, VA TAB QATLAMIGACHA. Ko'ylak (top layer) old
+   * renderi hali kelmagan bo'lsa yoki foydalanuvchi Futbolka tabida
+   * bo'lsa, ekranda faqat tabga mos qatlam ko'rinishi kerak.
+   */
+  const wornFront = useMemo(() => {
+    if (angle === 'front') return null;
+    const top = frontResolved
+      .filter((layer) => layerRank(layer.category) <= layerRank(tab))
+      .at(-1);
+    return top?.render?.status === 'ready' ? top.render : null;
+  }, [angle, frontResolved, tab]);
+
+  /**
+   * Joriy turkumdagi kiyimlar qaysi surat ustiga kiydiriladi.
+   *
+   * ⚠️ FRONT ZANJIRIDAN. Yon/orqa burchakda ham baza FRONT bo'ladi —
+   * chunki strip so'rovi ham (variantId, FRONT_base) bilan kalitlangan
+   * yon renderlarni oladi.
+   */
+  const stripBase = useMemo(() => baseForCategory(frontResolved, tab), [frontResolved, tab]);
 
   const stripIds = useMemo(() => items.map((item) => item.variantId), [items]);
 
@@ -389,8 +466,64 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     queryKey: ['renders', 'strip', angle, stripBase.baseRenderId, stripIds.join(',')],
     queryFn: () => getRenders(stripIds, angle, stripBase.baseRenderId),
     enabled: ready && stripIds.length > 0 && stripBase.ready,
-    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 2500 : false),
+    refetchInterval: (query) => (isWorking(query.state.data as TryonRender[]) ? 1000 : false),
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
+
+  /*
+   * ⚠️ QOLGAN BURCHAKLARNI OLDINDAN YUKLASH (2026-09-25). Uch burchak
+   * (old · yon · orqa) bitta varaqdan keladi va bir vaqtda tayyor bo'ladi.
+   * Joriy burchak yuklangach, qolgan ikkitasini keshga oldindan solamiz —
+   * foydalanuvchi svayp qilganda yoki tugmani bosganda tarmoq kutilmaydi,
+   * surat darhol almashadi.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    /* URL keshga tushgach, o'sha kiyimning yuqori qatlami suratini
+       RN kesh'iga BAYT bilan solamiz — svaypda tarmoq umuman kutilmaydi. */
+    const warm = (renders: TryonRender[] | undefined): void => {
+      const top = topReady(resolveOutfit(outfit, indexRenders(renders ?? [])));
+      if (top?.cutoutUrl) void Image.prefetch(top.cutoutUrl);
+      if (top?.imageUrl) void Image.prefetch(top.imageUrl);
+    };
+
+    for (const other of ['front', 'side', 'back'] as const) {
+      if (other === angle) continue;
+      if (outfitIds.length > 0) {
+        const key = ['renders', 'outfit', other, outfitIds.join(',')];
+        void queryClient
+          .prefetchQuery({
+            queryKey: key,
+            queryFn: () => getRenders(outfitIds, other, null, 'all'),
+            staleTime: 30_000,
+          })
+          .then(() => warm(queryClient.getQueryData<TryonRender[]>(key)));
+      }
+      if (stripIds.length > 0 && stripBase.ready) {
+        void queryClient.prefetchQuery({
+          queryKey: ['renders', 'strip', other, stripBase.baseRenderId, stripIds.join(',')],
+          queryFn: () => getRenders(stripIds, other, stripBase.baseRenderId),
+          staleTime: 30_000,
+        });
+      }
+    }
+  }, [ready, angle, outfitIds, stripIds, stripBase.ready, stripBase.baseRenderId, outfit, queryClient]);
+
+  /*
+   * ⚠️ JORIY BURCHAK SURATINI OLDINDAN YUKLASH. Varaq generatsiya
+   * tugashi bilan (yoki keshdan) URL kelganda RN suratni ko'rsatishdan
+   * OLDIN baytlarni yuklab qo'yamiz — shunda ekranga darhol chiqadi,
+   * "sekin kelyabdi" holati yo'qoladi. Yon/orqa uchun old zaxira ham.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    const top = topReady(resolveOutfit(outfit, indexRenders(outfitRenders.data ?? [])));
+    if (top?.cutoutUrl) void Image.prefetch(top.cutoutUrl);
+    if (top?.imageUrl) void Image.prefetch(top.imageUrl);
+    const ff = topReady(resolveOutfit(outfit, indexRenders(frontFallback.data ?? [])));
+    if (ff?.imageUrl) void Image.prefetch(ff.imageUrl);
+  }, [ready, outfit, outfitRenders.data, frontFallback.data]);
 
   /**
    * Ikkala ro'yxat bitta jadvalga qo'shiladi.
@@ -402,6 +535,39 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const renderIndex = useMemo(
     () => indexRenders([...(stripRenders.data ?? []), ...(outfitRenders.data ?? [])]),
     [stripRenders.data, outfitRenders.data],
+  );
+
+  /**
+   * Sahna va zanjir rejasi uchun ishlatiladigan resolved.
+   *
+   * ⚠️ OLD BURCHAKDA: `renderIndex` (outfit + strip) ga tayanadi — bu
+   * kiyim tasmadan bosilgan zahoti tepadagi sahna almashishini
+   * ta'minlaydi (kartochkadagi render outfit query kelguncha kutmaydi).
+   *
+   * ⚠️ YON/ORQADA: FRONT zanjiri yuriladi, har qatlamning shu bazadagi
+   * yon/orqa renderi izlanadi. Chunki server operator 3 panelli varaqni
+   * qo'shimcha burchaklarga FRONT bazasi bilan yozadi.
+   *
+   * ⚠️ `nextPending` HAM shu resolved ustida ishlaydi — strip'da tayyor
+   * bo'lgan renderni topsa, yangi generatsiya so'rovi yuborilmaydi.
+   */
+  const resolved = useMemo(() => {
+    if (angle === 'front') return resolveOutfit(outfit, renderIndex);
+    return resolveAtFrontChain(outfit, frontRenders, renderIndex);
+  }, [angle, outfit, renderIndex, frontRenders]);
+
+  /*
+   * ⚠️ TAB QATLAMIGACHA (2026-09-27). `visibleResolved` HOOKS ROYIXATIDA
+   * shu joyda — quyidagi early return'lardan OLDIN. Ilgari uni sahna
+   * qismida `worn` yonida qo'yganman, `if (!ready) return <Redirect />`
+   * dan KEYIN — birinchi render'da hooks ro'yxati boshqa, ikkinchisida
+   * boshqa bo'lardi va React «Rendered more hooks than during the
+   * previous render» xatosi tashlardi.
+   */
+  const tabRank = layerRank(tab);
+  const visibleResolved = useMemo(
+    () => resolved.filter((layer) => layerRank(layer.category) <= tabRank),
+    [resolved, tabRank],
   );
 
   /* ── So'rovlar ── */
@@ -418,18 +584,20 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   const asked = useRef(new Set<string>());
 
-  const batch = useMutation({
-    mutationFn: (input: { variantIds: string[]; base: string | null }) =>
-      requestRenderBatch(input.variantIds, angle, input.base),
-    onSuccess: (result) => {
-      if (result.limitReached) setLimitReached(true);
-      void queryClient.invalidateQueries({ queryKey: ['renders'] });
-    },
-    onError: (err) => {
-      if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
-      else setNotice(explainError(err, t));
-    },
-  });
+  /*
+   * Sahnani serverdan qayta olish (o'ng-yuqoridagi «Yangilash» tugmasi).
+   * Natija tayyor bo'lsa-yu ilova eski holatda qotib qolsa yoki tarmoq
+   * uzilib-ulangan bo'lsa qo'l bilan yangilash uchun. Yangi generatsiya
+   * BOSHLAMAYDI — faqat mavjud ma'lumotni qayta so'raydi.
+   */
+  const refreshScene = useCallback(() => {
+    asked.current.clear();
+    setNotice(null);
+    void queryClient.invalidateQueries({ queryKey: ['renders'] });
+    void queryClient.invalidateQueries({ queryKey: ['garments'] });
+    void queryClient.invalidateQueries({ queryKey: ['avatar'] });
+    void queryClient.invalidateQueries({ queryKey: ['profile'] });
+  }, [queryClient]);
 
   const single = useMutation({
     mutationFn: (input: { variantId: string; base: string | null }) =>
@@ -437,52 +605,17 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['renders'] }),
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'RATE_LIMITED') setLimitReached(true);
-      else setNotice(explainError(err, t));
+      else setNotice(err instanceof ApiError ? err.message : 'Kiyintirib bo`lmadi');
     },
   });
 
   /*
-   * ── Tasmani oldindan tayyorlash ──
-   *
-   * ⚠️ FAQAT OLD KO'RINISHDA. Aylantirilgan ko'rinish uchun ham butun
-   * tasma yasalsa sarf uch barobar oshardi, foydalanuvchi esa aylantirgan
-   * payt odatda BITTA kiyimni ko'rmoqchi bo'ladi — uni komplekt zanjiri
-   * o'zi yasaydi.
+   * ⚠️ OLDINDAN TAYYORLASH OLIB TASHLANDI (2026-09-25, so'rovga ko'ra).
+   * Ilgari turkum ochilishi bilan tasmadagi birinchi kiyim o'zi
+   * kiyintirilardi — mijoz hech narsa bosmasdan AI ishga tushib, kredit
+   * va operator vaqti ketardi. Endi AI faqat kiyim BOSILGANDA ishlaydi
+   * (`wear` → komplekt zanjiri).
    */
-  useEffect(() => {
-    if (!ready || angle !== 'front') return;
-    if (!stripBase.ready || stripIds.length === 0) return;
-    if (limitReached) return;
-
-    /*
-     * ⚠️ FAQAT BIRINCHISI OLDINDAN YASALADI, HAMMASI EMAS.
-     *
-     * Ilgari tasmadagi BARCHA kiyim bir yo'la kiyintirilardi. Ikki zarari
-     * bor edi: har kiyim alohida OpenAI chaqiruvi, ya'ni
-     * foydalanuvchi ko'rmagan kiyimlari uchun ham to'lanardi; va hammasi
-     * navbatga tushgani uchun BIRINCHI natija ham oxirigacha kutardi.
-     *
-     * Mijoz qarori: turkum ochilganda birinchisi darhol chiqsin, qolganlari
-     * esa BOSILGANDA yasalsin — buni pastdagi komplekt zanjiri effekti
-     * o'zi qiladi, chunki tanlangan kiyim `resolveOutfit` ga tushadi.
-     */
-    const missing = stripIds
-      .filter((variantId) => !renderIndex.has(renderKey(variantId, stripBase.baseRenderId)))
-      .slice(0, 1);
-    if (missing.length === 0) return;
-
-    const key = `batch:${angle}:${stripBase.baseRenderId ?? 'root'}:${missing.join(',')}`;
-    if (asked.current.has(key)) return;
-    asked.current.add(key);
-
-    /*
-     * ⚠️ `batch` BOG'LIQLIKLARDA YO'Q — ATAYIN. U mutatsiya obyekti va
-     * har chizishda yangi havola bo'ladi; ro'yxatga qo'shilsa effekt
-     * cheksiz takrorlanardi. Ishlatilayotgani esa faqat `mutate`, u
-     * o'zgarmaydi.
-     */
-    batch.mutate({ variantIds: missing, base: stripBase.baseRenderId });
-  }, [ready, angle, stripBase.ready, stripBase.baseRenderId, stripIds, renderIndex, limitReached]);
 
   /*
    * ── Komplekt zanjirini tiklash ──
@@ -498,6 +631,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    */
   useEffect(() => {
     if (!ready || limitReached) return;
+    /*
+     * ⚠️ YON/ORQA AI'NI ISHGA TUSHIRMAYDI. Burchak tugmasi — faqat ko'rish:
+     * tayyor natija bo'lsa o'sha, bo'lmasa avatarning o'sha burchagi.
+     * Aks holda har bosishda yangi kiyintirish ishi (kredit) ketardi.
+     */
+    if (angle !== 'front') return;
 
     const pending = nextPending(resolved);
     if (!pending) return;
@@ -511,24 +650,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   }, [ready, angle, resolved, limitReached]);
 
   /*
-   * ── Turkum ochilganda birinchi kiyim kiyiladi ──
-   *
-   * ⚠️ MAKETNING VA'DASI SHU. Foydalanuvchi turkumni ochganda o'zini
-   * ALLAQACHON kiyingan holda ko'rishi kerak — bo'sh sahna va
-   * «kiyintirish» tugmasi emas. Keyingi kiyimlar bosilganda almashadi.
-   *
-   * ⚠️ FAQAT BO'SH TURKUMGA. Foydalanuvchi bu turkumda allaqachon kiyim
-   * tanlagan bo'lsa u saqlanadi — aks holda tab almashtirib qaytish
-   * tanlovni yo'qotardi.
+   * ⚠️ AVTOMATIK KIYINTIRISH YO'Q (2026-09-25, so'rovga ko'ra). Turkum
+   * ochilganda hech narsa generatsiya qilinmaydi — AI FAQAT mijoz kiyimni
+   * BOSGANDA ishlaydi (`putOn` → `wear` → komplekt zanjiri). Avatar o'zi
+   * birinchi mahsulotni kiyib turadi (operator `makeAvatar`), shuning
+   * uchun sahna baribir bo'sh emas.
    */
-  useEffect(() => {
-    if (!ready || items.length === 0) return;
-    if (dismissed.includes(tab)) return;
-    if (outfit.some((layer) => layer.category === tab)) return;
-
-    const first = items[0];
-    if (first) wear(tab, first.variantId);
-  }, [ready, items, outfit, tab, wear, dismissed]);
 
   // Tab almashganda o'lcham tanlovi tozalanadi — eski o'lcham yangi
   // kiyimda bo'lmasligi mumkin
@@ -543,14 +670,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
       for (const line of lines) await addToCart(line.variantId, line.chosenSize);
       return lines.length;
     },
-    onSuccess: (count) => setNotice(t.fitting.addedToCart.replace('{n}', String(count))),
-    onError: (err) => setNotice(explainError(err, t)),
+    onSuccess: (count) => setNotice(`${count} ta mahsulot savatga qo\`shildi`),
+    onError: (err) => setNotice(err instanceof ApiError ? err.message : 'Qo`shilmadi'),
   });
 
   if (!signedIn) {
     return (
       <Screen>
-        <SignInRequired hint={t.fitting.signInHint} />
+        <SignInRequired hint="Kiyintirish avataringizga bog`langan." />
       </Screen>
     );
   }
@@ -569,8 +696,28 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
     !avatar.data.cutoutUrl &&
     !ensureCutout.isError;
 
-  /** Komplektning eng tepa tayyor surati — sahnada shu turadi */
-  const worn = topReady(resolved);
+  /**
+   * Sahnada ko'rsatiladigan natija.
+   *
+   * ⚠️ TAB QATLAMIGACHA (2026-09-26). Foydalanuvchi Futbolka tabga
+   * o'tsa-yu ustida ko'ylak/kurtka bor bo'lsa, sahnada u kiyimlar tabi
+   * bilan mos kelmasdi. Endi sahna JORIY TAB qatlamigacha chiqadi —
+   * yuqoridagi qatlamlar vaqtincha yashiriladi (`visibleResolved`
+   * useMemo'si tepada, hooks ro'yxati barqaror bo'lsin uchun).
+   *
+   * ⚠️ OLD VA YON/ORQADA MANTIQ HAR XIL. Old: progressive (`topReady`) —
+   * kutayotgan qatlam paytida oldingi tayyor qatlam ko'rinadi.
+   * Yon/Orqa: STRICTLY eng tepa qatlam — u qatlamning shu burchakdagi
+   * surati yo'q bo'lsa `null` (past qatlam chiqmaydi), `wornFront`
+   * old zaxirasi ishga tushadi.
+   */
+  const visibleTop = visibleResolved.at(-1);
+  const worn =
+    angle === 'front'
+      ? topReady(visibleResolved)
+      : visibleTop?.render?.status === 'ready'
+        ? visibleTop.render
+        : null;
 
   const failed = resolved.find((layer) => layer.render?.status === 'failed');
 
@@ -601,15 +748,46 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    * kelmaydi. Bunday holda foydalanuvchi tepadagi bannerni o'qiydi va
    * kiyimning oddiy suratini ko'radi.
    */
+  /*
+   * ⚠️ SPINNER FAQAT OLD KO'RINISHDA (2026-09-25). Generatsiya faqat oldda
+   * bo'ladi; yon va orqa varaqdan kesib olinadi (server). Shuning uchun
+   * yon/orqada «AI kiyintirmoqda» ko'rsatilmaydi — tayyor bo'lak bo'lsa
+   * o'sha, bo'lmasa avatarning o'sha tomoni chiqadi, spinner emas.
+   */
   const currentWorking = Boolean(
+    angle === 'front' &&
     current &&
     !(limitReached && !shown) &&
     (!stripBase.ready || !shown || shown.status === 'pending' || shown.status === 'processing'),
   );
 
-  const deckIndex = Math.max(
+  /** Sahnadagi yagona holat — ustuvorlik: kiyintirish → sahnaga tayyorlash → xato */
+  const stageStatus: { title: string; hint: string; error?: boolean } | null = currentWorking
+    ? !worn
+      ? {
+          title: '5 daqiqada tayyor bo`ladi',
+          hint: 'Kiyim ustingizga kiydirilyapti — ilovani ochiq qoldiring',
+        }
+      : {
+          title: 'AI kiyintirmoqda…',
+          hint: stripBase.ready
+            ? 'Har qatlam 10–20 soniya'
+            : 'Avval ostidagi qatlam tayyorlanmoqda',
+        }
+    : preparingCutout
+      ? { title: 'Avatar sahnaga tayyorlanmoqda…', hint: 'Fon bir marta ajratiladi' }
+      : failed
+        ? {
+            title: 'Kiyintirib bo`lmadi',
+            hint: failed.render?.error ?? 'Boshqa kiyim bilan urinib ko`ring',
+            error: true,
+          }
+        : null;
+
+  /* Svayp burchakni almashtiradi: Old → Yon → Orqa */
+  const angleIndex = Math.max(
     0,
-    items.findIndex((item) => item.variantId === current?.variantId),
+    ANGLE_OPTIONS.findIndex((option) => option.value === angle),
   );
 
   /**
@@ -622,40 +800,33 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
    * tayyor kartada kurtkasiz, tayyor bo'lmaganida kurtkali surat
    * chiqib, tasma sakrab ketardi.
    */
-  const layerBase = stripBase.baseRenderId
-    ? (resolved.find((layer) => layer.render?.id === stripBase.baseRenderId)?.render ?? null)
-    : null;
-
   /*
-   * Svayp tasmasi — turkumdagi HAR kiyim uchun bitta karta, hammasi
-   * shu turkum ostidagi komplekt ustida.
-   *
-   * ⚠️ TAYYOR BO'LMAGANIDA KOMPLEKTNING O'ZI TURADI, kiyim surati emas.
-   * Bo'sh karta qo'yilsa svayp «teshik»ka tushardi; kiyim surati
-   * qo'yilsa esa ekran «katalog»ga o'xshab qolardi — bu ekranning
-   * ma'nosi esa O'ZINGNI ko'rish.
+   * ⚠️ SVAYP KIYIMNI EMAS, BURCHAKNI ALMASHTIRADI (2026-09-25, so'rovga
+   * ko'ra). Avatarni chapga/o'ngga surib Old · Yon · Orqa ko'riladi;
+   * kiyim esa pastdagi tasmadan BOSIB tanlanadi. Har karta o'sha
+   * burchakdagi suratni ko'rsatadi: joriy burchakda kiyintirilgan natija,
+   * qolgan burchaklarda avatarning o'sha tomoni (svayp paytida ko'rinadi,
+   * qo'yib yuborilgach o'sha burchakning kiyimli natijasi yuklanadi).
    */
-  const deck = items.map((item) => {
-    const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
-
-    if (render?.status === 'ready') {
-      return {
-        key: item.variantId,
-        url: render.cutoutUrl ?? render.imageUrl,
-        resizeMode: 'contain' as const,
-      };
+  const angleDeck = ANGLE_OPTIONS.map((option) => {
+    if (option.value === angle) {
+      const url =
+        worn?.cutoutUrl ??
+        worn?.imageUrl ??
+        wornFront?.imageUrl ??
+        angles[option.value] ??
+        baseImage;
+      return { key: option.value, url, resizeMode: 'contain' as const };
     }
-
-    const fallbackCutout = layerBase ? layerBase.cutoutUrl : baseCutout;
-    const fallbackImage = preparingCutout ? null : layerBase ? layerBase.imageUrl : baseImage;
-
     return {
-      key: item.variantId,
-      url: fallbackCutout ?? fallbackImage,
+      key: option.value,
+      url: angles[option.value] ?? baseImage,
       resizeMode: 'contain' as const,
     };
   });
 
+  /*
+   * ⚠️ SERVERDAN KELADI, RO'YXATDAN QIDIRILMAYDI.
   /*
    * ⚠️ SERVERDAN KELADI, RO'YXATDAN QIDIRILMAYDI.
    *
@@ -667,7 +838,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
   const colorOptions = current?.colors ?? [];
   const sizes = current?.sizes ?? [];
   const soldOutSizes = current?.soldOutSizes ?? [];
-  const picked = size ?? (fitSize && sizes.includes(fitSize) ? fitSize : sizes[0]) ?? null;
+  const picked = size ?? matchSize(sizes, fitSize) ?? sizes[0] ?? null;
 
   /* ── Komplekt jamlanmasi ── */
   const outfitItems = outfit
@@ -683,7 +854,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         {showBack ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t.fitting.back}
+            accessibilityLabel="Orqaga"
             hitSlop={10}
             onPress={() => goBack('/(tabs)')}
             style={styles.headerButton}
@@ -694,7 +865,7 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           <View style={styles.headerButton} />
         )}
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>{t.fitting.title}</Text>
+          <Text style={styles.headerTitle}>Kiyintirish</Text>
           {/*
             ⚠️ SARLAVHA OSTIDA DO'KON — VA U BOSILADI. Ilgari bu yerda
             «Kiyimni tanlang» degan yozuv turardi: u hech narsa
@@ -705,14 +876,14 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
           <Pressable onPress={() => setStoreOpen(true)} hitSlop={8} style={styles.storeChip}>
             <Icon name="stores" size={12} color={colors.accent} />
             <Text style={styles.storeChipText} numberOfLines={1}>
-              {storeName ?? t.fitting.storePick}
+              {storeName ?? "Do'kon tanlang"}
             </Text>
             <Icon name="next" size={12} color={colors.textDim} />
           </Pressable>
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t.fitting.changeAvatar}
+          accessibilityLabel="Avatarni almashtirish"
           hitSlop={10}
           onPress={() => router.push('/ai/avatar')}
           style={styles.headerButton}
@@ -721,134 +892,105 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         </Pressable>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.page}
-        showsVerticalScrollIndicator={false}
-      >
-
-      {/* ── Avatar maydoni ── */}
-      <View style={styles.stage}>
-        <AvatarStage
-          zoomed={zoomed}
-          imageUrl={preparingCutout ? null : worn?.imageUrl ?? baseImage}
-          cutoutUrl={worn?.cutoutUrl ?? baseCutout}
-          dimmed={!worn && currentWorking}
-          showRings
-        >
-          {deck.length > 0 ? (
+      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+        {/* ── Avatar maydoni ── */}
+        <View style={styles.stage}>
+          <AvatarStage
+            zoomed={zoomed}
+            imageUrl={preparingCutout ? null : (worn?.imageUrl ?? wornFront?.imageUrl ?? baseImage)}
+            cutoutUrl={worn?.cutoutUrl ?? baseCutout}
+            dimmed={!worn && currentWorking}
+            showRings
+          >
             <PhotoSwipe
-              photos={deck}
-              index={deckIndex}
+              photos={angleDeck}
+              index={angleIndex}
               onIndexChange={(next) => {
-                const item = items[next];
-                if (!item) return;
-
-                /*
-                 * ⚠️ SVAYP HAM KIYINTIRADI, faqat ko'rsatmaydi. Aks holda
-                 * ekranda bir kiyim ko'rinib, komplektda boshqasi turardi —
-                 * va «Savatga» tugmasi ko'rinmayotgan narsani qo'shardi.
-                 */
-                putOn(tab, item.variantId);
-
-                stripRef.current?.scrollToIndex({
-                  index: next,
-                  animated: true,
-                  viewPosition: 0.5,
-                });
+                const option = ANGLE_OPTIONS[next];
+                if (option) setAngle(option.value);
               }}
             />
-          ) : null}
-        </AvatarStage>
+          </AvatarStage>
 
-        {/* «5 daqiqada tayyor» — kiyim operatorda kiydirilayotgan payt */}
-        {currentWorking && !worn ? (
-          <View style={styles.workingOverlay} pointerEvents="none">
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.workingTitle}>{t.fitting.readyTitle}</Text>
-            <Text style={styles.workingHint}>{t.fitting.readyHint}</Text>
+          <View style={styles.sideControls} pointerEvents="box-none">
+            <Control
+              icon="zoom"
+              label={zoomed ? 'Kichraytir' : 'Yaqinlashtir'}
+              onPress={() => setZoomed((value) => !value)}
+            />
+
+            {/* Yangilash — natija/ro'yxatni serverdan qayta oladi (qulaylik uchun) */}
+            <Control icon="reset" label="Yangilash" onPress={refreshScene} />
+
+            {/* Burchak — bosilganda sahna darhol o'sha ko'rinishga almashadi */}
+            <View style={styles.angleSwitch} accessibilityRole="radiogroup">
+              {ANGLE_OPTIONS.map((option) => {
+                const active = angle === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={option.label}
+                    onPress={() => setAngle(option.value)}
+                    style={[styles.angleButton, active && styles.angleButtonActive]}
+                  >
+                    <Text style={[styles.angleText, active && styles.angleTextActive]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        ) : null}
 
-        <View style={styles.sideControls} pointerEvents="box-none">
-          {/* Faqat yaqinlashtirish — «Old» (burchak) va «Yechish» olib tashlangan */}
-          <Control
-            icon="zoom"
-            label={zoomed ? t.fitting.zoomOut : t.fitting.zoomIn}
-            onPress={() => setZoomed((value) => !value)}
-          />
+          {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
+          {resolved.length > 0 ? (
+            <View style={styles.layerRail} pointerEvents="none">
+              {resolved.map((layer) => (
+                <View
+                  key={layer.category}
+                  style={[
+                    styles.layerDot,
+                    layer.render?.status === 'ready' && styles.layerDotReady,
+                    layer.category === tab && styles.layerDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          {/*
+            ⚠️ BITTA HOLAT KARTASI (2026-09-25). Ilgari «5 daqiqada tayyor»
+            va «AI kiyintirmoqda» ALOHIDA qatlam edi va `currentWorking`
+            bo'lganda IKKALASI birdan markazga chizilardi — matnlar
+            ustma-ust tushib o'qib bo'lmasdi. Endi ustuvorlik bilan faqat
+            bittasi, to'q karta ichida (avatar rasmi ustida ham o'qiladi).
+          */}
+          {stageStatus ? (
+            <View style={styles.overlay} pointerEvents="none">
+              <View style={styles.statusCard}>
+                {stageStatus.error ? (
+                  <Icon name="close" size={26} color={colors.danger} />
+                ) : (
+                  <ActivityIndicator size="large" color={colors.accent} />
+                )}
+                <Text style={styles.statusTitle}>{stageStatus.title}</Text>
+                <Text style={styles.statusHint} numberOfLines={3}>
+                  {stageStatus.hint}
+                </Text>
+              </View>
+            </View>
+          ) : null}
         </View>
 
-        {/*
-          ── Sizga mos uslub ──
-
-          ⚠️ BU YERDA KOMPLEKT YASALMAYDI. Tayyor komplekt bir necha
-          qatlamni birdan chizishni talab qiladi, ya'ni bir bosishda bir
-          necha kredit ketardi. Shuning uchun karta mavjud AI Designer
-          ekraniga olib boradi — komplekt o'sha yerda ko'riladi va
-          foydalanuvchi nimani kiyintirishni o'zi tanlaydi.
-        */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.fitting.suggestStyle}
-          onPress={() => router.push('/ai/look')}
-          style={styles.suggestCard}
+        {/* Barcha turkumlar bitta gorizontal qatorda, qolganlari surib ko'riladi. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabsWrap}
+          contentContainerStyle={styles.tabs}
         >
-          <Icon name="looks" size={22} color={colors.accent} />
-          <Text style={styles.suggestText}>{t.fitting.suggestCard}</Text>
-        </Pressable>
-
-        {/* Kiyilgan qatlamlar — maketdagi ko'rsatkich */}
-        {resolved.length > 0 ? (
-          <View style={styles.layerRail} pointerEvents="none">
-            {resolved.map((layer) => (
-              <View
-                key={layer.category}
-                style={[
-                  styles.layerDot,
-                  layer.render?.status === 'ready' && styles.layerDotReady,
-                  layer.category === tab && styles.layerDotActive,
-                ]}
-              />
-            ))}
-          </View>
-        ) : null}
-
-        {currentWorking ? (
-          <View style={styles.overlay} pointerEvents="none">
-            <ActivityIndicator color={colors.accent} />
-            <Text style={styles.overlayText}>{t.fitting.workingTitle}</Text>
-            <Text style={styles.overlayHint}>
-              {stripBase.ready ? t.fitting.workingHintReady : t.fitting.workingHintBase}
-            </Text>
-          </View>
-        ) : null}
-
-        {preparingCutout ? (
-          <View style={styles.overlay} pointerEvents="none">
-            <ActivityIndicator color={colors.accent} />
-            <Text style={styles.overlayText}>{t.fitting.preparingTitle}</Text>
-            <Text style={styles.overlayHint}>{t.fitting.preparingHint}</Text>
-          </View>
-        ) : null}
-
-        {failed && !currentWorking ? (
-          <View style={styles.overlay} pointerEvents="none">
-            <Icon name="close" size={26} color={colors.danger} />
-            <Text style={styles.overlayText}>{t.fitting.failedTitle}</Text>
-            <Text style={styles.overlayHint} numberOfLines={2}>
-              {t.fitting.failedHint}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Barcha turkumlar bitta gorizontal qatorda, qolganlari surib ko'riladi. */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabsWrap}
-        contentContainerStyle={styles.tabs}
-      >
           {TABS.map((item) => {
             const active = tab === item.category;
             const dressed = outfit.some((layer) => layer.category === item.category);
@@ -877,20 +1019,17 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                     color={active ? colors.accent : colors.textMuted}
                   />
                 </View>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.tabText, active && styles.tabTextActive]}
-                >
-                  {t.fitting[item.labelKey]}
+                <Text numberOfLines={1} style={[styles.tabText, active && styles.tabTextActive]}>
+                  {item.label}
                 </Text>
                 {/* Kiyilgan turkum belgilanadi — komplekt qayerda yig'ilgani ko'rinsin */}
                 {dressed ? <View style={styles.tabDressed} /> : null}
               </Pressable>
             );
           })}
-      </ScrollView>
+        </ScrollView>
 
-      {/*
+        {/*
         ── Uslub chiplari ──
 
         ⚠️ TANLANGAN KIYIMDAN TASHQARIDA TURADI. Ilgari o'lcham va rang
@@ -901,147 +1040,151 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
         Filtr serverda bajariladi: chip `queryKey` ni o'zgartiradi va
         ro'yxat qaytadan so'raladi. Qayta bosilsa — bekor bo'ladi.
       */}
-      <View style={styles.styleRowWrap}>
-        <View style={styles.styleRow}>
-          {GARMENT_STYLES.map((item) => {
-            const active = styleFilter === item;
+        <View style={styles.styleRowWrap}>
+          <View style={styles.styleRow}>
+            {GARMENT_STYLES.map((item) => {
+              const active = styleFilter === item;
 
-            return (
-              <Pressable
-                key={item}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={t.fitting.styleAria.replace('{name}', styleLabel(item))}
-                onPress={() => setStyleFilter((value) => (value === item ? null : item))}
-                style={[styles.styleChip, active && styles.styleChipActive]}
-              >
-                <Text style={[styles.styleChipText, active && { color: colors.text }]}>
-                  {styleLabel(item)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.bottom}>
-        {limitReached ? (
-          <View style={styles.banner}>
-            <Icon name="clock" size={14} color={colors.warning} />
-            <Text style={styles.bannerText}>{t.fitting.limitBanner}</Text>
+              return (
+                <Pressable
+                  key={item}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`Uslub: ${STYLE_LABEL[item]}`}
+                  onPress={() => setStyleFilter((value) => (value === item ? null : item))}
+                  style={[styles.styleChip, active && styles.styleChipActive]}
+                >
+                  <Text style={[styles.styleChipText, active && { color: colors.text }]}>
+                    {STYLE_LABEL[item]}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        ) : null}
+        </View>
 
-        {/* ── Kiyim tasmasi ── */}
-        {garments.isLoading ? (
-          <ActivityIndicator color={colors.accent} style={styles.stripLoader} />
-        ) : items.length === 0 ? (
-          /*
+        <View style={styles.bottom}>
+          {limitReached ? (
+            <View style={styles.banner}>
+              <Icon name="clock" size={14} color={colors.warning} />
+              <Text style={styles.bannerText}>
+                Kunlik AI chegarasi tugadi. Tayyor suratlar qoladi, yangilari ertaga.
+              </Text>
+            </View>
+          ) : null}
+
+          {/* ── Kiyim tasmasi ── */}
+          {usingFallback && !itemsLoading ? (
+            <Text style={styles.fallbackNote}>
+              Sizning {fitSize} razmeringiz bu do‘konda yo‘q — barcha kiyimlar ko‘rsatilmoqda
+            </Text>
+          ) : null}
+
+          {itemsLoading ? (
+            <ActivityIndicator color={colors.accent} style={styles.stripLoader} />
+          ) : items.length === 0 ? (
+            /*
             ⚠️ BO'SH RO'YXAT — BOSHI BERK KO'CHA EMAS. Ikkala chiqish
             yo'li ham shu yerda: filtrni bo'shatish yoki do'konni
             almashtirish. Ilgari faqat «kiyim yo'q» yozuvi turardi.
           */
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyStrip}>
-              {styleFilter
-                ? t.fitting.emptyStyle
-                    .replace('{style}', styleLabel(styleFilter))
-                    .replace('{tab}', (activeTab ? t.fitting[activeTab.labelKey] : '').toLowerCase())
-                : sizeFilter
-                  ? t.fitting.emptySize
-                      .replace('{store}', storeName ?? t.fitting.emptyStore)
-                      .replace('{size}', sizeFilter)
-                      .replace('{tab}', (activeTab ? t.fitting[activeTab.labelKey] : '').toLowerCase())
-                  : t.fitting.emptyGeneric}
-            </Text>
-            <View style={styles.emptyActions}>
-              {/* Uslub filtri bo'sh qilgan bo'lsa — birinchi chiqish yo'li shu */}
-              {styleFilter ? (
-                <Button
-                  title={t.fitting.clearStyle}
-                  variant="ghost"
-                  onPress={() => setStyleFilter(null)}
-                />
-              ) : null}
-              {sizeFilter ? (
-                <Button
-                  title={t.fitting.showAllSizes}
-                  variant="ghost"
-                  onPress={() => setOnlyMySize(false)}
-                />
-              ) : null}
-              <Button title={t.fitting.pickOtherStore} onPress={() => setStoreOpen(true)} />
-            </View>
-          </View>
-        ) : (
-          <FlatList
-            ref={stripRef}
-            data={items}
-            keyExtractor={(item) => item.variantId}
-            getItemLayout={(_data, index) => ({
-              length: STRIP_ITEM,
-              offset: STRIP_ITEM * index,
-              index,
-            })}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.strip}
-            removeClippedSubviews
-            renderItem={({ item }) => {
-              const selected = item.variantId === current?.variantId;
-              const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
-              const isReady = render?.status === 'ready';
-              const busy = render?.status === 'pending' || render?.status === 'processing';
-
-              /*
-               * ⚠️ KARTOCHKADA ODAMNING O'ZI — MAKETDAGI ASOSIY FIKR.
-               * Har kartochka kiyimning yassi suratini emas, MODELNI
-               * o'sha kiyimda ko'rsatadi. Endi bu deyarli hamma
-               * kartochkada bor: tasma oldindan tayyorlanadi.
-               */
-              const preview = isReady ? (render.cutoutUrl ?? render.imageUrl) : item.image;
-
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={item.title}
-                  onPress={() => {
-                    /*
-                     * ⚠️ BOSISH = KIYINTIRISH. Ilgari bosish faqat
-                     * tanlardi va pastda alohida «Kiyintirish» tugmasi
-                     * bor edi — ya'ni natijani ko'rish uchun ikki
-                     * bosish kerak edi.
-                     */
-                    putOn(tab, item.variantId);
-                  }}
-                  style={[styles.thumbWrap, selected && styles.thumbSelected]}
-                >
-                  <Image
-                    source={{ uri: preview ?? undefined }}
-                    style={[styles.thumb, isReady && styles.thumbWorn]}
-                    resizeMode={isReady ? 'contain' : 'cover'}
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyStrip}>
+                {styleFilter
+                  ? `${STYLE_LABEL[styleFilter]} uslubidagi ${activeTab?.label.toLowerCase()} topilmadi`
+                  : sizeFilter
+                    ? `${storeName ?? 'Bu do‘kon'}da ${sizeFilter} o‘lchamdagi ${activeTab?.label.toLowerCase()} yo‘q`
+                    : 'Bu turkumda hozircha kiyim yo`q'}
+              </Text>
+              <View style={styles.emptyActions}>
+                {/* Uslub filtri bo'sh qilgan bo'lsa — birinchi chiqish yo'li shu */}
+                {styleFilter ? (
+                  <Button
+                    title="Uslub filtrini olib tashlash"
+                    variant="ghost"
+                    onPress={() => setStyleFilter(null)}
                   />
+                ) : null}
+                {sizeFilter ? (
+                  <Button
+                    title="Barcha o`lchamlarni ko`rsat"
+                    variant="ghost"
+                    onPress={() => setOnlyMySize(false)}
+                  />
+                ) : null}
+                <Button title="Boshqa do`kon tanlash" onPress={() => setStoreOpen(true)} />
+              </View>
+            </View>
+          ) : (
+            <FlatList
+              ref={stripRef}
+              data={items}
+              keyExtractor={(item) => item.variantId}
+              getItemLayout={(_data, index) => ({
+                length: STRIP_ITEM,
+                offset: STRIP_ITEM * index,
+                index,
+              })}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.strip}
+              removeClippedSubviews
+              renderItem={({ item }) => {
+                // Faqat haqiqatan KIYILGANI ajratiladi — kiyim bosilmaguncha hech biri
+                const selected = item.variantId === wornHere;
+                const render = renderIndex.get(renderKey(item.variantId, stripBase.baseRenderId));
+                const isReady = render?.status === 'ready';
+                const busy = render?.status === 'pending' || render?.status === 'processing';
 
-                  {busy ? (
-                    <View style={styles.thumbBusy}>
-                      <ActivityIndicator size="small" color={colors.accent} />
-                    </View>
-                  ) : null}
+                /*
+                 * ⚠️ KARTOCHKADA ODAMNING O'ZI — MAKETDAGI ASOSIY FIKR.
+                 * Har kartochka kiyimning yassi suratini emas, MODELNI
+                 * o'sha kiyimda ko'rsatadi. Endi bu deyarli hamma
+                 * kartochkada bor: tasma oldindan tayyorlanadi.
+                 */
+                const preview = isReady ? (render.cutoutUrl ?? render.imageUrl) : item.image;
 
-                  {isReady ? (
-                    <View style={styles.readyBadge}>
-                      <Icon name="authentic" size={10} color={colors.bg} />
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            }}
-          />
-        )}
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={item.title}
+                    onPress={() => {
+                      /*
+                       * ⚠️ BOSISH = KIYINTIRISH. Ilgari bosish faqat
+                       * tanlardi va pastda alohida «Kiyintirish» tugmasi
+                       * bor edi — ya'ni natijani ko'rish uchun ikki
+                       * bosish kerak edi.
+                       */
+                      putOn(tab, item.variantId);
+                    }}
+                    style={[styles.thumbWrap, selected && styles.thumbSelected]}
+                  >
+                    <Image
+                      source={{ uri: preview ?? undefined }}
+                      style={[styles.thumb, isReady && styles.thumbWorn]}
+                      resizeMode={isReady ? 'contain' : 'cover'}
+                    />
 
-        {current ? (
-          <View style={styles.details}>
-            {/*
+                    {busy ? (
+                      <View style={styles.thumbBusy}>
+                        <ActivityIndicator size="small" color={colors.accent} />
+                      </View>
+                    ) : null}
+
+                    {isReady ? (
+                      <View style={styles.readyBadge}>
+                        <Icon name="authentic" size={10} color={colors.bg} />
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              }}
+            />
+          )}
+
+          {current ? (
+            <View style={styles.details}>
+              {/*
               ── Mahsulot sarlavhasi ──
 
               Chapda nom, do'kon va NARX; o'ngda sevimli va ulashish.
@@ -1051,150 +1194,142 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               qo'yib, pastgacha tushmaguncha narxini bilmasdi. Endi u
               tanlov bilan birga ko'rinadi.
             */}
-            <View style={styles.detailsHead}>
-              <View style={styles.detailsText}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {current.title}
-                </Text>
-                <Text style={styles.store} numberOfLines={1}>
-                  {current.store.name}
-                </Text>
-                <Text style={styles.price}>{money(current.price, current.currency)}</Text>
-              </View>
+              <View style={styles.detailsHead}>
+                <View style={styles.detailsText}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {current.title}
+                  </Text>
+                  <Text style={styles.store} numberOfLines={1}>
+                    {current.store.name}
+                  </Text>
+                  <Text style={styles.price}>{money(current.price, current.currency)}</Text>
+                </View>
 
-              <View style={styles.detailsActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    favoriteIds.has(current.productId)
-                      ? t.fitting.favRemove
-                      : t.fitting.favAdd
-                  }
-                  accessibilityState={{ selected: favoriteIds.has(current.productId) }}
-                  hitSlop={6}
-                  disabled={favorite.isPending}
-                  onPress={() =>
-                    favorite.mutate({
-                      productId: current.productId,
-                      on: !favoriteIds.has(current.productId),
-                    })
-                  }
-                  style={styles.roundButton}
-                >
-                  <Icon
-                    name={favoriteIds.has(current.productId) ? 'favoriteOn' : 'favorite'}
-                    size={17}
-                    color={favoriteIds.has(current.productId) ? colors.accent : colors.text}
-                  />
-                </Pressable>
+                <View style={styles.detailsActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      favoriteIds.has(current.productId)
+                        ? 'Sevimlilardan olib tashlash'
+                        : 'Sevimlilarga qo`shish'
+                    }
+                    accessibilityState={{ selected: favoriteIds.has(current.productId) }}
+                    hitSlop={6}
+                    disabled={favorite.isPending}
+                    onPress={() =>
+                      favorite.mutate({
+                        productId: current.productId,
+                        on: !favoriteIds.has(current.productId),
+                      })
+                    }
+                    style={styles.roundButton}
+                  >
+                    <Icon
+                      name={favoriteIds.has(current.productId) ? 'favoriteOn' : 'favorite'}
+                      size={17}
+                      color={favoriteIds.has(current.productId) ? colors.accent : colors.text}
+                    />
+                  </Pressable>
 
-                {/*
+                  {/*
                   ⚠️ HAVOLA EMAS, MATN. Mahsulotning veb sahifasi hali
                   yo'q, shuning uchun soxta manzil yubormaymiz — nom,
                   do'kon va narx yuboriladi. Sahifa paydo bo'lganda shu
                   yerga havola qo'shiladi.
                 */}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t.fitting.shareAria}
-                  hitSlop={6}
-                  onPress={() => {
-                    void Share.share({
-                      message: `${current.title} — ${current.store.name}\n${money(
-                        current.price,
-                        current.currency,
-                      )}\n\n${t.fitting.shareSeen}`,
-                    });
-                  }}
-                  style={styles.roundButton}
-                >
-                  <Icon name="share" size={17} color={colors.text} />
-                </Pressable>
-              </View>
-            </View>
-
-            {colorOptions.length > 1 ? (
-              <>
-                <Text style={styles.label}>{t.fitting.colorLabel}</Text>
-                <View style={styles.colors}>
-                  {colorOptions.map((option) => (
-                    <Pressable
-                      key={option.variantId}
-                      accessibilityRole="button"
-                      accessibilityLabel={t.fitting.colorAria.replace(
-                        '{value}',
-                        option.colorHex ?? 'variant',
-                      )}
-                      onPress={() => {
-                        putOn(tab, option.variantId);
-                      }}
-                      style={[
-                        styles.color,
-                        option.variantId === current.variantId && styles.colorActive,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.colorDot,
-                          { backgroundColor: option.colorHex ?? colors.surface2 },
-                        ]}
-                      />
-                    </Pressable>
-                  ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Ulashish"
+                    hitSlop={6}
+                    onPress={() => {
+                      void Share.share({
+                        message: `${current.title} — ${current.store.name}\n${money(
+                          current.price,
+                          current.currency,
+                        )}\n\nLookSave'da ko'rdim`,
+                      });
+                    }}
+                    style={styles.roundButton}
+                  >
+                    <Icon name="share" size={17} color={colors.text} />
+                  </Pressable>
                 </View>
-              </>
-            ) : null}
+              </View>
 
-            {sizes.length > 0 ? (
-              <>
-                <View style={styles.sizeHead}>
-                  <Text style={styles.label}>
-                    {t.fitting.sizeLabel}
-                    {fitSize ? (
-                      <Text style={styles.recommend}>
-                        {' · '}
-                        {t.fitting.sizeRecommend.replace('{size}', fitSize)}
-                      </Text>
-                    ) : null}
-                  </Text>
-                  {/*
+              {colorOptions.length > 1 ? (
+                <>
+                  <Text style={styles.label}>Rang</Text>
+                  <View style={styles.colors}>
+                    {colorOptions.map((option) => (
+                      <Pressable
+                        key={option.variantId}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Rang: ${option.colorHex ?? 'variant'}`}
+                        onPress={() => {
+                          putOn(tab, option.variantId);
+                        }}
+                        style={[
+                          styles.color,
+                          option.variantId === current.variantId && styles.colorActive,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.colorDot,
+                            { backgroundColor: option.colorHex ?? colors.surface2 },
+                          ]}
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
+              {sizes.length > 0 ? (
+                <>
+                  <View style={styles.sizeHead}>
+                    <Text style={styles.label}>
+                      O`lcham
+                      {fitSize ? <Text style={styles.recommend}> · sizga {fitSize}</Text> : null}
+                    </Text>
+                    {/*
                     Filtr holati ko'rinib tursin: foydalanuvchi ro'yxat
                     nega qisqa ekanini bilishi kerak
                   */}
-                  {fitSize ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => setOnlyMySize((value) => !value)}
-                      hitSlop={8}
-                      style={[styles.filterPill, onlyMySize && styles.filterPillActive]}
-                    >
-                      <Icon
-                        name="filter"
-                        size={12}
-                        color={onlyMySize ? colors.accent : colors.textDim}
-                      />
-                      <Text style={[styles.filterText, onlyMySize && { color: colors.accent }]}>
-                        {t.fitting.onlyMySize}
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </View>
+                    {fitSize ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setOnlyMySize((value) => !value)}
+                        hitSlop={8}
+                        style={[styles.filterPill, onlyMySize && styles.filterPillActive]}
+                      >
+                        <Icon
+                          name="filter"
+                          size={12}
+                          color={onlyMySize ? colors.accent : colors.textDim}
+                        />
+                        <Text style={[styles.filterText, onlyMySize && { color: colors.accent }]}>
+                          Faqat mening o`lchamim
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
 
-                <View style={styles.sizes}>
-                  {sizes.map((item) => (
-                    <Pressable
-                      key={item}
-                      accessibilityRole="button"
-                      onPress={() => setSize(item)}
-                      style={[styles.size, picked === item && styles.sizeActive]}
-                    >
-                      <Text style={[styles.sizeText, picked === item && { color: colors.text }]}>
-                        {item}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  <View style={styles.sizes}>
+                    {sizes.map((item) => (
+                      <Pressable
+                        key={item}
+                        accessibilityRole="button"
+                        onPress={() => setSize(item)}
+                        style={[styles.size, picked === item && styles.sizeActive]}
+                      >
+                        <Text style={[styles.sizeText, picked === item && { color: colors.text }]}>
+                          {item}
+                        </Text>
+                      </Pressable>
+                    ))}
 
-                  {/*
+                    {/*
                     ⚠️ TUGAGANLARI HAM KO'RSATILADI — bosib bo'lmaydi.
 
                     Ilgari ular ro'yxatdan shunchaki tushib qolardi va
@@ -1202,25 +1337,25 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                     Ko'rsatilsa, u kutishi yoki boshqa do'konni ochishi
                     mumkin — qaror uniki bo'ladi.
                   */}
-                  {soldOutSizes.map((item) => (
-                    <View
-                      key={`sold-${item}`}
-                      accessible
-                      accessibilityLabel={t.fitting.soldOutTag.replace('{size}', item)}
-                      style={[styles.size, styles.sizeSoldOut]}
-                    >
-                      <Text style={styles.sizeSoldOutText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            ) : (
-              <Text style={styles.soldOut}>{t.fitting.soldOutProduct}</Text>
-            )}
+                    {soldOutSizes.map((item) => (
+                      <View
+                        key={`sold-${item}`}
+                        accessible
+                        accessibilityLabel={`${item} — tugagan`}
+                        style={[styles.size, styles.sizeSoldOut]}
+                      >
+                        <Text style={styles.sizeSoldOutText}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.soldOut}>Bu mahsulot omborda tugagan</Text>
+              )}
 
-            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+              {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-            {/*
+              {/*
               ── Komplekt ──
 
               ⚠️ ILGARI BU YERDA «Uslub» QATORI TURARDI. U tanlovni
@@ -1229,60 +1364,58 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
               Uning o'rnida endi komplektning o'zi: nima kiyilgan,
               qancha turadi va bir bosishda savatga.
             */}
-            {outfitItems.length > 0 ? (
-              <View style={styles.outfitCard}>
-                <View style={styles.outfitHead}>
-                  <Text style={styles.outfitTitle}>
-                    {t.fitting.outfitTitle.replace('{n}', String(outfitItems.length))}
-                  </Text>
-                  <Text style={styles.outfitTotal}>
-                    {money(String(outfitTotal), outfitCurrency)}
-                  </Text>
+              {outfitItems.length > 0 ? (
+                <View style={styles.outfitCard}>
+                  <View style={styles.outfitHead}>
+                    <Text style={styles.outfitTitle}>Komplekt · {outfitItems.length} ta</Text>
+                    <Text style={styles.outfitTotal}>
+                      {money(String(outfitTotal), outfitCurrency)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.outfitRow}>
+                    {resolved.map((layer) => {
+                      const item = seen[layer.variantId];
+                      if (!item) return null;
+
+                      return (
+                        <Pressable
+                          key={layer.category}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${item.title} — yechish`}
+                          onPress={() => remove(layer.category)}
+                          style={styles.outfitItem}
+                        >
+                          <Image source={{ uri: item.image }} style={styles.outfitThumb} />
+                          <View style={styles.outfitRemove}>
+                            <Icon name="close" size={9} color={colors.text} />
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
+              ) : null}
 
-                <View style={styles.outfitRow}>
-                  {resolved.map((layer) => {
-                    const item = seen[layer.variantId];
-                    if (!item) return null;
-
-                    return (
-                      <Pressable
-                        key={layer.category}
-                        accessibilityRole="button"
-                        accessibilityLabel={t.fitting.outfitRemove.replace('{title}', item.title)}
-                        onPress={() => remove(layer.category)}
-                        style={styles.outfitItem}
-                      >
-                        <Image source={{ uri: item.image }} style={styles.outfitThumb} />
-                        <View style={styles.outfitRemove}>
-                          <Icon name="close" size={9} color={colors.text} />
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-
-            <View style={styles.actions}>
-              {/*
+              <View style={styles.actions}>
+                {/*
                 ⚠️ NARX ENDI TUGMADA EMAS. U yuqorida, nom ostida turadi —
                 maketdagidek. Tugmada takrorlash faqat joy egallardi va
                 uzun narxda yozuv ikki qatorga tushardi.
               */}
-              <Button
-                title={picked ? t.fitting.addToCart : t.fitting.pickSize}
-                icon="tryon"
-                trailingIcon={picked ? 'next' : undefined}
-                pill
-                disabled={!picked || cart.isPending}
-                loading={cart.isPending}
-                onPress={() =>
-                  picked && cart.mutate([{ variantId: current.variantId, chosenSize: picked }])
-                }
-              />
+                <Button
+                  title={picked ? 'Savatga qo`shish' : 'O`lcham tanlang'}
+                  icon="tryon"
+                  trailingIcon={picked ? 'next' : undefined}
+                  pill
+                  disabled={!picked || cart.isPending}
+                  loading={cart.isPending}
+                  onPress={() =>
+                    picked && cart.mutate([{ variantId: current.variantId, chosenSize: picked }])
+                  }
+                />
 
-              {/*
+                {/*
                 Butun komplektni savatga — bir bosishda.
 
                 ⚠️ FAQAT BIRDAN KO'P BO'LSA. Bitta kiyimda u yuqoridagi
@@ -1294,39 +1427,35 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
                 bel) — birini ikkinchisiga qo'llasak, shim noto'g'ri
                 o'lchamda savatga tushardi.
               */}
-              {outfitItems.length > 1 ? (
-                <Button
-                  title={t.fitting.addOutfit.replace(
-                    '{total}',
-                    money(String(outfitTotal), outfitCurrency),
-                  )}
-                  variant="ghost"
-                  disabled={cart.isPending}
-                  onPress={() => {
-                    const lines = outfitItems
-                      .map((item) => {
-                        const fit = measurements ? recommendSize(item.slot, measurements) : null;
-                        const chosenSize =
-                          fit && item.sizes.includes(fit) ? fit : (item.sizes[0] ?? null);
-                        return chosenSize ? { variantId: item.variantId, chosenSize } : null;
-                      })
-                      .filter((line): line is { variantId: string; chosenSize: string } =>
-                        Boolean(line),
-                      );
+                {outfitItems.length > 1 ? (
+                  <Button
+                    title={`Butun komplektni savatga · ${money(String(outfitTotal), outfitCurrency)}`}
+                    variant="ghost"
+                    disabled={cart.isPending}
+                    onPress={() => {
+                      const lines = outfitItems
+                        .map((item) => {
+                          const fit = measurements ? recommendSize(item.slot, measurements) : null;
+                          const chosenSize = matchSize(item.sizes, fit) ?? item.sizes[0] ?? null;
+                          return chosenSize ? { variantId: item.variantId, chosenSize } : null;
+                        })
+                        .filter((line): line is { variantId: string; chosenSize: string } =>
+                          Boolean(line),
+                        );
 
-                    if (lines.length === 0) {
-                      setNotice(t.fitting.outfitSoldOut);
-                      return;
-                    }
+                      if (lines.length === 0) {
+                        setNotice('Komplektdagi mahsulotlar omborda tugagan');
+                        return;
+                      }
 
-                    cart.mutate(lines);
-                  }}
-                />
-              ) : null}
+                      cart.mutate(lines);
+                    }}
+                  />
+                ) : null}
+              </View>
             </View>
-          </View>
-        ) : null}
-      </View>
+          ) : null}
+        </View>
       </ScrollView>
 
       <StorePicker
@@ -1353,6 +1482,12 @@ export function FittingExperience({ showBack = false }: FittingExperienceProps):
 }
 
 /** Avatar yonidagi dumaloq tugma — maketdagi uslubda. */
+const ANGLE_OPTIONS: Array<{ value: AvatarAngle; label: string }> = [
+  { value: 'front', label: 'Old' },
+  { value: 'side', label: 'Yon' },
+  { value: 'back', label: 'Orqa' },
+];
+
 function Control({
   icon,
   label,
@@ -1398,6 +1533,31 @@ function Control({
 }
 
 const styles = StyleSheet.create({
+  angleSwitch: {
+    gap: 6,
+    padding: 4,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(10,10,15,0.7)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'stretch',
+  },
+  angleButton: {
+    minWidth: 52,
+    paddingVertical: 7,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  angleButtonActive: { backgroundColor: colors.primary },
+  angleText: { ...text.tiny, color: colors.textMuted, fontFamily: fonts.semibold },
+  angleTextActive: { color: colors.text },
+  fallbackNote: {
+    ...text.small,
+    color: colors.warning,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   headerButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1, alignItems: 'center' },
@@ -1430,15 +1590,19 @@ const styles = StyleSheet.create({
   page: { paddingBottom: spacing.xl },
   avatar: { flex: 1 },
   dimmed: { opacity: 0.35 },
-  workingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  statusCard: {
+    maxWidth: 280,
     alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(10,10,15,0.82)',
   },
-  workingTitle: { ...text.h3, color: colors.text, textAlign: 'center', marginTop: spacing.sm },
-  workingHint: { ...text.small, color: colors.textMuted, textAlign: 'center' },
+  statusTitle: { ...text.h3, color: colors.text, textAlign: 'center' },
+  statusHint: { ...text.small, color: colors.textMuted, textAlign: 'center' },
 
   /* Chapdagi tik qator — maketdagi Rotate / Zoom / Reset */
   sideControls: {
@@ -1470,23 +1634,6 @@ const styles = StyleSheet.create({
    * va ularni sanashdan ko'ra ko'rish tez: to'lgan nuqta — tayyor
    * qatlam, bo'shi — kelayotgani.
    */
-  /* Maketdagi o'ng-past burchakdagi karta */
-  suggestCard: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
-    width: 76,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 6,
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(28,25,40,0.85)',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    gap: 6,
-  },
-  suggestText: { ...text.tiny, fontSize: 10, lineHeight: 13, color: colors.text, textAlign: 'center' },
-
   layerRail: {
     position: 'absolute',
     right: spacing.sm,
@@ -1510,8 +1657,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.lg,
   },
-  overlayText: { ...text.bodyMed, color: colors.text, textAlign: 'center' },
-  overlayHint: { ...text.tiny, color: colors.textDim, textAlign: 'center' },
 
   /*
    * ⚠️ GORIZONTAL `ScrollView` EMAS, ODDIY `View`.

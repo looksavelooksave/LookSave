@@ -24,6 +24,22 @@ export interface AvatarMeasurements {
   chest?: number;
   waist?: number;
   hips?: number;
+  /** Mijoz tanlagan razmerlar — gavda hajmiga qo'shimcha ishora */
+  topSize?: string;
+  bottomSize?: string;
+}
+
+/**
+ * «wears size L tops and M trousers» — razmer gavda hajmini modelga
+ * odamcha tilda aytadi. Ko'krak/bel (sm) o'rniga keldi: mijoz ularni
+ * endi kiritmaydi, razmerni esa tanlaydi.
+ */
+function sizeHint(measurements: AvatarMeasurements): string | null {
+  const parts = [
+    measurements.topSize ? `size ${measurements.topSize} tops` : null,
+    measurements.bottomSize ? `size ${measurements.bottomSize} trousers` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? `wears ${parts.join(' and ')}` : null;
 }
 
 export type AvatarGender = 'male' | 'female' | null;
@@ -65,12 +81,19 @@ const ANGLE_TEXT: Record<AvatarAngle, string> = {
     'elbows relaxed and slightly away from the body. The feet are shoulder-width apart, ' +
     'planted flat. Keep the body axis upright, with relaxed shoulders, an elegant confident ' +
     'stance, realistic anatomy and no exaggerated curve or lean.',
+  /*
+   * ⚠️ YON VA ORQA MATNI VARAQ BILAN BIR XIL (`buildAvatarSheetPrompt`).
+   * Ikki joyda ikki xil tavsif bo'lsa, avtomatik va operator rejimidagi
+   * avatarlar turli tomonga qarab chiqardi.
+   */
   side:
-    'Turned 90 degrees to the left, full side profile view. Standing straight, arms relaxed ' +
-    'at the sides and slightly away from the body, feet shoulder-width apart.',
+    'The whole body turned 90 degrees so we see a clean full side profile, facing the LEFT ' +
+    'edge of the image. Standing straight, arms relaxed at the sides and slightly away from ' +
+    'the body, feet slightly apart. The face is seen in profile.',
   back:
-    'Turned away from the camera, back view, face not visible. Standing straight, arms relaxed ' +
-    'at the sides and slightly away from the body, feet shoulder-width apart.',
+    'Seen directly from behind — the back of the head and the back of the clothing face the ' +
+    'camera, the face is NOT visible. Standing straight, arms relaxed at the sides and ' +
+    'slightly away from the body, feet shoulder-width apart.',
 };
 
 /**
@@ -162,9 +185,11 @@ export function buildAvatarPrompt(
   const shape = shapeFrom(measurements);
 
   // 1-jumla: kim
+  const sizes = sizeHint(measurements);
   parts.push(
     `Full-body studio photograph of a ${person}, ${[height, build].filter(Boolean).join(', ')}` +
       (shape ? `, with ${shape}` : '') +
+      (sizes ? `, who ${sizes}` : '') +
       '.',
   );
 
@@ -193,6 +218,111 @@ export function buildAvatarPrompt(
   );
 
   return parts.join(' ');
+}
+
+/**
+ * YUZ QULFI — foydalanuvchi o'zini tanishi kerak (2026-09-25, so'rovga ko'ra).
+ *
+ * ⚠️ «same person» YETMAYDI. Model yuzni «o'xshash» qilib qayta chizadi:
+ * chiroyliroq, yoshroq, silliqroq — va foydalanuvchi o'zini tanimaydi.
+ * Shuning uchun yuzning HAR BIR qismi nomma-nom sanaladi va nima
+ * qilinmasligi ochiq aytiladi. Bu band qisqartirilmaydi.
+ *
+ * Kengaytmada nusxasi bor: `apps/browser-extension/src/shared/prompt.ts`
+ * → FACE_LOCK. Biri o'zgarsa ikkinchisi ham o'zgarsin.
+ */
+export function faceLock(panels: boolean): string {
+  return [
+    'FACE IDENTITY (the most important rule): the face must be the SAME real person as in the ' +
+      'reference photo — not a lookalike, not an idealised or "improved" version.',
+    'Preserve EXACTLY: face shape and jawline, forehead and hairline, eye shape, eye colour and ' +
+      'spacing, eyebrows, nose shape and size, lips and mouth, ears, cheekbones, skin tone and ' +
+      'skin texture, facial hair, moles, freckles and marks, apparent age and ethnicity.',
+    'Do NOT beautify, slim, smooth, de-age, retouch, symmetrise or re-imagine the face, and do ' +
+      'NOT blend it with any other face.',
+    panels
+      ? 'The SAME identical face appears in every panel: in the side view it is the true profile ' +
+        'of that same face (same nose, lips, chin and brow line); in the back view the hairstyle, ' +
+        'hair colour, head shape and ears match exactly.'
+      : 'Hairstyle and hair colour stay exactly as in the reference.',
+  ].join(' ');
+}
+
+/**
+ * Uch burchak BITTA rasmda — «turnaround sheet» (operator rejimi).
+ *
+ * Operator bu matnni brauzerdagi AI ga beradi va bitta landshaft rasm
+ * oladi: chapdan o'ngga OLD · YON · ORQA. Server uni uchta teng bo'lakka
+ * kesadi va har birini o'z slotiga yozadi (`avatar-sheet.ts`).
+ *
+ * ⚠️ NEGA BITTA RASMDA, UCHTA ALOHIDA EMAS:
+ *   1. Bir generatsiya — uchta emas: vaqt va kredit uch barobar kam.
+ *   2. Model uchala ko'rinishni BIR VAQTDA chizadi, ya'ni yuz, soch,
+ *      gavda va kiyim bir xil chiqadi. Alohida so'rovlarda «yon» dagi odam
+ *      «old» dagidan sezilarli farq qilardi.
+ *
+ * ⚠️ KESISH TENG UCHDAN BIRGA TAYANADI. Shuning uchun matnda eng qat'iy
+ * talab — har odam O'Z panelining markazida, qo'shni panelga o'tmaydi
+ * va hammasi bir xil o'lchamda. Bu buzilsa bo'laklarda qo'l yoki oyoq
+ * kesilib qoladi.
+ *
+ * ⚠️ FON — SHAFFOF PNG, HAR DOIM. Bo'laklar to'g'ridan-to'g'ri sahnaga
+ * qo'yiladi; oq yoki kulrang fon qolsa avatar qutida turgandek ko'rinadi.
+ */
+export function buildAvatarSheetPrompt(
+  gender: AvatarGender,
+  measurements: AvatarMeasurements,
+): string {
+  const person = personWord(gender);
+  const height = measurements.height ? `${Math.round(measurements.height)} cm tall` : null;
+  const build = buildFromBmi(measurements.height, measurements.weight);
+  const shape = shapeFrom(measurements);
+  const sizes = sizeHint(measurements);
+  const who =
+    `a ${person}, ${[height, build].filter(Boolean).join(', ')}` +
+    (shape ? `, with ${shape}` : '') +
+    (sizes ? `, who ${sizes}` : '');
+
+  return [
+    'Create ONE single image: a photorealistic character turnaround sheet of the person in the ' +
+      `reference photo — ${who}.`,
+
+    faceLock(true),
+
+    'LAYOUT: the same person is shown THREE times, side by side in one horizontal row, in three ' +
+      'equal-width vertical panels — each panel is exactly one third of the image width. From ' +
+      'left to right:',
+
+    `PANEL 1 (left third) — FRONT VIEW: ${ANGLE_TEXT.front}`,
+
+    `PANEL 2 (middle third) — SIDE VIEW: ${ANGLE_TEXT.side}`,
+
+    `PANEL 3 (right third) — BACK VIEW: ${ANGLE_TEXT.back}`,
+
+    'EXACTLY THREE FIGURES of the same single person — never four, never two people in one ' +
+      'panel, no mirror images, no extra poses, no close-ups or inset portraits.',
+
+    'CONSISTENCY (very important): identical person, face, body proportions, hairstyle and ' +
+      'clothing in all three panels, lit from the same direction. Same camera distance, eye-level ' +
+      'camera and the same scale — the top of the head and the soles of the feet are at the same ' +
+      'height in every panel.',
+
+    'FRAMING FOR CUTTING (the image will be cut into three equal vertical strips): each figure ' +
+      'is centered horizontally in its own third and fills about 85–90% of the image height, ' +
+      'with a small empty margin above the head and below the feet. Leave clear empty space — ' +
+      'at least 8% of the image width — between neighbouring figures, so no hand, elbow, foot or ' +
+      'hair ever touches or crosses the invisible line between panels. The entire body is ' +
+      'visible from head to feet in every panel — nothing is cropped.',
+
+    `CLOTHING: ${baseLayer(gender)}, the same in all three views.`,
+
+    'BACKGROUND: fully TRANSPARENT PNG with an alpha channel — no background colour at all, no ' +
+      'floor, no wall, no ground shadow, no reflection, no divider lines or panel borders ' +
+      'between the views, no text, labels, numbers or watermarks. Only the three cut-out figures.',
+
+    'OUTPUT: landscape 3:2 image (for example 1536x1024), PNG with transparency. Soft even ' +
+      'studio lighting on the subject, sharp focus, photorealistic.',
+  ].join('\n\n');
 }
 
 /**

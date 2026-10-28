@@ -1,4 +1,4 @@
-import { registerSchema, loginSchema, passwordSchema } from '@looksave/validation';
+import { registerSchema, loginSchema, passwordSchema, usernameSchema } from '@looksave/validation';
 import { describe, expect, it } from 'vitest';
 
 import { hashPassword, verifyPassword } from './password';
@@ -90,5 +90,46 @@ describe('auth sxemalari', () => {
 
   it('login sxemasi parol uzunligini talab qilmaydi (eski parollar uchun)', () => {
     expect(loginSchema.safeParse({ phone: '+998901234567', password: 'a' }).success).toBe(true);
+  });
+
+  it('login telefon YOKI username bilan — ikkalasi ham, hech biri ham emas', () => {
+    expect(loginSchema.safeParse({ username: 'chilonzor', password: 'a' }).success).toBe(true);
+    expect(loginSchema.safeParse({ password: 'a' }).success).toBe(false);
+    expect(
+      loginSchema.safeParse({ phone: '+998901234567', username: 'chilonzor', password: 'a' })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe('username qoidalari', () => {
+  it('katta harf kichikka o`giriladi', () => {
+    expect(usernameSchema.parse('  Chilonzor_Fashion ')).toBe('chilonzor_fashion');
+  });
+
+  it('noto`g`ri shakllar rad etiladi', () => {
+    for (const bad of [
+      'ab',
+      '1shop',
+      '_shop',
+      'shop..uz',
+      'shop.',
+      'do`kon',
+      'shop-uz',
+      'x'.repeat(31),
+    ]) {
+      expect(usernameSchema.safeParse(bad).success, bad).toBe(false);
+    }
+  });
+
+  it('band so`zlar rad etiladi', () => {
+    expect(usernameSchema.safeParse('Admin').success).toBe(false);
+    expect(usernameSchema.safeParse('looksave').success).toBe(false);
+  });
+
+  it('to`g`ri shakllar o`tadi', () => {
+    for (const ok of ['abc', 'chilonzor', 'shop.uz', 'moda_2026']) {
+      expect(usernameSchema.safeParse(ok).success, ok).toBe(true);
+    }
   });
 });

@@ -143,6 +143,7 @@ export function toNearbyDto(row: NearbyRow): NearbyStoreDto {
 interface StoreDetailRow {
   id: string;
   name: string;
+  username: string | null;
   description: string | null;
   logo_url: string | null;
   cover_url: string | null;
@@ -171,9 +172,11 @@ export async function findStoreById(id: string): Promise<StoreDetailRow | null> 
             s.city, s.country, s.phone, s.working_hours, s.rating, s.review_count,
             s.avg_response_min, s.delivery_enabled, s.delivery_radius_m, s.delivery_fee,
             s.free_delivery_from, s.pickup_enabled, s.currency,
+            u.username,
             ST_Y(s.location::geometry) AS lat,
             ST_X(s.location::geometry) AS lng
        FROM stores s
+       JOIN users u ON u.id = s.owner_id
       WHERE s.id = $1 AND s.status = 'active'`,
     [id],
   );
@@ -204,6 +207,8 @@ export async function findStoreCategories(storeId: string): Promise<StoreCategor
 export interface StoreDetailDto {
   id: string;
   name: string;
+  /** Do'konning @handle'i (egasining username'i); qo'yilmagan bo'lsa `null` */
+  username: string | null;
   description: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
@@ -240,6 +245,7 @@ export function toStoreDetailDto(
   return {
     id: row.id,
     name: row.name,
+    username: row.username,
     description: row.description,
     logoUrl: row.logo_url,
     coverUrl: row.cover_url,

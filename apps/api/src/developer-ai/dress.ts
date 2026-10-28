@@ -5,6 +5,7 @@ import { ApiError } from '../http/api-error';
 import { isOwnCdnUrl, presignRead } from '../integrations/r2';
 import { logger } from '../logger';
 import { makeCutout } from '../store/cutout';
+import { storeAvatarSheet } from '../tryon/avatar-sheet';
 
 /**
  * Operator kiyintirishi — `developer_ai` paneli.
@@ -44,10 +45,7 @@ export interface DressBoard {
  * kiydirishning ma'nosi yo'q — mijoz uni baribir sotib ololmaydi.
  * `DISTINCT ON (p.id)` — har mahsulotdan bitta (ranglar takrorlanmasin).
  */
-export async function listDressBoard(
-  userId: string,
-  storeId: string | null,
-): Promise<DressBoard> {
+export async function listDressBoard(userId: string, storeId: string | null): Promise<DressBoard> {
   const avatar = await pool.query<{ avatar_image_url: string | null }>(
     `SELECT avatar_image_url FROM profiles WHERE user_id = $1`,
     [userId],
@@ -132,30 +130,46 @@ export async function submitDress(
    * operator kiyintirishini belgilaydi va takroriy yuklashda O'CHIRIB
    * qaytadan yoziladi (operator qayta kiydirsa yangisi turadi).
    */
-  await pool.query(
-    `INSERT INTO tryon_renders (user_id, variant_id, angle, source_hash, base_render_id,
-                                status, provider, result_url, completed_at)
-     VALUES ($1, $2, 'front', 'operator', NULL, 'ready', 'manual', $3, now())
-     ON CONFLICT (user_id, variant_id, angle, source_hash)
-       DO UPDATE SET result_url = EXCLUDED.result_url, cutout_url = NULL,
-                     status = 'ready', error = NULL, completed_at = now()`,
-    [userId, variantId, resultUrl],
-  );
+  /*
+   * ⚠️ UCH PANELLI VARAQ (old · yon · orqa) BO'LSA — UCHTA RENDER
+   * (2026-09-25). Kengaytma kiyimni bir so'rovda uch burchakdan chizadi;
+   * server uni bo'lib har burchakni o'z `angle` si bilan yozadi. Mijoz
+   * ilovasida Old/Yon/Orqa tugmalari shu yozuvlarni ko'rsatadi.
+   * Bitta pozali surat avvalgidek faqat «old» bo'ladi.
+   */
+  const pieces = (await storeAvatarSheet(resultUrl)) ?? { front: resultUrl };
 
-  void attachCutout(userId, variantId, resultUrl);
-  logger.info({ userId, variantId }, 'developer_ai: kiyim kiydirildi');
+  for (const [angle, url] of Object.entries(pieces)) {
+    await pool.query(
+      `INSERT INTO tryon_renders (user_id, variant_id, angle, source_hash, base_render_id,
+                                  status, provider, result_url, completed_at)
+       VALUES ($1, $2, $3, 'operator', NULL, 'ready', 'manual', $4, now())
+       ON CONFLICT (user_id, variant_id, angle, source_hash)
+         DO UPDATE SET result_url = EXCLUDED.result_url, cutout_url = NULL,
+                       status = 'ready', error = NULL, completed_at = now()`,
+      [userId, variantId, angle, url],
+    );
+    void attachCutout(userId, variantId, angle, url);
+  }
+
+  logger.info({ userId, variantId, angles: Object.keys(pieces) }, 'developer_ai: kiyim kiydirildi');
   return { variantId, done: true };
 }
 
-async function attachCutout(userId: string, variantId: string, url: string): Promise<void> {
+async function attachCutout(
+  userId: string,
+  variantId: string,
+  angle: string,
+  url: string,
+): Promise<void> {
   try {
     const cutout = await makeCutout(url, 'tryon');
     if (!cutout) return;
     await pool.query(
       `UPDATE tryon_renders SET cutout_url = $3
-        WHERE user_id = $1 AND variant_id = $2 AND angle = 'front'
+        WHERE user_id = $1 AND variant_id = $2 AND angle = $5
           AND source_hash = 'operator' AND result_url = $4`,
-      [userId, variantId, cutout, url],
+      [userId, variantId, cutout, url, angle],
     );
   } catch (err) {
     logger.warn({ err, userId, variantId }, 'developer_ai: kiyim kesimi yasalmadi');

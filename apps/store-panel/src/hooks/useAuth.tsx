@@ -12,7 +12,8 @@ import {
 interface AuthState {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (phone: string, password: string) => Promise<AuthUser>;
+  /** `identity` — telefon raqami yoki username */
+  signIn: (identity: string, password: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
 }
 
@@ -38,8 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     () => ({
       user,
       loading,
-      signIn: async (phone, password) => {
-        const signedIn = await apiLogin(phone, password);
+      signIn: async (identity, password) => {
+        const signedIn = await apiLogin(identity, password);
         setUser(signedIn);
         return signedIn;
       },

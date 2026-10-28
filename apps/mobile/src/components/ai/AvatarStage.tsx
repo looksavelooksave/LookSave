@@ -4,7 +4,6 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, text } from '../../theme/tokens';
 
-const PODIUM_IMAGE = require('../../../assets/tryon-podium.png');
 const STUDIO_BACKGROUND = require('../../../assets/tryon-studio-bg.png');
 
 /**
@@ -106,11 +105,7 @@ export function AvatarStage({
 
   return (
     <View style={styles.root}>
-      <Image
-        source={STUDIO_BACKGROUND}
-        style={styles.studioBackground}
-        resizeMode="cover"
-      />
+      <Image source={STUDIO_BACKGROUND} style={styles.studioBackground} resizeMode="cover" />
       <LinearGradient
         colors={['rgba(5,5,9,0.42)', 'rgba(5,5,9,0.28)', 'rgba(5,5,9,0.5)']}
         locations={[0, 0.48, 1]}
@@ -126,29 +121,16 @@ export function AvatarStage({
         />
       </Animated.View>
 
-      {/* Podium avatar ortida chiziladi: oyoqlar uning ustida turib ko'rinadi. */}
-      <View style={styles.podium} pointerEvents="none">
-        <Image source={PODIUM_IMAGE} style={styles.podiumImage} resizeMode="contain" />
-      </View>
-
       {children ? (
         <View
-          style={[
-            styles.swipeFrame,
-            zoomed && styles.personFrameZoomed,
-            dimmed && styles.dimmed,
-          ]}
+          style={[styles.swipeFrame, zoomed && styles.personFrameZoomed, dimmed && styles.dimmed]}
         >
           {children}
         </View>
       ) : source ? (
         <Image
           source={{ uri: source }}
-          style={[
-            styles.personFrame,
-            dimmed && styles.dimmed,
-            zoomed && styles.personFrameZoomed,
-          ]}
+          style={[styles.personFrame, dimmed && styles.dimmed, zoomed && styles.personFrameZoomed]}
           resizeMode="contain"
         />
       ) : (
@@ -167,7 +149,7 @@ export function AvatarStage({
         ⚠️ GAVDANI KESIB O'TGAN HALQALAR OLIB TASHLANDI (2026-09-20).
         Ilgari 34% va 56% da ikkita neon ellips gavdadan o'tardi —
         foydalanuvchi ularni «aylanachalar» deb, olib tashlashni so'radi.
-        Podium (pastdagi) va orqa fon romkalari qoldi.
+        Orqa fon romkalari qoldi (podium 2026-09-25 da olib tashlandi).
       */}
 
       {/* O'lchovlar — maketdagi joylashuvda */}
@@ -288,22 +270,6 @@ const styles = StyleSheet.create({
    * ko'rinardi. Odam kadrning o'rtadagi ~45% ini egallaydi, halqa esa
    * undan bir oz kengroq bo'lishi kerak.
    */
-  /*
-   * ── Podium (maketdagi 2-rasm) ──
-   *
-   * ⚠️ OYOQ OSTIDA, PAST. Ilgari u yuqorida (son sohasida) va juda
-   * yorqin edi. Endi sahnaning tagiga tushirilgan va rangi bosiqroq —
-   * odam ustida turgandek ko'rinadi, e'tibor tortmaydi.
-   */
-  podium: {
-    position: 'absolute',
-    left: '12%',
-    right: '12%',
-    bottom: '-11%',
-    height: '36%',
-  },
-  podiumImage: { width: '100%', height: '100%' },
-
   label: { position: 'absolute' },
   labelValue: { ...text.h3, color: colors.text, fontVariant: ['tabular-nums'] },
   labelUnit: { ...text.tiny, color: colors.textMuted, marginTop: -2 },

@@ -168,6 +168,8 @@ export interface StoreProfile {
   id: string;
   name: string;
   slug: string;
+  /** Egasining username'i — panelga kirish nomi va do'konning @handle'i */
+  username: string | null;
   description: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
@@ -212,6 +214,10 @@ export const getStoreProfile = (): Promise<StoreProfile> => api<StoreProfile>('/
 export const updateStoreProfile = (body: UpdateStoreBody): Promise<StoreProfile> =>
   api<StoreProfile>('/store/profile', { method: 'PATCH', body });
 
+/** Faqat do'kon egasi o'zgartira oladi — xodimga server 403 qaytaradi */
+export const setStoreUsername = (username: string): Promise<{ username: string }> =>
+  api<{ username: string }>('/store/username', { method: 'PATCH', body: { username } });
+
 // ── Do'kon arizasi ──
 
 export interface StoreApplication {
@@ -247,3 +253,29 @@ export const applyForStore = (
   input: StoreApplication,
 ): Promise<{ id: string; name: string; slug: string; status: string; createdAt: string }> =>
   api('/stores/apply', { method: 'POST', body: input });
+
+
+// ── Sotuvchi brandi ──
+
+export interface StoreBrand {
+  id: string;
+  name: string;
+  slug: string;
+  username: string | null;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+export interface StoreBrandInput {
+  name: string;
+  username: string;
+  logoUrl?: string | null;
+  description?: string | null;
+}
+
+/** Sotuvchining o'z brandi — yo'q bo'lsa null */
+export const getMyBrand = (): Promise<StoreBrand | null> => api<StoreBrand | null>('/store/brand');
+
+/** Brandni yaratadi yoki yangilaydi (@username bilan) */
+export const saveMyBrand = (input: StoreBrandInput): Promise<StoreBrand> =>
+  api<StoreBrand>('/store/brand', { method: 'PUT', body: input });

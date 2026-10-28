@@ -1,0 +1,89 @@
+{
+  "_comment": "catalog-demo.json ning birinchi importidagi xatolar: sarlavha/rang DummyJSON nomidan olingan edi, rasmga qaralmagan. Kalit — ESKI sarlavha. fix-catalog.ts shu bo'yicha prod'dagi yozuvni topib yangilaydi.",
+  "fixes": [
+    {
+      "oldTitle": "Ko'k-qora katak ko'ylak",
+      "title": "Ko'k-oq katak ko'ylak",
+      "description": "Paxtali, uzun yengli ko'k-oq katak ko'ylak. Kundalik va ofis uchun.",
+      "colorHex": "#4a6fa5",
+      "colorName": { "uz": "Ko'k-oq", "ru": "Сине-белый", "en": "Blue-white" }
+    },
+    {
+      "oldTitle": "Qora printli futbolka",
+      "title": "Oq printli futbolka",
+      "description": "Yumshoq paxta oq futbolka, old tomonida grafik print.",
+      "colorHex": "#f5f5f5",
+      "colorName": { "uz": "Oq", "ru": "Белый", "en": "White" }
+    },
+    {
+      "oldTitle": "Kalta yengli yozgi ko'ylak",
+      "title": "Ko'k gulli yozgi ko'ylak",
+      "description": "Yengil matodan kalta yengli gulli ko'ylak, issiq kunlar uchun.",
+      "colorHex": "#2f5aa8",
+      "colorName": { "uz": "Ko'k gulli", "ru": "Синий с цветами", "en": "Blue floral" }
+    },
+    {
+      "oldTitle": "Klassik katak ko'ylak",
+      "title": "Yashil katak ko'ylak",
+      "description": "Klassik bichimdagi yashil katak ko'ylak, tugmali yoqa.",
+      "colorHex": "#5b7a5a",
+      "colorName": { "uz": "Yashil", "ru": "Зелёный", "en": "Green" }
+    },
+    {
+      "oldTitle": "Qora-jigarrang shippak",
+      "title": "Qora poshnali tufli",
+      "description": "O'tkir burunli qora charm tufli, ichi jigarrang. Baland poshna.",
+      "categorySlug": "dress-shoes",
+      "tags": ["classic"],
+      "colorHex": "#141414",
+      "colorName": { "uz": "Qora", "ru": "Чёрный", "en": "Black" }
+    },
+    {
+      "oldTitle": "Baland poshnali tufli",
+      "title": "Qora tasmali sandal",
+      "description": "Keng tasmali, ochiq burunli qora sandal. Yoz va kechalar uchun.",
+      "categorySlug": "sandals",
+      "tags": ["classic", "minimal"]
+    },
+    {
+      "oldTitle": "Ochiq burunli yozgi tufli",
+      "title": "Qora klassik tufli",
+      "description": "Klassik o'tkir burunli qora tufli, ichi och bej. Ofis va bayram uchun.",
+      "categorySlug": "dress-shoes",
+      "tags": ["classic"],
+      "colorHex": "#111111",
+      "colorName": { "uz": "Qora", "ru": "Чёрный", "en": "Black" }
+    },
+    {
+      "oldTitle": "Qora klassik sumka",
+      "title": "Havorang klassik sumka",
+      "description": "Qattiq shaklli havorang qo'l sumkasi.",
+      "colorHex": "#9fd3e6",
+      "colorName": { "uz": "Havorang", "ru": "Голубой", "en": "Light blue" }
+    },
+    {
+      "oldTitle": "Sport quyosh ko'zoynagi",
+      "title": "Oq ramkali ko'zoynak",
+      "description": "Shaffof-oq keng ramkali zamonaviy quyosh ko'zoynagi.",
+      "tags": ["streetwear", "minimal"],
+      "colorHex": "#e8e8e8",
+      "colorName": { "uz": "Oq", "ru": "Белый", "en": "White" }
+    },
+    {
+      "oldTitle": "Kumush klassik soat",
+      "description": "Kumush rangli korpus va metall bilaguzuk, qora siferblat."
+    },
+    {
+      "oldTitle": "Oy fazali soat",
+      "description": "Oy fazasi ko'rsatkichli, jigarrang charm tasmali klassik soat.",
+      "colorHex": "#5a3a2a",
+      "colorName": { "uz": "Jigarrang", "ru": "Коричневый", "en": "Brown" }
+    },
+    {
+      "oldTitle": "Sport metall soat",
+      "description": "Qora siferblatli, suvga chidamli metall bilaguzukli sport soat.",
+      "colorHex": "#1a1a1a",
+      "colorName": { "uz": "Qora", "ru": "Чёрный", "en": "Black" }
+    }
+  ]
+}

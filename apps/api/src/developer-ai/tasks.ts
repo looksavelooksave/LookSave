@@ -6,6 +6,7 @@ import { ApiError } from '../http/api-error';
 import { isOwnCdnUrl, presignRead } from '../integrations/r2';
 import { logger } from '../logger';
 import { makeCutout } from '../store/cutout';
+import { storeAvatarSheet } from '../tryon/avatar-sheet';
 import { announceTask, notifyCustomer, updateAnnouncement } from './notify';
 
 /**
@@ -424,28 +425,65 @@ async function finish(
  * ⚠️ AVATARDA ESKI BURCHAKLAR VA KESIM TOZALANADI. Ular OLDINGI avatardan
  * qolgan: yangi yuz bilan eski «yon» ko'rinish aralashib ketardi.
  */
-async function applyResult(client: PoolClient, row: TaskRow, resultUrl: string): Promise<void> {
+async function applyResult(
+  client: PoolClient,
+  row: TaskRow,
+  resultUrl: string,
+  angles: Record<string, string> | null,
+): Promise<void> {
   if (row.kind === 'avatar') {
+    /*
+     * Uch panelli varaq bo'lsa (`angles`) — asosiy avatar OLD bo'lak,
+     * burchaklar esa uchalasi. Oddiy rasmda burchaklar bo'shatiladi.
+     */
     await client.query(
       `UPDATE profiles
           SET avatar_image_url = $2,
               avatar_status = 'ready',
               avatar_error = NULL,
-              avatar_angles = '{}'::jsonb,
+              avatar_angles = $3::jsonb,
               avatar_cutout_url = NULL,
               avatar_updated_at = now()
         WHERE user_id = $1`,
-      [row.ref_id, resultUrl],
+      [row.ref_id, angles?.['front'] ?? resultUrl, JSON.stringify(angles ?? {})],
     );
     return;
   }
 
-  await client.query(
+  /*
+   * ⚠️ VARAQ BO'LSA: asosiy yozuvga O'Z burchagidagi bo'lak, qolgan
+   * burchaklar esa o'sha kiyim/asos/xesh bilan alohida yozuv bo'lib
+   * qo'shiladi — mijoz Old/Yon/Orqa ni qayta so'ramasdan ko'radi.
+   */
+  const { rows } = await client.query<{
+    user_id: string;
+    variant_id: string;
+    angle: string;
+    source_hash: string;
+    base_render_id: string | null;
+  }>(
     `UPDATE tryon_renders
-        SET result_url = $2, status = 'ready', error = NULL, completed_at = now()
-      WHERE id = $1`,
-    [row.ref_id, resultUrl],
+        SET result_url = COALESCE(($3::jsonb ->> angle), $2),
+            status = 'ready', error = NULL, completed_at = now()
+      WHERE id = $1
+      RETURNING user_id, variant_id, angle, source_hash, base_render_id`,
+    [row.ref_id, resultUrl, JSON.stringify(angles ?? {})],
   );
+  const main = rows[0];
+  if (!main || !angles) return;
+
+  for (const [angle, url] of Object.entries(angles)) {
+    if (angle === main.angle) continue;
+    await client.query(
+      `INSERT INTO tryon_renders (user_id, variant_id, angle, source_hash, base_render_id,
+                                  status, provider, result_url, completed_at)
+       VALUES ($1, $2, $3, $4, $5, 'ready', 'manual', $6, now())
+       ON CONFLICT (user_id, variant_id, angle, source_hash)
+         DO UPDATE SET result_url = EXCLUDED.result_url, cutout_url = NULL,
+                       status = 'ready', error = NULL, completed_at = now()`,
+      [main.user_id, main.variant_id, angle, main.source_hash, main.base_render_id, url],
+    );
+  }
 }
 
 async function applyFailure(client: PoolClient, row: TaskRow, reason: string): Promise<void> {
@@ -492,6 +530,15 @@ async function inTransaction<T>(work: (client: PoolClient) => Promise<T>): Promi
  * yetib, navbatdagi ish «band» holatida osilib qolishi (yoki aksincha)
  * mumkin edi.
  */
+/**
+ * Varaqni ajratib bo'lmadi — operatorga aniq sabab qaytadi va ish yopilmaydi.
+ * Aks holda mijozga butun varaq (uch odam yonma-yon) avatar bo'lib borardi.
+ */
+function sheetError(err: unknown): never {
+  logger.error({ err }, 'avatar varag`i ajratilmadi');
+  throw new ApiError('VALIDATION_ERROR', 'Rasmni 3 ga bo`lib bo`lmadi — qayta yuklab ko`ring');
+}
+
 export async function completeTask(
   taskId: string,
   operatorId: string,
@@ -504,9 +551,23 @@ export async function completeTask(
     );
   }
 
+  /*
+   * Uch panelli varaq (old · yon · orqa) — bo'laklarga ajratiladi.
+   *
+   * ⚠️ TRANZAKSIYADAN OLDIN. Yuklab olish, kesish va R2 ga yozish bir
+   * necha soniya oladi; tranzaksiya ichida bo'lsa navbat qatori shuncha
+   * vaqt qulflanib turardi. Ish esa hali «band» — boshqa operator uni
+   * ololmaydi, ya'ni oldindan qilish xavfsiz.
+   *
+   * Faqat avatar ishida: kiyintirish natijasi har doim bitta surat.
+   */
+  const pending = await findTask(taskId);
+  // Kiyintirish ham endi uch panelli varaq bo'lib kelishi mumkin (2026-09-25)
+  const angles = pending ? await storeAvatarSheet(resultUrl).catch(sheetError) : null;
+
   const row = await inTransaction(async (client) => {
     const finished = await finish(client, taskId, operatorId, { status: 'done', resultUrl });
-    await applyResult(client, finished, resultUrl);
+    await applyResult(client, finished, resultUrl, angles);
     return finished;
   });
 
@@ -527,7 +588,7 @@ export async function completeTask(
    * sahnaga toza tushardi, ikkinchisi och kulrang to'rtburchak bo'lib
    * ko'rinardi — va farq operatordan kelgan-kelmaganiga bog'liq edi.
    */
-  if (row.kind === 'avatar') void attachCutout(row.ref_id, resultUrl);
+  if (row.kind === 'avatar') void attachCutout(row.ref_id, angles?.['front'] ?? resultUrl);
   else void attachRenderCutout(row.ref_id, resultUrl);
 
   void updateAnnouncement(taskId, {

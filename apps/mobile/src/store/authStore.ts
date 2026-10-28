@@ -13,6 +13,11 @@ interface AuthState {
   signIn: (phone: string, password: string) => Promise<void>;
   signUp: (input: { phone: string; fullName: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Profil tahrirlangach chaqiriladi. Ism va surat ko'p ekranda shu
+   * store'dan o'qiladi — yangilanmasa eski ism qolib ketardi.
+   */
+  setUser: (user: AuthUser) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -55,4 +60,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     await clearTokens();
     set({ status: 'signedOut', user: null });
   },
+
+  setUser: (user) => set({ user }),
 }));

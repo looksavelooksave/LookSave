@@ -22,7 +22,7 @@ export interface AdminStore {
   coverUrl: string | null;
   location: { lat: number; lng: number };
   createdAt: string;
-  owner: { name: string | null; phone: string };
+  owner: { name: string | null; phone: string; username: string | null };
   rejectReason: string | null;
   productCount: number;
   orderCount: number;
@@ -113,6 +113,10 @@ export const rejectStore = (id: string, reason: string): Promise<unknown> =>
 
 export const suspendStore = (id: string, reason: string): Promise<unknown> =>
   api(`/admin/stores/${id}/suspend`, { method: 'POST', body: { reason } });
+
+/** Do'kon egasining username'i — login va do'konning @handle'i */
+export const setStoreOwnerUsername = (id: string, username: string): Promise<unknown> =>
+  api(`/admin/stores/${id}/username`, { method: 'PATCH', body: { username } });
 
 export const getModerationProducts = (
   status: 'pending' | 'rejected' | 'active',
@@ -282,3 +286,44 @@ export const updateBrand = (id: string, input: Partial<BrandInput>): Promise<Bra
 
 export const deleteBrand = (id: string): Promise<void> =>
   api<void>(`/admin/brands/${id}`, { method: 'DELETE' });
+
+// ── Kategoriyalar ──
+
+export interface AdminCategory {
+  id: string;
+  parentId: string | null;
+  slug: string;
+  name: Record<string, string>;
+  icon: string | null;
+  slot: string | null;
+  gender: string;
+  sizeType: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  productCount: number;
+  childCount: number;
+}
+
+export interface CategoryInput {
+  name: Record<string, string>;
+  slug?: string;
+  icon?: string | null;
+  slot?: string | null;
+  gender: string;
+  sizeType?: string | null;
+  parentId?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export const getCategories = (): Promise<AdminCategory[]> =>
+  api<AdminCategory[]>('/admin/categories');
+
+export const createCategory = (input: CategoryInput): Promise<AdminCategory> =>
+  api<AdminCategory>('/admin/categories', { method: 'POST', body: input });
+
+export const updateCategory = (id: string, input: Partial<CategoryInput>): Promise<AdminCategory> =>
+  api<AdminCategory>(`/admin/categories/${id}`, { method: 'PATCH', body: input });
+
+export const deleteCategory = (id: string): Promise<void> =>
+  api<void>(`/admin/categories/${id}`, { method: 'DELETE' });

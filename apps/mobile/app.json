@@ -32,7 +32,8 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
-      ]
+      ],
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",
@@ -56,6 +57,17 @@
         {
           "locationWhenInUsePermission": "Yaqin atrofdagi do'konlarni ko'rsatish uchun joylashuvingiz kerak"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
       ]
     ],
     "experiments": {
@@ -64,20 +76,21 @@
     "extra": {
       "apiUrl": null,
       "eas": {
-        "projectId": "5503e8f4-4f2a-4e86-8ff3-8ab012c74531"
+        "projectId": "8573157d-f4a2-47e9-b708-0bbc0cea5519"
       }
     },
     "icon": "./assets/logo.png",
     "splash": {
       "image": "./assets/logo-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0F"
+      "backgroundColor": "#000000"
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/5503e8f4-4f2a-4e86-8ff3-8ab012c74531"
-    }
+      "url": "https://u.expo.dev/8573157d-f4a2-47e9-b708-0bbc0cea5519"
+    },
+    "owner": "umidjon_looksave_developer"
   }
 }

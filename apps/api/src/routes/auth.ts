@@ -31,6 +31,7 @@ import {
   findStoreIds,
   findUserById,
   findUserByPhone,
+  findUserByUsername,
   recordLoginAttempt,
   toAuthUser,
   touchLastActive,
@@ -149,33 +150,45 @@ authRouter.post(
     windowSec: 900,
     max: 5,
     prefix: 'auth:login:phone',
+    // Telefon ham, username ham bir xil hisoblagichga tushadi: aks holda
+    // username bilan yana 5 ta urinish olinardi
     key: (req) => {
       const body: unknown = req.body;
-      if (typeof body === 'object' && body !== null && 'phone' in body) {
-        const phone = (body as { phone: unknown }).phone;
+      if (typeof body === 'object' && body !== null) {
+        const { phone, username } = body as { phone?: unknown; username?: unknown };
         if (typeof phone === 'string') return phone;
+        if (typeof username === 'string') return `@${username.trim().toLowerCase()}`;
       }
       return 'unknown';
     },
     message: 'Bu raqam uchun urinishlar tugadi. 15 daqiqadan keyin urinib ko`ring.',
   }),
   route({ body: loginSchema }, async (input, req, res) => {
-    const { phone, password } = input.body;
+    const { phone, username, password } = input.body;
     // Veb-saytdan kelgan urinishda `req.ip` — veb-serverniki. Audit
     // yozuvida mehmonning o'z IP'si turishi kerak (`http/client-ip.ts`).
     const ip = getClientIp(req, res);
     const userAgent = req.get('User-Agent') ?? null;
 
-    const user = await findUserByPhone(phone);
+    const user = phone ? await findUserByPhone(phone) : await findUserByUsername(username ?? '');
     const ok = user?.password_hash
       ? await verifyPassword(password, user.password_hash)
       : // Vaqt hujumini qiyinlashtirish uchun raqam topilmasa ham hash hisoblanadi
         await verifyPassword(password, 'scrypt$65536$8$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAA');
 
-    await recordLoginAttempt({ phone, ip, success: ok && user !== null, userAgent });
+    // `login_attempts.phone` NOT NULL: username bilan urinishda topilgan
+    // egasining raqami, topilmasa `@username` yoziladi
+    await recordLoginAttempt({
+      phone: phone ?? user?.phone ?? `@${username ?? ''}`,
+      ip,
+      success: ok && user !== null,
+      userAgent,
+    });
 
     if (!user || !ok) {
-      throw ApiError.unauthorized('Telefon raqami yoki parol noto`g`ri');
+      throw ApiError.unauthorized(
+        phone ? 'Telefon raqami yoki parol noto`g`ri' : 'Username yoki parol noto`g`ri',
+      );
     }
 
     if (!user.is_active) {

@@ -15,9 +15,12 @@ import {
   View,
 } from 'react-native';
 import {
+  getMyBrand,
   getStoreProfile,
+  saveMyBrand,
   updateStoreProfile,
   uploadStoreImage,
+  type StoreBrandInput,
   type WorkingHour,
 } from '../../src/api/endpoints';
 import { explainError } from '../../src/api/explainError';
@@ -188,6 +191,73 @@ export default function StoreSettings(): JSX.Element {
     },
     onError: (err) => setError(explainError(err, t)),
   });
+
+  // ── Mening brendim (@username bilan) — do'kondan alohida yozuv, alohida saqlash ──
+  const brand = useQuery({ queryKey: ['store', 'brand'], queryFn: getMyBrand });
+  const [brandForm, setBrandForm] = useState({
+    name: '',
+    username: '',
+    description: '',
+    logoUrl: null as string | null,
+  });
+  const [brandUploading, setBrandUploading] = useState(false);
+  const [brandSaved, setBrandSaved] = useState(false);
+  const [brandError, setBrandError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (brand.data === undefined) return;
+    setBrandForm({
+      name: brand.data?.name ?? '',
+      username: brand.data?.username ?? '',
+      description: brand.data?.description ?? '',
+      logoUrl: brand.data?.logoUrl ?? null,
+    });
+  }, [brand.data]);
+
+  const setBrand = (key: keyof typeof brandForm) => (value: string) => {
+    setBrandSaved(false);
+    setBrandForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const pickBrandLogo = async (): Promise<void> => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Ruxsat kerak', 'Logo tanlash uchun galereyaga ruxsat bering.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    setBrandUploading(true);
+    setBrandError(null);
+    try {
+      const url = await uploadStoreImage(result.assets[0].uri);
+      setBrandForm((prev) => ({ ...prev, logoUrl: url }));
+      setBrandSaved(false);
+    } catch {
+      setBrandError('Logo yuklanmadi — qaytadan urinib ko`ring');
+    } finally {
+      setBrandUploading(false);
+    }
+  };
+
+  const saveBrand = useMutation({
+    mutationFn: (input: StoreBrandInput) => saveMyBrand(input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['store', 'brand'] });
+      setBrandSaved(true);
+      setBrandError(null);
+    },
+    onError: (err) => setBrandError(err instanceof ApiError ? err.message : 'Saqlanmadi'),
+  });
+
+  const brandUsername = brandForm.username.trim().replace(/^@/, '').toLowerCase();
+  const brandValid = brandForm.name.trim().length >= 2 && brandUsername.length >= 3;
 
   if (profile.isLoading) {
     return (
@@ -461,6 +531,81 @@ export default function StoreSettings(): JSX.Element {
             loading={save.isPending}
             onPress={() => save.mutate()}
           />
+
+          {/* ── Mening brendim (@username bilan) — alohida saqlash ── */}
+          <View style={styles.brandDivider} />
+          <Text style={styles.brandTitle}>MENING BRENDIM</Text>
+          <Text style={styles.brandHint}>
+            Xaridorlar «Brendlar» bo`limida shu nom, logo va @username bilan ko`radi. Qo`shgan
+            mahsulotlaringiz avtomatik shu brendga bog`lanadi.
+          </Text>
+
+          <Text style={styles.fieldLabel}>BREND LOGOSI</Text>
+          <View style={styles.logoRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Brend logosi"
+              onPress={() => void pickBrandLogo()}
+              disabled={brandUploading}
+              style={styles.logoBox}
+            >
+              {brandUploading ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : brandForm.logoUrl ? (
+                <Image
+                  source={{ uri: brandForm.logoUrl }}
+                  style={styles.logoImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Icon name="shop" size={26} color={colors.textDim} />
+              )}
+            </Pressable>
+            <View style={styles.logoActions}>
+              <Button
+                title={brandForm.logoUrl ? 'Logoni o`zgartirish' : 'Logo tanlash'}
+                variant="ghost"
+                loading={brandUploading}
+                onPress={() => void pickBrandLogo()}
+              />
+            </View>
+          </View>
+
+          <Field label="Brend nomi" value={brandForm.name} onChangeText={setBrand('name')} />
+          <Field
+            label="Username"
+            value={brandForm.username}
+            onChangeText={setBrand('username')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="@chilonzor_moda"
+          />
+          <Text style={styles.brandHint}>
+            3–30 belgi: lotin harfi bilan boshlanadi, faqat harf, raqam, _ va .
+          </Text>
+          <Field
+            label="Brend tavsifi"
+            value={brandForm.description}
+            onChangeText={setBrand('description')}
+            multiline
+          />
+
+          {brandError ? <Text style={styles.error}>{brandError}</Text> : null}
+          {brandSaved ? <Text style={styles.saved}>Saqlandi — @{brandUsername}</Text> : null}
+
+          <Button
+            title={brand.data ? 'Brendni saqlash' : 'Brend yaratish'}
+            loading={saveBrand.isPending}
+            disabled={!brandValid}
+            onPress={() =>
+              saveBrand.mutate({
+                name: brandForm.name.trim(),
+                username: brandUsername,
+                description: brandForm.description.trim() || null,
+                logoUrl: brandForm.logoUrl,
+              })
+            }
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
@@ -604,4 +749,12 @@ const styles = StyleSheet.create({
 
   error: { ...text.small, color: colors.danger, marginTop: spacing.md, marginBottom: spacing.sm },
   saved: { ...text.small, color: colors.success, marginTop: spacing.md, marginBottom: spacing.sm },
+  brandDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  brandTitle: { ...text.h3, color: colors.text, marginBottom: spacing.xs },
+  brandHint: { ...text.small, color: colors.textDim, marginBottom: spacing.sm },
 });

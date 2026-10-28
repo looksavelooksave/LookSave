@@ -8,6 +8,8 @@ export type Gender = 'male' | 'female';
 export interface AuthUser {
   id: Uuid;
   phone: string;
+  /** Sotuvchi username'i — login va do'konning @handle'i. Xaridorda `null`. */
+  username: string | null;
   fullName: string | null;
   role: UserRole;
   gender: Gender | null;

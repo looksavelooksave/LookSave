@@ -46,19 +46,27 @@ export function BrandRow({
       <View style={styles.brandRow}>
         {brands.map((brand) => (
           <Pressable key={brand.id} style={styles.brandTile} onPress={() => onPress(brand)}>
-            {brand.logoUrl ? (
-              <Image
-                source={{ uri: brand.logoUrl }}
-                style={styles.brandLogo}
-                resizeMode="contain"
-              />
-            ) : (
-              // Logotip yo'q bo'lsa — brend nomi. Deckda logotiplar oq, shuning
-              // uchun nom ham oq va siqilgan harflar bilan beriladi.
-              <Text style={styles.brandName} numberOfLines={2}>
-                {brand.name}
+            <View style={styles.brandMark}>
+              {brand.logoUrl ? (
+                <Image
+                  source={{ uri: brand.logoUrl }}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                />
+              ) : (
+                // Logotip yo'q bo'lsa — brend nomi. Deckda logotiplar oq, shuning
+                // uchun nom ham oq va siqilgan harflar bilan beriladi.
+                <Text style={styles.brandName} numberOfLines={2}>
+                  {brand.name}
+                </Text>
+              )}
+            </View>
+            {/* @username — sotuvchi brendini tanitadi; yo'q bo'lsa ko'rsatilmaydi */}
+            {brand.username ? (
+              <Text style={styles.brandHandle} numberOfLines={1}>
+                @{brand.username}
               </Text>
-            )}
+            ) : null}
           </Pressable>
         ))}
       </View>
@@ -78,17 +86,29 @@ const styles = StyleSheet.create({
   actionText: { ...text.tiny, color: colors.accent },
   brandRow: { flexDirection: 'row', gap: spacing.sm },
   brandTile: {
-    width: 86,
-    height: 64,
+    width: 92,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    gap: 6,
+  },
+  brandMark: {
+    width: '100%',
+    height: 48,
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.sm,
   },
   brandLogo: { width: '100%', height: '100%' },
+  brandHandle: {
+    ...text.tiny,
+    color: colors.textDim,
+    textAlign: 'center',
+    maxWidth: '100%',
+  },
   brandName: {
     ...text.tiny,
     color: colors.text,

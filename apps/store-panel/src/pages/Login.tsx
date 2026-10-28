@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 export function LoginPage(): JSX.Element {
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('+998');
+  // Telefon YOKI username — `toLoginIdentity` ajratadi
+  const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -20,7 +21,7 @@ export function LoginPage(): JSX.Element {
     setError(null);
 
     try {
-      const user = await signIn(phone.replace(/\s/g, ''), password);
+      const user = await signIn(identity, password);
       if (user.role === 'customer') {
         setError("Bu panel do'konlar uchun. Xaridorlar mobil ilovadan foydalanadi.");
         return;
@@ -48,15 +49,17 @@ export function LoginPage(): JSX.Element {
 
         <form onSubmit={(event) => void submit(event)} className="card mt-8 space-y-4 p-5">
           <label className="block">
-            <span className="label">Telefon</span>
+            <span className="label">Telefon yoki username</span>
             <Input
               className="mt-2"
-              type="tel"
-              inputMode="tel"
+              type="text"
               autoComplete="username"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="+998901234567"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={identity}
+              onChange={(event) => setIdentity(event.target.value)}
+              placeholder="+998901234567 yoki chilonzor_moda"
               required
             />
           </label>

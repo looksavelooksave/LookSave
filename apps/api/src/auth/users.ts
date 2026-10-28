@@ -2,10 +2,12 @@ import type { AuthUser, CountryCode, Gender, Locale, UserRole } from '@looksave/
 import type { PoolClient } from 'pg';
 
 import { pool } from '../db/pool';
+import { ApiError } from '../http/api-error';
 
 export interface UserRow {
   id: string;
   phone: string;
+  username: string | null;
   password_hash: string | null;
   full_name: string | null;
   role: UserRole;
@@ -17,13 +19,14 @@ export interface UserRow {
   created_at: Date;
 }
 
-const USER_COLUMNS = `id, phone, password_hash, full_name, role, gender, locale, country,
+const USER_COLUMNS = `id, phone, username, password_hash, full_name, role, gender, locale, country,
                       avatar_url, is_active, created_at`;
 
 export function toAuthUser(row: UserRow): AuthUser {
   return {
     id: row.id,
     phone: row.phone,
+    username: row.username,
     fullName: row.full_name,
     role: row.role,
     gender: row.gender,
@@ -39,6 +42,37 @@ export async function findUserByPhone(phone: string): Promise<UserRow | null> {
     phone,
   ]);
   return rows[0] ?? null;
+}
+
+/** Username kichik harfda saqlanadi — qidiruv ham `lower()` indeksi bo'yicha. */
+export async function findUserByUsername(username: string): Promise<UserRow | null> {
+  const { rows } = await pool.query<UserRow>(
+    `SELECT ${USER_COLUMNS} FROM users WHERE lower(username) = lower($1)`,
+    [username],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Username qo'yadi yoki almashtiradi (admin ham, sotuvchi ham shu yerdan).
+ *
+ * ⚠️ Bandligi OLDINDAN tekshirilmaydi — unique indeks hal qiladi. Oldindan
+ * `SELECT` qilinsa, ikki so'rov orasida boshqasi o'sha nomni olib qo'yishi
+ * mumkin edi.
+ */
+export async function setUsername(userId: string, username: string): Promise<void> {
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE users SET username = $2, updated_at = now() WHERE id = $1`,
+      [userId, username],
+    );
+    if (rowCount === 0) throw ApiError.notFound('Foydalanuvchi topilmadi');
+  } catch (err) {
+    if (typeof err === 'object' && err !== null && 'code' in err && err.code === '23505') {
+      throw new ApiError('ALREADY_EXISTS', 'Bu username band — boshqasini tanlang');
+    }
+    throw err;
+  }
 }
 
 export async function findUserById(id: string): Promise<UserRow | null> {

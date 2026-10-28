@@ -98,7 +98,7 @@ export const getCategories = (): Promise<Category[]> => api<Category[]>('/catego
 
 export const getBrands = (): Promise<Brand[]> => api<Brand[]>('/brands');
 
-export type UploadPurpose = 'product' | 'store';
+export type UploadPurpose = 'product' | 'store' | 'brand';
 
 const presign = (
   fileName: string,

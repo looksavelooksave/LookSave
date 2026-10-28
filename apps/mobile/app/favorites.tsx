@@ -44,7 +44,13 @@ export default function Favorites(): JSX.Element {
     );
   }
 
-  if (favorites.isLoading) return <SkeletonGrid count={4} />;
+  if (favorites.isLoading) {
+    return (
+      <View style={styles.list}>
+        <SkeletonGrid count={4} />
+      </View>
+    );
+  }
   if (favorites.isError) {
     return <ErrorView error={favorites.error} onRetry={() => void favorites.refetch()} />;
   }

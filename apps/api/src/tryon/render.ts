@@ -1,6 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { AI_TRYON_SLOTS, garmentImageForAngle } from '@looksave/validation';
+import { AI_TRYON_SLOTS, garmentImageForAngle, normalizeSize } from '@looksave/validation';
+
+import type { AvatarGender, AvatarMeasurements } from './avatar-prompt';
+import { buildTryonSheetPrompt } from './tryon-prompt';
 
 import { enqueueTask, isAutoAiUser, isManual } from '../developer-ai/tasks';
 import { pool } from '../db/pool';
@@ -417,13 +420,13 @@ export async function listGarments(filters: GarmentFilters) {
         -- omborda bo'lmagan rangni tanlab qolardi.
         AND ($6::text IS NULL OR EXISTS (
               SELECT 1 FROM variant_stock vs2
-               WHERE vs2.variant_id = v.id AND vs2.size = $6 AND vs2.stock > vs2.reserved))
+               WHERE vs2.variant_id = v.id AND replace(replace(upper(regexp_replace(btrim(vs2.size), '^EU[[:space:]]*', '', 'i')), 'XXXL', '3XL'), '2XL', 'XXL') = $6 AND vs2.stock > vs2.reserved))
         -- Uslub: KESISHMA, tenglik emas. Tags erkin massiv va do'kon
         -- unga o'z belgilarini ham qo'shishi mumkin.
         AND ($7::text IS NULL OR p.tags @> ARRAY[$7]::text[])
       ORDER BY p.id, (v.images->>0) IS NOT NULL DESC, v.id
       LIMIT $3`,
-    [slots, gender, limit, category, storeId, size, style],
+    [slots, gender, limit, category, storeId, size ? normalizeSize(size) : null, style],
   );
 
   return rows.map((row) => ({
@@ -548,12 +551,33 @@ export async function requestRender(
    * qatorini `ready` qiladi.
    */
   if (manual) {
+    /*
+     * ⚠️ O'LCHAM VA JINS HAM BERILADI (2026-09-25). Kengaytma endi AI'ga
+     * gavda suratini bermaydi — faqat yuz va kiyim; gavda shu raqamlardan
+     * (bo'y, vazn, razmer) prompt ichida quriladi.
+     */
+    const person = await pool.query<{ measurements: unknown; gender: string | null }>(
+      `SELECT COALESCE(p.measurements, '{}'::jsonb) AS measurements, u.gender
+         FROM users u LEFT JOIN profiles p ON p.user_id = u.id
+        WHERE u.id = $1`,
+      [userId],
+    );
+    const measurements = (person.rows[0]?.measurements ?? {}) as Record<string, number | string>;
+    const gender = person.rows[0]?.gender ?? null;
     await enqueueTask('render', userId, fresh.id, {
       bodyUrl: sources.bodyPhotoUrl,
       garmentImageUrl: sources.garmentImageUrl,
       ...(sources.faceReferenceUrl ? { faceUrl: sources.faceReferenceUrl } : {}),
       angle,
       slot: sources.slot,
+      measurements,
+      gender,
+      // Operator QO'LDA ishlaganda nusxalaydigan matn (avtomatik rejim o'zi quradi)
+      prompt: buildTryonSheetPrompt(
+        sources.slot,
+        measurements as AvatarMeasurements,
+        gender as AvatarGender,
+      ),
     });
     logger.info({ userId, renderId: fresh.id }, 'kiyintirish operator navbatiga qo`yildi');
     return toDto(fresh);
@@ -1048,13 +1072,13 @@ export async function listTryonStores(filters: {
         AND ($4::text IS NULL OR p.gender IN ($4, 'unisex'))
         AND ($5::text IS NULL OR EXISTS (
               SELECT 1 FROM variant_stock vs
-               WHERE vs.variant_id = v.id AND vs.size = $5 AND vs.stock > vs.reserved))
+               WHERE vs.variant_id = v.id AND replace(replace(upper(regexp_replace(btrim(vs.size), '^EU[[:space:]]*', '', 'i')), 'XXXL', '3XL'), '2XL', 'XXL') = $5 AND vs.stock > vs.reserved))
       -- s.id birlamchi kalit: qolgan ustunlar unga funksional bog'liq
       GROUP BY s.id
       -- Yaqinroq oldinda; koordinatasiz esa kiyimi ko'proq do'kon oldinda
       ORDER BY distance_m ASC NULLS LAST, garment_count DESC
       LIMIT $6`,
-    [lat, lng, AI_TRYON_SLOTS, gender, size, limit],
+    [lat, lng, AI_TRYON_SLOTS, gender, size ? normalizeSize(size) : null, limit],
   );
 
   return rows.map((row) => ({

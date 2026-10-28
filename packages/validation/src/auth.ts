@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { personNameSchema } from './common';
 import { e164PhoneSchema, validateE164Phone } from './phone';
+import { CLOTHING_SIZES } from './sizing';
 
 /**
  * Parol qoidalari.
@@ -45,10 +46,24 @@ export const registerSchema = deviceSchema.extend({
   locale: z.enum(['uz', 'ru', 'en', 'ar']).optional(),
 });
 
-export const loginSchema = deviceSchema.extend({
-  phone: e164PhoneSchema,
-  password: z.string().min(1, 'Parol kiritilmagan').max(128),
-});
+/**
+ * Kirish — telefon YOKI username bilan (sotuvchilar uchun, `username.ts`).
+ *
+ * ⚠️ Username bu yerda faqat shakli bo'yicha yumshoq tekshiriladi, to'liq
+ * `usernameSchema` bilan emas: band so'zlar ro'yxati o'zgarsa, eski
+ * username egasi kira olmay qolmasligi kerak. Topilmasa baribir
+ * "noto'g'ri" javobi qaytadi.
+ */
+export const loginSchema = deviceSchema
+  .extend({
+    phone: e164PhoneSchema.optional(),
+    username: z.string().trim().toLowerCase().min(1).max(30).optional(),
+    password: z.string().min(1, 'Parol kiritilmagan').max(128),
+  })
+  .refine((value) => (value.phone === undefined) !== (value.username === undefined), {
+    path: ['phone'],
+    message: 'Telefon raqami yoki username kiriting',
+  });
 
 export const refreshSchema = z.object({
   refreshToken: z.string().min(20).max(2048),
@@ -119,6 +134,13 @@ export const measurementsSchema = z
     chest: z.number().int().min(50).max(180).optional(),
     waist: z.number().int().min(40).max(180).optional(),
     hips: z.number().int().min(50).max(180).optional(),
+    /*
+     * Mijoz o'zi tanlaydigan razmer (chiplar). Ko'krak/bel/son (sm) o'rniga
+     * — ularni oddiy foydalanuvchi o'lchay olmaydi, «L» ni esa biladi.
+     * Sm maydonlari eski profillar va avatar shakli uchun qoladi.
+     */
+    topSize: z.enum(CLOTHING_SIZES).optional(),
+    bottomSize: z.enum(CLOTHING_SIZES).optional(),
     shoeSize: z.number().min(30).max(50).optional(),
     shoeSizeSystem: z.enum(['EU', 'US', 'UK']).default('EU'),
   })

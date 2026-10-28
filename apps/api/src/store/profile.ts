@@ -1,5 +1,6 @@
 import type { UpdateStoreInput } from '@looksave/validation';
 
+import { setUsername } from '../auth/users';
 import { computeOpenState } from '../catalog/hours';
 import { pool } from '../db/pool';
 import { ApiError } from '../http/api-error';
@@ -42,6 +43,8 @@ interface StoreRow {
   reject_reason: string | null;
   rating: string;
   review_count: number;
+  owner_id: string;
+  owner_username: string | null;
 }
 
 async function loadStore(storeId: string): Promise<StoreRow> {
@@ -50,15 +53,38 @@ async function loadStore(storeId: string): Promise<StoreRow> {
             s.landmark, s.city, s.country, s.phone, s.working_hours, s.delivery_enabled,
             s.pickup_enabled, s.delivery_radius_m, s.delivery_fee, s.free_delivery_from,
             s.currency, s.status, s.reject_reason, s.rating, s.review_count,
+            s.owner_id, u.username AS owner_username,
             ST_Y(s.location::geometry) AS lat,
             ST_X(s.location::geometry) AS lng
-       FROM stores s WHERE s.id = $1`,
+       FROM stores s
+       JOIN users u ON u.id = s.owner_id
+      WHERE s.id = $1`,
     [storeId],
   );
 
   const store = rows[0];
   if (!store) throw ApiError.notFound('Do`kon topilmadi');
   return store;
+}
+
+/**
+ * Sotuvchi o'z username'ini o'zgartiradi.
+ *
+ * ⚠️ FAQAT EGA (yoki admin). Username egasining akkauntiga tegishli —
+ * u bilan panelga kiriladi. Xodim uni o'zgartira olsa, egani o'z
+ * akkauntidan chiqarib qo'yishi mumkin edi.
+ */
+export async function setStoreUsername(
+  storeId: string,
+  actor: { sub: string; role: string },
+  username: string,
+): Promise<{ username: string }> {
+  const store = await loadStore(storeId);
+  if (actor.role !== 'admin' && actor.sub !== store.owner_id) {
+    throw ApiError.forbidden('Username`ni faqat do`kon egasi o`zgartira oladi');
+  }
+  await setUsername(store.owner_id, username);
+  return { username };
 }
 
 export async function getStoreProfile(storeId: string) {
@@ -69,6 +95,8 @@ export async function getStoreProfile(storeId: string) {
     id: store.id,
     name: store.name,
     slug: store.slug,
+    /** Egasining username'i — do'konning @handle'i va panelga kirish nomi */
+    username: store.owner_username,
     description: store.description,
     logoUrl: store.logo_url,
     coverUrl: store.cover_url,

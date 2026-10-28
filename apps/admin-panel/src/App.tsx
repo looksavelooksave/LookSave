@@ -9,6 +9,7 @@ import { OrdersPage } from './pages/Orders';
 import { OverviewPage } from './pages/Overview';
 import { ProductsPage } from './pages/Products';
 import { BrandsPage } from './pages/Brands';
+import { CategoriesPage } from './pages/Categories';
 import { StoresPage } from './pages/Stores';
 
 export function App(): JSX.Element {
@@ -53,6 +54,7 @@ export function App(): JSX.Element {
         <Route path="stores" element={<StoresPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="brands" element={<BrandsPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="moderation" element={<ModerationPage />} />
       </Route>

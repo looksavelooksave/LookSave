@@ -1,11 +1,14 @@
 import {
   baseForCategory,
+  GARMENT_STYLES,
   indexRenders,
   recommendSize,
   resolveOutfit,
   slotForCategory,
   type OutfitLayer,
 } from '@looksave/validation';
+// Yon/orqa uchun FRONT zanjiri kerak — server operator 3 panelli varaqni
+// qo'shimcha burchak yozuvlariga FRONT bazasi bilan yozadi (mobil bilan bir xil).
 
 import {
   getAvatar,
@@ -73,8 +76,25 @@ export interface TryonState {
   garments: Garment[];
   outfitRenders: TryonRender[];
   stripRenders: TryonRender[];
+  /**
+   * FRONT burchak renderlari.
+   *
+   * ⚠️ YON/ORQA UCHUN. Server operator 3 panelli varaqni chizganda
+   * qo'shimcha burchak yozuvlari FRONT so'rovi bazasi bilan saqlanadi.
+   * Mijoz yon/orqada zanjirni FRONT'dan yuradi va har qatlamning shu
+   * bazadagi yon/orqa renderini izlaydi. Old burchakda bo'sh massiv.
+   */
+  frontRenders: TryonRender[];
   /** Joriy turkumdagi kiyimlar qaysi natija ustiga kiydiriladi */
   base: { baseRenderId: string | null; ready: boolean };
+  /**
+   * Foydalanuvchining o'lchamidagi kiyim topilmadi va ro'yxat butun
+   * o'lchamlar bilan qaytadi.
+   *
+   * ⚠️ SAHIFA TEPADA BANNER KO'RSATADI. Aks holda foydalanuvchi bir xil
+   * ro'yxatni ko'rib «filtr ishlamadi» deb tushunardi.
+   */
+  usingFallback: boolean;
   error: string | null;
 }
 
@@ -115,8 +135,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     garments: [],
     outfitRenders: [],
     stripRenders: [],
+    frontRenders: [],
     base: { baseRenderId: null, ready: true },
     fitSize: null,
+    usingFallback: false,
     error: null,
   };
 
@@ -151,6 +173,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
    */
   const useFit = url.searchParams.get('fit') !== '0';
   const angle = (url.searchParams.get('angle') ?? 'front') as AvatarAngle;
+  const rawStyle = url.searchParams.get('style');
+  const style = rawStyle && (GARMENT_STYLES as readonly string[]).includes(rawStyle) ? rawStyle : null;
   const outfit = parseOutfit(url.searchParams.get('outfit'));
 
   let profile: FullProfile;
@@ -229,22 +253,55 @@ export async function loader({ params, request }: Route.LoaderArgs) {
      * Komplekt natijalari `scope: 'all'` bilan olinadi — HAR asos
      * ustidagisi. Zanjirni aynan shundan tiklaymiz: qaysi qatlam
      * qaysining ustida turgani natijalarning o'zidan o'qiladi.
+     *
+     * ⚠️ YON/ORQA UCHUN FRONT RENDERLARI HAM YUKLANADI (2026-09-26).
+     * Server operator 3 panelli varaqni qo'shimcha burchak yozuvlariga
+     * FRONT bazasi bilan yozadi — mijoz zanjirni FRONT'dan yurishi kerak.
+     * Old burchakda `frontRenders` bo'sh (`outfitRenders` ning o'zi
+     * front bo'ladi).
      */
-    const [garments, outfitRenders] = await Promise.all([
-      getGarments({ category, storeId, size, gender: profile.gender, limit: 30 }, context.options),
-      getRenders(
-        { variantIds: outfit.map((layer) => layer.variantId), angle, scope: 'all' },
+    const variantIds = outfit.map((layer) => layer.variantId);
+    const [initialGarments, outfitRenders, frontRenders] = await Promise.all([
+      getGarments(
+        { category, storeId, size, style, gender: profile.gender, limit: 30 },
         context.options,
       ),
+      getRenders({ variantIds, angle, scope: 'all' }, context.options),
+      angle === 'front'
+        ? Promise.resolve([] as TryonRender[])
+        : getRenders({ variantIds, angle: 'front', scope: 'all' }, context.options),
     ]);
+
+    /*
+     * ⚠️ MOS RAZMER YO'Q — razmersiz qayta so'raladi (2026-09-26,
+     * mobil bilan bir xil). Do'konda mijozning razmeridagi kiyim
+     * bo'lmasa ro'yxat bo'sh qolmaydi: hamma o'lchamdagi kiyim
+     * ko'rsatiladi, sahifa tepasida esa «sizning razmeringiz yo'q»
+     * izohi turadi. Uslub filtri esa hurmatlanadi — chunki uni
+     * foydalanuvchi qo'ygan.
+     */
+    const needFallback = Boolean(size) && initialGarments.length === 0;
+    const fallbackGarments = needFallback
+      ? await getGarments(
+          { category, storeId, size: null, style, gender: profile.gender, limit: 30 },
+          context.options,
+        )
+      : null;
+    const usingFallback = Boolean(fallbackGarments && fallbackGarments.length > 0);
+    const garments = usingFallback ? (fallbackGarments ?? []) : initialGarments;
 
     /*
      * ⚠️ ZANJIR SERVERDA TIKLANADI. Mijoz ham shu modulni ishlata olardi
      * (`@looksave/validation`), lekin u payt tasma natijalari uchun
      * IKKINCHI so'rov kerak bo'lardi: asosning `id` si birinchi javobdan
      * chiqadi. Bu yerda ikkalasi bitta yo'lda bajariladi.
+     *
+     * ⚠️ `base` HAR DOIM FRONT ZANJIRIDAN. Yon/orqa render kalitlari ham
+     * FRONT bazasi bilan yoziladi (yuqoridagi izohga qarang), shuning
+     * uchun strip so'rovi ham FRONT bazasi bilan chaqiriladi.
      */
-    const resolved = resolveOutfit(outfit, indexRenders(outfitRenders));
+    const chainRenders = angle === 'front' ? outfitRenders : frontRenders;
+    const resolved = resolveOutfit(outfit, indexRenders(chainRenders));
     const base = baseForCategory(resolved, category);
 
     const stripRenders = base.ready
@@ -258,7 +315,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         )
       : [];
 
-    return Response.json({ ...state, garments, outfitRenders, stripRenders, base }, { headers });
+    return Response.json(
+      { ...state, garments, outfitRenders, stripRenders, frontRenders, base, usingFallback },
+      { headers },
+    );
   } catch (error) {
     return Response.json(
       {

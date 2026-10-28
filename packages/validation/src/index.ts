@@ -18,3 +18,4 @@ export * from './store-products';
 export * from './outfit';
 export * from './sizing';
 export * from './delivery';
+export * from './username';
