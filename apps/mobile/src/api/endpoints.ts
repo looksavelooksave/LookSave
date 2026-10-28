@@ -1,8 +1,36 @@
 import type { AuthResult, AuthUser } from '@looksave/shared-types';
 
+import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 import { api, apiList, saveTokens } from './client';
+
+/**
+ * Faylni to'g'ridan-to'g'ri presigned URL'ga oqimli yuklash.
+ *
+ * ⚠️ NEGA KERAK: oldin `fetch(uri).then(r => r.blob())` orqali butun fayl
+ * JS xotirasiga o'qilardi, keyin blob RN ko'prigi orqali native tomoni
+ * yuborilardi — bu 2× ko'p vaqt va 2× ko'p RAM. 3 MB rasm uchun sekin
+ * mobil tarmoqda butun yuklash 60s dan oshib ketar edi, api client esa
+ * 25s dan keyin "Internet ulanmadi" chiqarardi (aslida yuklash ketyapti).
+ *
+ * `FileSystem.uploadAsync` native tomonidan (iOS'da URLSession) oqim
+ * sifatida yuboradi — fayl JS tomoniga umuman o'tmaydi.
+ */
+async function putFileToPresigned(
+  localUri: string,
+  uploadUrl: string,
+  headers: Record<string, string>,
+): Promise<void> {
+  const result = await FileSystem.uploadAsync(uploadUrl, localUri, {
+    httpMethod: 'PUT',
+    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+    headers,
+  });
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error('Surat yuklanmadi');
+  }
+}
 
 /**
  * Yuklashdan oldin rasmni kichraytiradi va siqadi.
@@ -431,15 +459,7 @@ export async function uploadAvatar(
     body: { fileName: 'photo.jpg', contentType: 'image/jpeg', purpose },
   });
 
-  // `fetch` lokal `file://` havolasini blob'ga o'giradi — RN'da shu usul ishlaydi
-  const blob = await (await fetch(small)).blob();
-
-  const response = await fetch(signed.uploadUrl, {
-    method: 'PUT',
-    headers: signed.headers,
-    body: blob,
-  });
-  if (!response.ok) throw new Error('Surat yuklanmadi');
+  await putFileToPresigned(small, signed.uploadUrl, signed.headers);
 
   return signed.publicUrl;
 }
@@ -495,13 +515,7 @@ export async function uploadBodyPhoto(localUri: string): Promise<string> {
     body: { fileName, contentType, purpose: 'body' },
   });
 
-  const blob = await (await fetch(localUri)).blob();
-  const response = await fetch(signed.uploadUrl, {
-    method: 'PUT',
-    headers: signed.headers,
-    body: blob,
-  });
-  if (!response.ok) throw new Error('Surat yuklanmadi');
+  await putFileToPresigned(localUri, signed.uploadUrl, signed.headers);
 
   await api<{ bodyPhotoUrl: string }>('/tryon/body-photo', {
     method: 'PUT',
@@ -1206,13 +1220,7 @@ export async function uploadStoreImage(localUri: string): Promise<string> {
     body: { fileName: 'photo.jpg', contentType: 'image/jpeg', purpose: 'product' },
   });
 
-  const blob = await (await fetch(small)).blob();
-  const response = await fetch(signed.uploadUrl, {
-    method: 'PUT',
-    headers: signed.headers,
-    body: blob,
-  });
-  if (!response.ok) throw new Error('Rasm yuklanmadi');
+  await putFileToPresigned(small, signed.uploadUrl, signed.headers);
 
   return signed.publicUrl;
 }
