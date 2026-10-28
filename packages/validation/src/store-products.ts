@@ -61,10 +61,11 @@ export const createProductSchema = z
       message: 'Eski narx joriy narxdan katta bo`lishi kerak',
     },
   )
-  // Moderatsiyaga yuborishda kamida 3 rasm (07-web-panels: mahsulot formasi)
-  .refine((value) => value.status === 'draft' || value.images.length >= 3, {
+  // Moderatsiyaga yuborishda kamida 1 rasm (old tomon). Orqa va yon
+  // bo'lmasa AI kiyintirish barcha burchak uchun oldini ishlatadi.
+  .refine((value) => value.status === 'draft' || value.images.length >= 1, {
     path: ['images'],
-    message: 'Nashr qilish uchun kamida 3 ta rasm kerak',
+    message: 'Nashr qilish uchun kamida bitta rasm kerak',
   });
 
 export const updateProductSchema = z
@@ -172,7 +173,7 @@ export const presignSchema = z.object({
    * `avatar` (oddiy profil rasmi) esa ochiq, chunki uni foydalanuvchi
    * o'zi ko'rsatish uchun qo'yadi.
    */
-  purpose: z.enum(['product', 'store', 'brand', 'face', 'avatar', 'body']),
+  purpose: z.enum(['product', 'store', 'brand', 'banner', 'face', 'avatar', 'body']),
 });
 
 export type CreateProductInput = z.output<typeof createProductSchema>;
@@ -198,14 +199,14 @@ export const profilePresignSchema = presignSchema.extend({
 });
 
 /**
- * Admin panel uchun — FAQAT brend logotipi.
+ * Admin panel uchun — brend logotipi va marketplace banneri.
  *
  * ⚠️ `profilePresignSchema` bilan bir xil sabab: ro'yxatni CHEGARALASH,
  * `purpose` ni majburan almashtirish EMAS. Admin `face` yoki `body`
  * yuklay olmasligi kerak — ular shaxsiy va `private` bucketga tushadi.
  */
 export const adminPresignSchema = presignSchema.extend({
-  purpose: z.literal('brand'),
+  purpose: z.enum(['brand', 'banner']),
 });
 
 export type PresignInput = z.output<typeof presignSchema>;

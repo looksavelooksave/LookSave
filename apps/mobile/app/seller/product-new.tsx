@@ -218,8 +218,10 @@ export default function NewProduct(): JSX.Element {
     }
     const filledImages = images.filter((item): item is string => Boolean(item));
 
-    // Serverdagi qoida — moderatsiyaga kamida 3 rasm
-    if (status === 'pending' && filledImages.length < 3) {
+    // Nashr qilish uchun kamida bitta rasm (odatda old tomon) kerak.
+    // Orqa va yon ixtiyoriy: bo'lmasa AI kiyintirish barcha burchak uchun
+    // oldi suratini ishlatadi.
+    if (status === 'pending' && filledImages.length < 1) {
       return setError(t.seller.err3Images);
     }
 
