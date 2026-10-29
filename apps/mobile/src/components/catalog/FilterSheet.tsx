@@ -46,6 +46,8 @@ export interface CatalogFilters {
   country?: 'UZ' | 'AE';
   /** TZ 1-qism, filtr №3 — shahar. Case-insensitive solishtiriladi. */
   city?: string;
+  /** TZ 1-qism, filtr №4 — tuman. */
+  district?: string;
 }
 
 export const EMPTY_FILTERS: CatalogFilters = { onlyTryon: false, limited: false };
@@ -59,7 +61,8 @@ export function countFilters(filters: CatalogFilters): number {
     (filters.onlyTryon ? 1 : 0) +
     (filters.limited ? 1 : 0) +
     (filters.country ? 1 : 0) +
-    (filters.city ? 1 : 0)
+    (filters.city ? 1 : 0) +
+    (filters.district ? 1 : 0)
   );
 }
 
@@ -128,6 +131,7 @@ export function FilterSheet({
   const [minText, setMinText] = useState(value.priceMin?.toString() ?? '');
   const [maxText, setMaxText] = useState(value.priceMax?.toString() ?? '');
   const [cityText, setCityText] = useState(value.city ?? '');
+  const [districtText, setDistrictText] = useState(value.district ?? '');
 
   /* Panel har ochilganda tashqi holatdan qayta to'ldiriladi */
   useEffect(() => {
@@ -136,6 +140,7 @@ export function FilterSheet({
     setMinText(value.priceMin?.toString() ?? '');
     setMaxText(value.priceMax?.toString() ?? '');
     setCityText(value.city ?? '');
+    setDistrictText(value.district ?? '');
   }, [visible, value]);
 
   /*
@@ -168,11 +173,13 @@ export function FilterSheet({
 
   const apply = (): void => {
     const cityTrimmed = cityText.trim();
+    const districtTrimmed = districtText.trim();
     onApply({
       ...draft,
       priceMin: toNumber(minText),
       priceMax: toNumber(maxText),
       city: cityTrimmed === '' ? undefined : cityTrimmed,
+      district: districtTrimmed === '' ? undefined : districtTrimmed,
     });
     onClose();
   };
@@ -182,6 +189,7 @@ export function FilterSheet({
     setMinText('');
     setMaxText('');
     setCityText('');
+    setDistrictText('');
   };
 
   return (
@@ -259,6 +267,16 @@ export function FilterSheet({
             value={cityText}
             onChangeText={setCityText}
             placeholder={t.catalog.cityPlaceholder}
+            placeholderTextColor={colors.textDim}
+            style={styles.cityInput}
+            autoCapitalize="words"
+          />
+
+          <Text style={styles.section}>{t.catalog.district}</Text>
+          <TextInput
+            value={districtText}
+            onChangeText={setDistrictText}
+            placeholder={t.catalog.districtPlaceholder}
             placeholderTextColor={colors.textDim}
             style={styles.cityInput}
             autoCapitalize="words"

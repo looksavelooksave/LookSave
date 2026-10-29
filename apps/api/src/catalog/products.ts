@@ -108,6 +108,10 @@ export async function findProducts(query: ProductsQuery): Promise<ProductListRow
     conditions.push(`lower(s.city) = lower($${add(query.city)})`);
   }
 
+  if (query.district !== undefined) {
+    conditions.push(`lower(s.district) = lower($${add(query.district)})`);
+  }
+
   if (query.gender !== undefined) {
     conditions.push(`p.gender IN ($${add(query.gender)}, 'unisex')`);
   }

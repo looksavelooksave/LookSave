@@ -50,7 +50,7 @@ interface StoreRow {
 async function loadStore(storeId: string): Promise<StoreRow> {
   const { rows } = await pool.query<StoreRow>(
     `SELECT s.id, s.name, s.slug, s.description, s.logo_url, s.cover_url, s.address,
-            s.landmark, s.city, s.country, s.phone, s.working_hours, s.delivery_enabled,
+            s.landmark, s.city, s.district, s.country, s.phone, s.working_hours, s.delivery_enabled,
             s.pickup_enabled, s.delivery_radius_m, s.delivery_fee, s.free_delivery_from,
             s.currency, s.status, s.reject_reason, s.rating, s.review_count,
             s.owner_id, u.username AS owner_username,
@@ -103,6 +103,7 @@ export async function getStoreProfile(storeId: string) {
     address: store.address,
     landmark: store.landmark,
     city: store.city,
+    district: store.district,
     country: store.country,
     phone: store.phone,
     location: { lat: store.lat, lng: store.lng },
@@ -158,6 +159,8 @@ export async function updateStoreProfile(storeId: string, input: UpdateStoreInpu
   if (input.coverUrl !== undefined) push('cover_url', input.coverUrl);
   if (input.address !== undefined) push('address', input.address);
   if (input.landmark !== undefined) push('landmark', input.landmark);
+  if (input.city !== undefined) push('city', input.city);
+  if (input.district !== undefined) push('district', input.district);
   if (input.workingHours !== undefined) push('working_hours', JSON.stringify(input.workingHours));
   if (input.deliveryEnabled !== undefined) push('delivery_enabled', input.deliveryEnabled);
   if (input.pickupEnabled !== undefined) push('pickup_enabled', input.pickupEnabled);

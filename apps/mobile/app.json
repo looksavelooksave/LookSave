@@ -2,6 +2,7 @@
   "expo": {
     "name": "LookSave",
     "slug": "looksave",
+    "owner": "umidjon_looksave_developer",
     "scheme": "looksave",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,7 +22,7 @@
         "NSLocationWhenInUseUsageDescription": "Yaqin atrofdagi do'konlarni va ularning mahsulotlarini xaritada ko'rsatish uchun joylashuvingizdan foydalanamiz.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "26"
+      "buildNumber": "30"
     },
     "android": {
       "package": "com.looksave.looksave",
@@ -33,12 +34,21 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
-      "versionCode": 2
+      "versionCode": 11
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
+        }
+      ],
       [
         "expo-camera",
         {
@@ -57,17 +67,6 @@
         {
           "locationWhenInUsePermission": "Yaqin atrofdagi do'konlarni ko'rsatish uchun joylashuvingiz kerak"
         }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "1.9.25",
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0"
-          }
-        }
       ]
     ],
     "experiments": {
@@ -83,14 +82,13 @@
     "splash": {
       "image": "./assets/logo-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#0A0A0F"
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/8573157d-f4a2-47e9-b708-0bbc0cea5519"
-    },
-    "owner": "umidjon_looksave_developer"
+      "url": "https://u.expo.dev/5503e8f4-4f2a-4e86-8ff3-8ab012c74531"
+    }
   }
 }

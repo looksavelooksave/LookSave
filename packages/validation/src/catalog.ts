@@ -58,6 +58,8 @@ export const productsQuerySchema = z
     country: z.enum(['UZ', 'AE']).optional(),
     /** Do'kon shahri — matn, `stores.city` ustunidagi qiymat. */
     city: z.string().trim().min(1).max(64).optional(),
+    /** Do'kon tumani — matn, `stores.district` ustuni (migratsiya 034). */
+    district: z.string().trim().min(1).max(64).optional(),
     priceMin: z.coerce.number().min(0).max(1e10).optional(),
     priceMax: z.coerce.number().min(0).max(1e10).optional(),
     onlyTryon: boolQuery,

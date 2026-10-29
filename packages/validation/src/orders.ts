@@ -193,6 +193,10 @@ export const updateStoreSchema = z
     coverUrl: z.string().url().max(500).nullable().optional(),
     address: z.string().trim().min(5).max(300).optional(),
     landmark: z.string().trim().max(200).nullable().optional(),
+    /** TZ 1-qism — shahar (sotuvchi o'zi to'ldiradi). */
+    city: z.string().trim().min(2).max(64).optional(),
+    /** TZ 1-qism — tuman (`stores.district`, migratsiya 034). */
+    district: z.string().trim().max(64).nullable().optional(),
     location: z
       .object({
         lat: z.number().min(-90).max(90),

@@ -145,6 +145,8 @@ export interface ProductFilters {
   country?: 'UZ' | 'AE';
   /** Do'kon shahri — matn, backend case-insensitive solishtiradi. */
   city?: string;
+  /** Do'kon tumani — matn, case-insensitive. */
+  district?: string;
   sort?: ProductSort;
   lat?: number;
   lng?: number;
@@ -1159,6 +1161,7 @@ export interface StoreProfile {
   address: string;
   landmark: string | null;
   city: string;
+  district: string | null;
   phone: string;
   status: string;
   currency: string;
@@ -1182,6 +1185,8 @@ export interface UpdateStoreBody {
   logoUrl?: string | null;
   address?: string;
   landmark?: string | null;
+  city?: string;
+  district?: string | null;
   workingHours?: WorkingHour[];
   deliveryEnabled?: boolean;
   pickupEnabled?: boolean;

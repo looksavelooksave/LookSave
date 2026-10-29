@@ -23,6 +23,7 @@ import {
   type StoreBrandInput,
   type WorkingHour,
 } from '../../src/api/endpoints';
+import { ApiError } from '../../src/api/client';
 import { explainError } from '../../src/api/explainError';
 import { Icon } from '../../src/components/Icon';
 import { SellerHeader } from '../../src/components/SellerHeader';
@@ -91,6 +92,8 @@ export default function StoreSettings(): JSX.Element {
     phone: '',
     address: '',
     landmark: '',
+    city: '',
+    district: '',
     description: '',
     logoUrl: null as string | null,
   });
@@ -113,6 +116,8 @@ export default function StoreSettings(): JSX.Element {
       phone: profile.data.phone,
       address: profile.data.address,
       landmark: profile.data.landmark ?? '',
+      city: profile.data.city,
+      district: profile.data.district ?? '',
       description: profile.data.description ?? '',
       logoUrl: profile.data.logoUrl,
     });
@@ -174,6 +179,8 @@ export default function StoreSettings(): JSX.Element {
         phone: form.phone.trim(),
         address: form.address.trim(),
         landmark: form.landmark.trim() || null,
+        city: form.city.trim(),
+        district: form.district.trim() || null,
         description: form.description.trim() || null,
         logoUrl: form.logoUrl,
         workingHours,
@@ -388,6 +395,8 @@ export default function StoreSettings(): JSX.Element {
           />
           <Field label={t.checkout.address} value={form.address} onChangeText={set('address')} />
           <Field label={t.checkout.landmark} value={form.landmark} onChangeText={set('landmark')} />
+          <Field label={t.catalog.city} value={form.city} onChangeText={set('city')} />
+          <Field label={t.catalog.district} value={form.district} onChangeText={set('district')} />
           <Field
             label={t.seller.descLabel}
             value={form.description}

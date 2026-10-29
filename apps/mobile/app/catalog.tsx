@@ -132,6 +132,7 @@ export default function Catalog(): JSX.Element {
         ...(filters.limited ? { limited: true } : {}),
         ...(filters.country ? { country: filters.country } : {}),
         ...(filters.city ? { city: filters.city } : {}),
+        ...(filters.district ? { district: filters.district } : {}),
         sort,
         lat: coords.lat,
         lng: coords.lng,

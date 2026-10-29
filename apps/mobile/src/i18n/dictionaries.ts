@@ -205,6 +205,8 @@ const uz = {
     countryAe: 'BAA',
     city: 'Shahar',
     cityPlaceholder: 'Masalan: Toshkent',
+    district: 'Tuman',
+    districtPlaceholder: 'Masalan: Chilonzor',
   },
   home: {
     categories: 'Kategoriyalar',
@@ -961,6 +963,8 @@ const ru: Dictionary = {
     countryAe: 'ОАЭ',
     city: 'Город',
     cityPlaceholder: 'Например: Ташкент',
+    district: 'Район',
+    districtPlaceholder: 'Например: Чиланзар',
   },
   home: {
     categories: 'Категории',
@@ -1701,6 +1705,8 @@ const en: Dictionary = {
     countryAe: 'UAE',
     city: 'City',
     cityPlaceholder: 'e.g. Tashkent',
+    district: 'District',
+    districtPlaceholder: 'e.g. Chilonzor',
   },
   home: {
     categories: 'Categories',
@@ -2436,6 +2442,8 @@ const ar: Dictionary = {
     countryAe: 'الإمارات',
     city: 'المدينة',
     cityPlaceholder: 'مثال: طشقند',
+    district: 'الحي',
+    districtPlaceholder: 'مثال: جيلانزار',
   },
   home: {
     categories: 'الفئات',
