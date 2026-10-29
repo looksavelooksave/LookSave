@@ -19,6 +19,7 @@ import { useI18n } from '../../i18n';
 import { useLocationStore } from '../../store/locationStore';
 import { colors, fonts, radius, spacing, text } from '../../theme/tokens';
 import { Icon } from '../Icon';
+import { StoreLogo } from '../StoreLogo';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -172,13 +173,7 @@ export function StorePicker({
                   }}
                   style={[styles.row, selected && styles.rowActive]}
                 >
-                  <View style={styles.logo}>
-                    {store.logo ? (
-                      <Image source={{ uri: store.logo }} style={styles.logoImage} />
-                    ) : (
-                      <Icon name="stores" size={18} color={colors.accent} />
-                    )}
-                  </View>
+                  <StoreLogo logoUrl={store.logo} name={store.name} size={40} />
 
                   <View style={styles.rowText}>
                     <Text style={styles.name} numberOfLines={1}>

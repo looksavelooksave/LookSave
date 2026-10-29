@@ -42,6 +42,10 @@ export interface CatalogFilters {
   priceMax?: number;
   onlyTryon: boolean;
   limited: boolean;
+  /** TZ 1-qism, filtr №2 — mamlakat. Backend `s.country` ustunini qoʻllab-quvvatlaydi (UZ/AE). */
+  country?: 'UZ' | 'AE';
+  /** TZ 1-qism, filtr №3 — shahar. Case-insensitive solishtiriladi. */
+  city?: string;
 }
 
 export const EMPTY_FILTERS: CatalogFilters = { onlyTryon: false, limited: false };
@@ -53,7 +57,9 @@ export function countFilters(filters: CatalogFilters): number {
     (filters.priceMin !== undefined ? 1 : 0) +
     (filters.priceMax !== undefined ? 1 : 0) +
     (filters.onlyTryon ? 1 : 0) +
-    (filters.limited ? 1 : 0)
+    (filters.limited ? 1 : 0) +
+    (filters.country ? 1 : 0) +
+    (filters.city ? 1 : 0)
   );
 }
 
@@ -121,6 +127,7 @@ export function FilterSheet({
   const [draft, setDraft] = useState<CatalogFilters>(value);
   const [minText, setMinText] = useState(value.priceMin?.toString() ?? '');
   const [maxText, setMaxText] = useState(value.priceMax?.toString() ?? '');
+  const [cityText, setCityText] = useState(value.city ?? '');
 
   /* Panel har ochilganda tashqi holatdan qayta to'ldiriladi */
   useEffect(() => {
@@ -128,6 +135,7 @@ export function FilterSheet({
     setDraft(value);
     setMinText(value.priceMin?.toString() ?? '');
     setMaxText(value.priceMax?.toString() ?? '');
+    setCityText(value.city ?? '');
   }, [visible, value]);
 
   /*
@@ -159,7 +167,13 @@ export function FilterSheet({
   const sheetShift = progress.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
 
   const apply = (): void => {
-    onApply({ ...draft, priceMin: toNumber(minText), priceMax: toNumber(maxText) });
+    const cityTrimmed = cityText.trim();
+    onApply({
+      ...draft,
+      priceMin: toNumber(minText),
+      priceMax: toNumber(maxText),
+      city: cityTrimmed === '' ? undefined : cityTrimmed,
+    });
     onClose();
   };
 
@@ -167,6 +181,7 @@ export function FilterSheet({
     setDraft(EMPTY_FILTERS);
     setMinText('');
     setMaxText('');
+    setCityText('');
   };
 
   return (
@@ -219,6 +234,35 @@ export function FilterSheet({
               onPress={() => setDraft((d) => ({ ...d, gender: 'female' }))}
             />
           </View>
+
+          <Text style={styles.section}>{t.catalog.country}</Text>
+          <View style={styles.options}>
+            <Option
+              label={t.catalog.countryAll}
+              active={draft.country === undefined}
+              onPress={() => setDraft((d) => ({ ...d, country: undefined }))}
+            />
+            <Option
+              label={t.catalog.countryUz}
+              active={draft.country === 'UZ'}
+              onPress={() => setDraft((d) => ({ ...d, country: 'UZ' }))}
+            />
+            <Option
+              label={t.catalog.countryAe}
+              active={draft.country === 'AE'}
+              onPress={() => setDraft((d) => ({ ...d, country: 'AE' }))}
+            />
+          </View>
+
+          <Text style={styles.section}>{t.catalog.city}</Text>
+          <TextInput
+            value={cityText}
+            onChangeText={setCityText}
+            placeholder={t.catalog.cityPlaceholder}
+            placeholderTextColor={colors.textDim}
+            style={styles.cityInput}
+            autoCapitalize="words"
+          />
 
           <Text style={styles.section}>{t.catalog.price}</Text>
           <View style={styles.priceRow}>
@@ -334,6 +378,17 @@ const styles = StyleSheet.create({
   },
   priceCaption: { ...text.tiny, color: colors.textDim },
   priceInput: { ...text.body, color: colors.text, padding: 0, marginTop: 2 },
+  cityInput: {
+    ...text.body,
+    color: colors.text,
+    backgroundColor: colors.surface2,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: 8,
+  },
 
   toggles: { marginTop: spacing.md, gap: spacing.xs },
   toggleRow: {

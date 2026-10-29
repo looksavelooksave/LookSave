@@ -141,6 +141,10 @@ export interface ProductFilters {
   priceMin?: number;
   priceMax?: number;
   limited?: boolean;
+  /** Do'kon mamlakati — UZ yoki AE (TZ 1-qism, 8 filtrdan biri). */
+  country?: 'UZ' | 'AE';
+  /** Do'kon shahri — matn, backend case-insensitive solishtiradi. */
+  city?: string;
   sort?: ProductSort;
   lat?: number;
   lng?: number;

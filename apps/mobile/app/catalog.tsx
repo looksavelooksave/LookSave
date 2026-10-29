@@ -130,6 +130,8 @@ export default function Catalog(): JSX.Element {
         ...(filters.priceMax !== undefined ? { priceMax: filters.priceMax } : {}),
         ...(filters.onlyTryon ? { onlyTryon: true } : {}),
         ...(filters.limited ? { limited: true } : {}),
+        ...(filters.country ? { country: filters.country } : {}),
+        ...(filters.city ? { city: filters.city } : {}),
         sort,
         lat: coords.lat,
         lng: coords.lng,

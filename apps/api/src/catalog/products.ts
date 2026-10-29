@@ -98,6 +98,16 @@ export async function findProducts(query: ProductsQuery): Promise<ProductListRow
     conditions.push(`p.store_id = $${add(query.storeId)}`);
   }
 
+  if (query.country !== undefined) {
+    conditions.push(`s.country = $${add(query.country)}`);
+  }
+
+  if (query.city !== undefined) {
+    // Shahar nomi erkin matn (poytaxt / kirill / lotin yoziladi):
+    // tenglik qattiq bo'ladi, shuning uchun case-insensitive solishtiruv.
+    conditions.push(`lower(s.city) = lower($${add(query.city)})`);
+  }
+
   if (query.gender !== undefined) {
     conditions.push(`p.gender IN ($${add(query.gender)}, 'unisex')`);
   }

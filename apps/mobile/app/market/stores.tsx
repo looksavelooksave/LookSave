@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getNearbyStores, type NearbyStore } from '../../src/api/endpoints';
 import { Icon } from '../../src/components/Icon';
 import { SkeletonList } from '../../src/components/Skeleton';
+import { StoreLogo } from '../../src/components/StoreLogo';
 import { Empty, ErrorView, Screen } from '../../src/components/ui';
 import { useLocationStore } from '../../src/store/locationStore';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
@@ -36,13 +37,7 @@ function StoreCard({ store, onPress }: { store: NearbyStore; onPress: () => void
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.logoWrap}>
-        {store.logoUrl ? (
-          <Image source={{ uri: store.logoUrl }} style={styles.logo} resizeMode="cover" />
-        ) : (
-          <Icon name="stores" size={24} color={colors.accent} />
-        )}
-      </View>
+      <StoreLogo logoUrl={store.logoUrl} name={store.name} size={52} />
 
       <View style={styles.cardText}>
         <Text style={styles.storeName} numberOfLines={1}>
@@ -164,18 +159,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardPressed: { borderColor: colors.accent },
-  logoWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  logo: { width: '100%', height: '100%' },
   cardText: { flex: 1 },
   storeName: { ...text.bodyMed, color: colors.text },
   storeMeta: { ...text.small, color: colors.textMuted, marginTop: 2 },
