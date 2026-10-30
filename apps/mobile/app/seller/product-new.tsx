@@ -18,7 +18,6 @@ import { GARMENT_STYLES, type GarmentStyle } from '@looksave/validation';
 import {
   createStoreProduct,
   getCategories,
-  prepareGarmentImage,
   uploadStoreImage,
   type Category,
 } from '../../src/api/endpoints';
@@ -147,39 +146,14 @@ export default function NewProduct(): JSX.Element {
       const url = await uploadStoreImage(result.assets[0].uri);
 
       /*
-       * ⚠️ FON OLIB TASHLANADI, LEKIN MAJBURAN EMAS.
-       *
-       * AI kiyintirish natijasi to'g'ridan-to'g'ri kiyim suratiga bog'liq:
-       * ilgich, maneken yoki tartibsiz fon bo'lsa model ularni ham kiyimning
-       * qismi deb qabul qiladi va natija buziladi.
-       *
-       * Lekin tanlovni DO'KONCHI qiladi — ba'zan asl surat yaxshiroq
-       * chiqadi (masalan kiyim oq bo'lsa va fon bilan qo'shilib ketsa).
-       * Avtomatik almashtirsak, u nima o'zgarganini bilmay qolardi.
+       * ⚠️ AI FON TOZALASH MAJBURIY EMAS. Ilgari har rasm uchun
+       * `prepareGarmentImage` chaqirilib, sotuvchi uchun 5–15 sek kutish
+       * va "Toza/Asl" dialogi chiqardi — bu product qo'shish jarayonini
+       * sekinlashtirardi. Endi sotuvchi istalgan rasmni qo'yaveradi;
+       * fon tozalash kerak bo'lsa, kelajakda alohida tugma orqali
+       * ixtiyoriy ravishda ishga tushiriladi.
        */
-      let finalUrl = url;
-      try {
-        const prepared = await prepareGarmentImage(url);
-
-        if (prepared.warning) {
-          Alert.alert(t.seller.imgWarnTitle, prepared.warning, [
-            { text: t.seller.addAnyway, onPress: () => putAt(slot, url) },
-            { text: t.common.cancel, style: 'cancel' },
-          ]);
-          return;
-        }
-
-        finalUrl = await new Promise<string>((resolve) => {
-          Alert.alert(t.seller.bgRemovedTitle, t.seller.bgRemovedBody, [
-            { text: t.seller.cleaned, onPress: () => resolve(prepared.cleanedUrl) },
-            { text: t.seller.original, onPress: () => resolve(url) },
-          ]);
-        });
-      } catch {
-        // Ishlov bermasa asl surat qoladi — yuklash bekor qilinmaydi
-      }
-
-      putAt(slot, finalUrl);
+      putAt(slot, url);
     } catch {
       Alert.alert(t.seller.uploadFailedTitle, t.seller.imgUploadFailedBody);
     } finally {

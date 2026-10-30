@@ -201,6 +201,20 @@ export const profilePresignSchema = presignSchema.extend({
 });
 
 /**
+ * UploadThing orqali to'g'ridan-to'g'ri yuklash — rasm server orqali
+ * o'tadi (R2 ning presign+PUT'idan farqli). Base64 ichida keladi, kattalik
+ * BODY_LIMIT bilan tartibga solinadi.
+ */
+export const uploadthingUploadSchema = z.object({
+  purpose: z.enum(['product', 'store', 'brand', 'avatar', 'face', 'body']),
+  contentType: z.enum(['image/webp', 'image/jpeg', 'image/png']),
+  fileName: z.string().trim().min(1).max(200),
+  /** Base64 — "data:...;base64," prefiks YO'Q, faqat baytlar. */
+  base64: z.string().min(16).max(16_000_000),
+});
+export type UploadthingUploadInput = z.output<typeof uploadthingUploadSchema>;
+
+/**
  * Admin panel uchun — brend logotipi va marketplace banneri.
  *
  * ⚠️ `profilePresignSchema` bilan bir xil sabab: ro'yxatni CHEGARALASH,

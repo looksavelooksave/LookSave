@@ -43,7 +43,9 @@ export default function SignIn(): JSX.Element {
     setError(null);
     try {
       await signIn(phone.replace(/\s/g, ''), password);
-      router.replace('/(tabs)');
+      // Sotuvchi bo'lsa — do'kon panelga; xaridor — xaridor sahifasiga.
+      const user = useAuthStore.getState().user;
+      router.replace(user?.role === 'store_owner' ? '/seller' : '/(tabs)');
     } catch (err) {
       setError(explainError(err, t));
     } finally {

@@ -7,6 +7,7 @@ import {
   idParamSchema,
   noShowSchema,
   presignSchema,
+  uploadthingUploadSchema,
   rejectOrderSchema,
   stockUpdateSchema,
   storeOrdersQuerySchema,
@@ -38,6 +39,8 @@ import {
   updateMemberRole,
 } from '../store/members';
 import { presignUpload } from '../integrations/r2';
+import { isUploadthingReady, uploadToUploadthing } from '../integrations/uploadthing';
+import { ApiError } from '../http/api-error';
 import {
   addVariant,
   archiveProduct,
@@ -463,6 +466,31 @@ storePanelRouter.post(
   route({ body: presignSchema }, async (input, req, res) => {
     storeOf(req, res);
     sendData(res, await presignUpload(input.body));
+  }),
+);
+
+/**
+ * POST /v1/store/uploads/ut — UploadThing orqali yuklash.
+ *
+ * ⚠️ R2 BILAN YONMA-YON. Token sozlanmagan bo'lsa 503 qaytadi va ilova
+ * eski `/presign` + PUT yo'liga qaytadi. Mavjud rasmlar hamon R2'da
+ * yashaydi — ko'chirish talab qilinmaydi.
+ */
+storePanelRouter.post(
+  '/store/uploads/ut',
+  rateLimit({ windowSec: 60, max: 60, prefix: 'store:ut' }),
+  route({ body: uploadthingUploadSchema }, async (input, req, res) => {
+    storeOf(req, res);
+    if (!isUploadthingReady()) {
+      throw new ApiError('SERVICE_UNAVAILABLE', 'UploadThing sozlanmagan');
+    }
+    const buffer = Buffer.from(input.body.base64, 'base64');
+    const result = await uploadToUploadthing(
+      buffer,
+      input.body.fileName,
+      input.body.contentType,
+    );
+    sendData(res, { url: result.url, key: result.key });
   }),
 );
 

@@ -4,6 +4,7 @@ import {
   idParamSchema,
   measurementsSchema,
   updateProfileSchema,
+  uploadthingUploadSchema,
 } from '@looksave/validation';
 import { Router } from 'express';
 
@@ -20,6 +21,7 @@ import {
   updateProfile,
 } from '../profile/profile';
 import { presignUpload } from '../integrations/r2';
+import { isUploadthingReady, uploadToUploadthing } from '../integrations/uploadthing';
 import { sendData, sendNoContent } from '../http/respond';
 import { route } from '../http/validate';
 
@@ -129,5 +131,30 @@ profileRouter.post(
     // Maqsad mijozdan keladi, lekin sxema uni shaxsiy to'plam bilan
     // cheklaydi — `product`/`store` bu marshrutdan o'tmaydi
     sendData(res, await presignUpload(input.body));
+  }),
+);
+
+/**
+ * POST /v1/profile/uploads/ut — avatar/yuz/body suratini UploadThing'ga.
+ * Token bo'sh bo'lsa 503, ilova R2 presign ga qaytadi.
+ */
+profileRouter.post(
+  '/profile/uploads/ut',
+  requireAuth,
+  rateLimit({ windowSec: 60, max: 20, prefix: 'profile:ut' }),
+  route({ body: uploadthingUploadSchema }, async (input, _req, res) => {
+    if (input.body.purpose === 'product' || input.body.purpose === 'store' || input.body.purpose === 'brand') {
+      throw new ApiError('BAD_REQUEST', 'Bu marshrut faqat shaxsiy rasm uchun');
+    }
+    if (!isUploadthingReady()) {
+      throw new ApiError('SERVICE_UNAVAILABLE', 'UploadThing sozlanmagan');
+    }
+    const buffer = Buffer.from(input.body.base64, 'base64');
+    const result = await uploadToUploadthing(
+      buffer,
+      input.body.fileName,
+      input.body.contentType,
+    );
+    sendData(res, { url: result.url, key: result.key });
   }),
 );

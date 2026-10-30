@@ -132,6 +132,19 @@ const envSchema = z.object({
   R2_BUCKET_PRIVATE: z.string().default(''),
   CDN_BASE_URL: z.string().url().default('https://cdn.looksave.uz'),
 
+  // ── UploadThing (K-03: mahsulot va logo rasmlari uchun muqobil) ──
+  /*
+   * ⚠️ TOKEN BO'SH BO'LSA UPLOADTHING O'CHIRILGAN. Ilgari eshitadigan
+   * yagona ombor R2 edi; token to'ldirilgach, yangi yuklamalar
+   * UploadThing'ga ketadi, eski R2 havolalari esa o'qishga ochiq qoladi.
+   * Shunday qilib migratsiya ikki tomonlama ishlaydi, mavjud rasmlarni
+   * ko'chirish shart emas.
+   *
+   * Token uploadthing.com dashboard → "API Keys" dan olinadi, u yerda
+   * token "sk_live_..." ko'rinishida ko'rsatiladi.
+   */
+  UPLOADTHING_TOKEN: z.string().default(''),
+
   // ── AI (OpenAI) ──
   /*
    * ⚠️ YAGONA AI PROVAYDER. Ilgari FASHN ham bor edi va ikkalasi

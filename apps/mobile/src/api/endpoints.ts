@@ -52,6 +52,35 @@ async function shrinkForUpload(uri: string, maxWidth = 1280): Promise<string> {
   }
 }
 
+/**
+ * UploadThing orqali yuklash — fayl base64'da serverga JSON POST sifatida
+ * yuboriladi, server UploadThing'ga joylab, URL qaytaradi.
+ *
+ * ⚠️ 503 QAYTSA — token sozlanmagan, chaqiruvchi R2 presign+PUT ga
+ * qaytishi kerak. Boshqa xatolar yuqoriga uzatiladi.
+ */
+async function uploadViaUploadthing(
+  endpoint: '/profile/uploads/ut' | '/store/uploads/ut',
+  localUri: string,
+  purpose: 'product' | 'store' | 'brand' | 'avatar' | 'face' | 'body',
+): Promise<string | null> {
+  const base64 = await FileSystem.readAsStringAsync(localUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const fileName = `${purpose}-${Date.now()}.jpg`;
+  try {
+    const result = await api<{ url: string; key: string }>(endpoint, {
+      method: 'POST',
+      body: { purpose, contentType: 'image/jpeg', fileName, base64 },
+    });
+    return result.url;
+  } catch (err) {
+    const status = (err as { status?: number } | null)?.status;
+    if (status === 503) return null; // UploadThing yo'q — R2'ga tushamiz
+    throw err;
+  }
+}
+
 // ── Auth ──
 
 export async function register(input: {
@@ -464,6 +493,10 @@ export async function uploadAvatar(
   // Kichraytirib-siqib olamiz — yuklash tez bo'lsin
   const small = await shrinkForUpload(localUri);
 
+  // UploadThing birinchi; token yo'q bo'lsa R2 ga qaytadi.
+  const utUrl = await uploadViaUploadthing('/profile/uploads/ut', small, purpose);
+  if (utUrl) return utUrl;
+
   const signed = await api<PresignResult>('/profile/uploads/presign', {
     method: 'POST',
     body: { fileName: 'photo.jpg', contentType: 'image/jpeg', purpose },
@@ -519,6 +552,16 @@ export interface TryonRender {
 export async function uploadBodyPhoto(localUri: string): Promise<string> {
   const fileName = localUri.split('/').pop() ?? 'body.jpg';
   const contentType = fileName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+  // UploadThing birinchi; R2 fallback.
+  const utUrl = await uploadViaUploadthing('/profile/uploads/ut', localUri, 'body');
+  if (utUrl) {
+    await api<{ bodyPhotoUrl: string }>('/tryon/body-photo', {
+      method: 'PUT',
+      body: { url: utUrl },
+    });
+    return utUrl;
+  }
 
   const signed = await api<PresignResult>('/profile/uploads/presign', {
     method: 'POST',
@@ -1253,6 +1296,11 @@ export const prepareGarmentImage = (url: string): Promise<PreparedGarment> =>
 export async function uploadStoreImage(localUri: string): Promise<string> {
   const small = await shrinkForUpload(localUri);
 
+  // UploadThing birinchi, server token sozlangan bo'lsa shu ishlaydi.
+  const utUrl = await uploadViaUploadthing('/store/uploads/ut', small, 'product');
+  if (utUrl) return utUrl;
+
+  // Aks holda eski R2 presign + PUT yo'li.
   const signed = await api<PresignResult>('/store/uploads/presign', {
     method: 'POST',
     body: { fileName: 'photo.jpg', contentType: 'image/jpeg', purpose: 'product' },
