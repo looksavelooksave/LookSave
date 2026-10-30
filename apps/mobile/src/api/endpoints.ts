@@ -1078,6 +1078,30 @@ export interface StoreDashboard {
 export const getStoreDashboard = (): Promise<StoreDashboard> =>
   api<StoreDashboard>('/store/dashboard');
 
+export interface StoreAnalytics {
+  period: 7 | 30 | 90;
+  totals: {
+    views: number;
+    tryons: number;
+    orders: number;
+    completed: number;
+    revenue: string;
+    conversion: number | null;
+  };
+  daily: Array<{ day: string; orders: number; completed: number }>;
+  topProducts: Array<{
+    id: string;
+    title: string;
+    views: number;
+    tryons: number;
+    orders: number;
+    conversion: number | null;
+  }>;
+}
+
+export const getStoreAnalytics = (days: 7 | 30 | 90 = 30): Promise<StoreAnalytics> =>
+  api<StoreAnalytics>(`/store/analytics?days=${days}`);
+
 /** Rad etish sabablari — server aynan shu qiymatlarni qabul qiladi. */
 export const REJECT_REASONS = [
   'out_of_stock',

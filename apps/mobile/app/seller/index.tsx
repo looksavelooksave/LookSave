@@ -1,868 +1,315 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  getStoreDashboard,
-  getStoreOrders,
-  getStoreProfile,
-  storeOrderAction,
-  type StoreOrder,
-  type StoreOrderFilter,
-} from '../../src/api/endpoints';
-import { explainError } from '../../src/api/explainError';
-import { Icon } from '../../src/components/Icon';
+import { getStoreDashboard, getStoreProfile } from '../../src/api/endpoints';
+import { Icon, type IconName } from '../../src/components/Icon';
 import { SignInRequired } from '../../src/components/SignInRequired';
-import { SkeletonList } from '../../src/components/Skeleton';
-import { Button, Empty, ErrorView, Screen } from '../../src/components/ui';
-import { translations, useI18n, type Dictionary } from '../../src/i18n';
+import { StoreLogo } from '../../src/components/StoreLogo';
+import { ErrorView, Loading } from '../../src/components/ui';
+import { useI18n } from '../../src/i18n';
 import { useAuthStore } from '../../src/store/authStore';
 import { money } from '../../src/theme/format';
 import { colors, radius, spacing, text } from '../../src/theme/tokens';
-import { goBack } from '../../src/navigation/back';
 
 /**
- * Sotuvchi paneli — bosh ekran.
+ * Sotuvchi paneli — bosh ekran (Dashboard).
  *
- * Bu yerdan hammasi boshqariladi: buyurtmalar, mahsulotlar, sozlamalar.
- * Sotuvchi kompyuter oldiga o'tirmasdan do'konini to'liq yuritadi.
- *
- * PREMIUM TUZILISH: sarlavha + tushum kartasi + boshqaruv + filtrlar hammasi
- * ro'yxat bilan BIRGA suriladi (`ListHeaderComponent`). Ilgari ular qotib
- * turardi va buyurtmalarga tor oyna qolardi.
- *
- * ⚠️ VAQT CHEGARASI BOR. `new` holatdagi buyurtma muddati o'tsa avtomatik
- * `expired` bo'ladi va mijoz yo'qoladi. Shuning uchun qolgan daqiqalar
- * kartada eng ko'zga tashlanadigan joyda turadi.
+ * Ilgari bu ekran buyurtmalar ro'yxatini ko'rsatardi, u endi "Buyurtmalar"
+ * tabida yashaydi. Hozirgi vazifa — sotuvchiga do'kon holatini bir qarashda
+ * ko'rsatish: tushum, kutilayotgan buyurtmalar, mahsulot soni va tez
+ * ishga tushadigan tugmalar (yangi mahsulot, sozlamalar).
  */
 
-const FILTERS: Array<{ key: StoreOrderFilter; labelKey: keyof Dictionary['seller'] }> = [
-  { key: 'new', labelKey: 'filterNew' },
-  { key: 'active', labelKey: 'filterInProgress' },
-  { key: 'completed', labelKey: 'filterCompleted' },
+interface MetricTile {
+  key: 'newOrders' | 'inProgress' | 'completedMonth' | 'productCount';
+  icon: IconName;
+  tint: string;
+}
+
+const TILES: ReadonlyArray<MetricTile> = [
+  { key: 'newOrders', icon: 'bell', tint: '#fbbf24' },
+  { key: 'inProgress', icon: 'clock', tint: '#22d3ee' },
+  { key: 'completedMonth', icon: 'check', tint: '#4ade80' },
+  { key: 'productCount', icon: 'shop', tint: '#a855f7' },
 ];
 
-/** Holat -> keyingi qadam. `null` — bu holatda tugma yo'q. Yorlig'i i18n'dan. */
-const NEXT_ACTION: Record<
-  string,
-  { action: 'confirm' | 'ready' | 'complete'; labelKey: keyof Dictionary['seller'] } | null
-> = {
-  new: { action: 'confirm', labelKey: 'actConfirm' },
-  seen: { action: 'confirm', labelKey: 'actConfirm' },
-  confirmed: { action: 'ready', labelKey: 'actReady' },
-  ready: { action: 'complete', labelKey: 'actComplete' },
-  completed: null,
-  rejected: null,
-  expired: null,
-};
-
-/**
- * Manzil matni — SATR yoki {text,lat,lng} OBYEKT bo'lishi mumkin.
- *
- * ⚠️ HIMOYA: eski API manzilni obyekt qaytarardi va uni to'g'ridan-to'g'ri
- * `<Text>` da chizsak «Objects are not valid as a React child» bilan ekran
- * qulardi. Endi ikkalasidan ham xavfsiz matn olinadi.
- */
-function addressText(address: unknown): string {
-  if (typeof address === 'string') return address;
-  if (address && typeof address === 'object') {
-    const value = (address as { text?: unknown }).text;
-    if (typeof value === 'string') return value;
-  }
-  return '';
-}
-
-/**
- * Yangi buyurtma kelganda ovoz + banner.
- *
- * ⚠️ NEGA LOKAL BILDIRISHNOMA: server push faqat haqiqiy qurilmada va
- * EXPO_ACCESS_TOKEN sozlanganda ishlaydi. Panel ochiq turganda esa sotuvchi
- * darhol sezishi kerak — shuning uchun navbat kuzatiladi va yangi buyurtma
- * aniqlanganda darhol lokal bildirishnoma chiqariladi (ovoz + banner). Ovoz
- * va ko'rinish `usePush` dagi global handler orqali oldinda ham ishlaydi.
- */
-async function playNewOrderAlert(count: number): Promise<void> {
-  const s = translations().seller;
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: count > 1 ? s.notifyMultiTitle.replace('{n}', String(count)) : s.notifyTitle,
-        body: s.notifyBody,
-        sound: 'default',
-        data: { type: 'store_order' },
-      },
-      trigger: null, // darhol
-    });
-  } catch {
-    // Ruxsat yo'q yoki qo'llab-quvvatlanmaydi — jim o'tkaziladi
-  }
-}
-
-export default function SellerOrders(): JSX.Element {
-  /*
-   * ⚠️ Ildiz Stack bu bo'limda sarlavha chizmaydi (`headerShown: false`),
-   * shuning uchun status paneli ostidagi bo'shliq QO'LDA qo'yiladi.
-   * Aks holda sarlavha soat va batareya ustiga chiqib ketadi.
-   */
+export default function SellerDashboard(): JSX.Element {
+  const authStatus = useAuthStore((state) => state.status);
+  const t = useI18n((state) => state.t);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const t = useI18n((state) => state.t);
-  const signedIn = useAuthStore((state) => state.status) === 'signedIn';
-  const role = useAuthStore((state) => state.user?.role);
-
-  const [filter, setFilter] = useState<StoreOrderFilter>('new');
-
-  const isSeller = role === 'store_owner' || role === 'admin';
-
-  const profile = useQuery({
-    queryKey: ['store', 'profile'],
-    queryFn: getStoreProfile,
-    enabled: signedIn && isSeller,
-    staleTime: 5 * 60_000,
-  });
 
   const dashboard = useQuery({
     queryKey: ['store', 'dashboard'],
     queryFn: getStoreDashboard,
-    enabled: signedIn && isSeller,
+    enabled: authStatus === 'signedIn',
   });
 
-  const orders = useQuery({
-    queryKey: ['store', 'orders', filter],
-    queryFn: () => getStoreOrders(filter),
-    enabled: signedIn && isSeller,
-    /*
-     * Yangi buyurtmalar ro'yxati o'zi yangilanadi: sotuvchi ekranni ochiq
-     * qoldirishi mumkin va qo'lda tortib yangilashni kutib bo'lmaydi.
-     * Faqat `new` filtrida — qolganlari shoshilinch emas.
-     */
-    refetchInterval: filter === 'new' ? 30_000 : false,
+  const profile = useQuery({
+    queryKey: ['store', 'profile'],
+    queryFn: getStoreProfile,
+    enabled: authStatus === 'signedIn',
   });
 
-  /*
-   * Yangi buyurtma kelganini kuzatish: `new` navbati soni OSHGANDA ovoz +
-   * banner. Birinchi yuklanishda jim (oldingi son yo'q). Boshqa filtrga
-   * o'tilsa hisob tiklanadi — qaytilganda eski buyurtmalarga ovoz chiqmaydi.
-   */
-  const prevNewCount = useRef<number | null>(null);
-  useEffect(() => {
-    if (filter !== 'new') {
-      prevNewCount.current = null;
-      return;
-    }
-    const count = orders.data?.items.length;
-    if (count === undefined) return;
-
-    if (prevNewCount.current !== null && count > prevNewCount.current) {
-      void playNewOrderAlert(count - prevNewCount.current);
-    }
-    prevNewCount.current = count;
-  }, [orders.data, filter]);
-
-  const act = useMutation({
-    mutationFn: ({
-      id,
-      action,
-      body,
-    }: {
-      id: string;
-      action: 'confirm' | 'ready' | 'complete' | 'reject';
-      body?: Record<string, unknown>;
-    }) => storeOrderAction(id, action, body),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['store'] });
-    },
-    onError: (err) => {
-      Alert.alert(t.seller.actionFailed, explainError(err, t));
-    },
-  });
-
-  if (!signedIn) {
-    return (
-      <Screen>
-        <SignInRequired hint={t.seller.panelSignInHint} />
-      </Screen>
-    );
+  if (authStatus !== 'signedIn') return <SignInRequired />;
+  if (dashboard.isLoading || profile.isLoading) return <Loading />;
+  if (dashboard.isError) {
+    return <ErrorView error={dashboard.error} onRetry={() => void dashboard.refetch()} />;
   }
 
-  // Sotuvchi emas — ariza berishga taklif qilamiz
-  if (!isSeller) {
-    return (
-      <Screen>
-        <Empty
-          icon="stores"
-          title={t.seller.noStoreTitle}
-          hint={t.seller.noStoreHint}
-          action={
-            <Button title={t.seller.applyTitle} onPress={() => router.push('/seller/apply')} />
-          }
-        />
-      </Screen>
-    );
-  }
-
-  const stats = dashboard.data;
+  const data = dashboard.data!;
   const store = profile.data;
+  const metrics: Record<MetricTile['key'], string | number> = {
+    newOrders: data.newOrders,
+    inProgress: data.inProgress,
+    completedMonth: data.completedMonth,
+    productCount: data.productCount,
+  };
 
-  const header = (
-    <View>
-      <LinearGradient
-        colors={['#1D1636', '#120E1C', colors.bg]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
-      >
-        <View style={styles.headerBar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Orqaga"
-            onPress={() => goBack('/profile')}
-            style={styles.iconButton}
-          >
-            <Icon name="back" size={20} color={colors.accent} />
-          </Pressable>
-
-          <Text style={styles.eyebrow}>
-            LOOK<Text style={styles.eyebrowAccent}>SAVE</Text> · SELLER
+  return (
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + spacing.md, paddingBottom: spacing.xl * 2 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Salom + do'kon */}
+      <View style={styles.header}>
+        <StoreLogo logoUrl={store?.logoUrl ?? null} name={store?.name ?? ''} size={56} />
+        <View style={styles.headerText}>
+          <Text style={styles.hello}>{t.sellerDashboard.hello}</Text>
+          <Text style={styles.storeName} numberOfLines={1}>
+            {store?.name ?? ''}
           </Text>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Yangi buyurtmalar"
-            onPress={() => setFilter('new')}
-            style={styles.iconButton}
-          >
-            <Icon name="bell" size={20} color={colors.accent} />
-            {stats && stats.newOrders > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>
-                  {stats.newOrders > 9 ? '9+' : stats.newOrders}
-                </Text>
-              </View>
-            ) : null}
-          </Pressable>
         </View>
-
-        {/* Do'kon o'ziga xosligi — real nom, logo va ish holati */}
-        <View style={styles.identity}>
-          <View style={styles.logoTile}>
-            {store?.logoUrl ? (
-              <Image source={{ uri: store.logoUrl }} style={styles.logoImg} resizeMode="cover" />
-            ) : (
-              <Icon name="shop" size={26} color={colors.text} />
-            )}
-          </View>
-
-          <View style={styles.identityText}>
-            <Text style={styles.storeName} numberOfLines={1}>
-              {store?.name ?? t.profile.myStore}
-            </Text>
-
-            {store ? (
-              <View
-                style={[styles.statusPill, store.isOpen ? styles.statusOpen : styles.statusClosed]}
-              >
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: store.isOpen ? colors.success : colors.textDim },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: store.isOpen ? colors.success : colors.textMuted },
-                  ]}
-                >
-                  {store.isOpen
-                    ? store.closesAt
-                      ? t.stores.openUntil.replace('{time}', store.closesAt)
-                      : t.stores.open
-                    : store.opensAt
-                      ? t.stores.closedOpensAt.replace('{time}', store.opensAt)
-                      : t.stores.closed}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.subtitle}>{t.seller.adminPanel}</Text>
-            )}
-          </View>
-        </View>
-
-        {stats ? (
-          <Text style={styles.subtitle}>
-            <Text style={styles.subtitleStrong}>{stats.newOrders}</Text> {t.seller.statNew} ·{' '}
-            <Text style={styles.subtitleStrong}>{stats.inProgress}</Text> {t.seller.statInProgress}
-          </Text>
-        ) : null}
-      </LinearGradient>
-
-      {/* Hero: oylik tushum — sotuvchi uchun eng muhim raqam */}
-      {stats ? (
-        <LinearGradient
-          colors={['#271B47', '#17121F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.heroTop}>
-            <Text style={styles.heroLabel}>{t.seller.revenueLabel}</Text>
-            <View style={styles.heroBadge}>
-              <Icon name="premium" size={16} color={colors.accent} />
-            </View>
-          </View>
-
-          <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>
-            {money(stats.revenueMonth, stats.currency)}
-          </Text>
-
-          <View style={styles.heroStats}>
-            <View style={styles.heroStat}>
-              <Icon name="authentic" size={14} color={colors.success} />
-              <Text style={styles.heroStatText}>
-                {stats.completedMonth} {t.seller.completedWord}
-              </Text>
-            </View>
-            <View style={styles.heroDivider} />
-            <View style={styles.heroStat}>
-              <Icon name="orders" size={14} color={colors.accent} />
-              <Text style={styles.heroStatText}>
-                {stats.productCount} {t.seller.productWord}
-              </Text>
-            </View>
-          </View>
-        </LinearGradient>
-      ) : null}
-
-      {/*
-        Boshqaruv — 2 ustunli plitalar. Buyurtmalar kunlik ish, mahsulot va
-        sozlama esa vaqti-vaqti bilan, shuning uchun ular pastda.
-      */}
-      <View style={styles.manage}>
-        <ManageTile
-          icon="slotTop"
-          label={t.seller.productsTitle}
-          hint={
-            stats ? t.seller.inCatalog.replace('{n}', String(stats.productCount)) : t.seller.catalogWord
-          }
-          onPress={() => router.push('/seller/products')}
-        />
-        <ManageTile
-          icon="settings"
-          label={t.seller.settingsTitle}
-          hint={t.seller.storeProfileHint}
-          onPress={() => router.push('/seller/settings')}
-        />
+        <View style={[styles.statusDot, { backgroundColor: store?.isOpen ? colors.success : colors.textMuted }]} />
       </View>
 
-      {/* Buyurtma filtrlari */}
-      <View style={styles.filters}>
-        {FILTERS.map((item) => (
-          <Pressable
-            key={item.key}
-            accessibilityRole="button"
-            accessibilityState={{ selected: filter === item.key }}
-            onPress={() => setFilter(item.key)}
-            style={styles.filterWrap}
-          >
-            {filter === item.key ? (
-              <LinearGradient
-                colors={[colors.accent, colors.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.filter}
-              >
-                <Text style={[styles.filterText, { color: colors.text }]}>
-                  {t.seller[item.labelKey]}
-                </Text>
-              </LinearGradient>
-            ) : (
-              <View style={[styles.filter, styles.filterIdle]}>
-                <Text style={styles.filterText}>{t.seller[item.labelKey]}</Text>
-              </View>
-            )}
-          </Pressable>
+      {/* Oylik tushum — asosiy karta */}
+      <View style={styles.revenueCard}>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDim]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.revenueTextWrap}>
+          <Text style={styles.revenueLabel}>{t.sellerDashboard.revenueThisMonth}</Text>
+          <Text style={styles.revenueValue}>
+            {money(data.revenueMonth, data.currency)}
+          </Text>
+          <Text style={styles.revenueHint}>
+            {t.sellerDashboard.ordersThisMonth.replace('{n}', String(data.completedMonth))}
+          </Text>
+        </View>
+        <View style={styles.revenueIco}>
+          <Icon name="premium" size={32} color={colors.text} />
+        </View>
+      </View>
+
+      {/* 4 ta ko'rsatkich */}
+      <View style={styles.tiles}>
+        {TILES.map((tile) => (
+          <View key={tile.key} style={styles.tile}>
+            <View style={[styles.tileIco, { backgroundColor: `${tile.tint}22` }]}>
+              <Icon name={tile.icon} size={18} color={tile.tint} />
+            </View>
+            <Text style={styles.tileValue}>{metrics[tile.key]}</Text>
+            <Text style={styles.tileLabel}>{t.sellerDashboard[tile.key]}</Text>
+          </View>
         ))}
       </View>
 
-      {orders.isLoading ? (
-        <View style={styles.statePad}>
-          <SkeletonList count={4} />
-        </View>
-      ) : null}
-      {orders.isError ? (
-        <View style={styles.statePad}>
-          <ErrorView error={orders.error} onRetry={() => void orders.refetch()} />
-        </View>
-      ) : null}
-    </View>
-  );
-
-  return (
-    <Screen>
-      <FlatList
-        data={orders.data?.items ?? []}
-        keyExtractor={(order) => order.id}
-        contentContainerStyle={styles.scroll}
-        refreshing={orders.isFetching}
-        onRefresh={() => void orders.refetch()}
-        removeClippedSubviews
-        initialNumToRender={6}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={header}
-        ListEmptyComponent={
-          // Yuklanayotganda skelet sarlavhada ko'rsatiladi — bu yerda emas
-          orders.data && !orders.isError ? (
-            <View style={styles.emptyBox}>
-              <View style={styles.emptyIcon}>
-                <Icon name="orders" size={34} color={colors.accent} />
-              </View>
-
-              <Text style={styles.emptyTitle}>
-                {filter === 'new' ? t.seller.emptyNewTitle : t.seller.emptyOtherTitle}
-              </Text>
-
-              {filter === 'new' ? (
-                <Text style={styles.emptyHint}>{t.seller.emptyNewHint}</Text>
-              ) : null}
-
-              {/*
-                ⚠️ AMAL «MAHSULOT QO'SHISH», «buyurtma qo'shish» EMAS.
-                Buyurtmani MIJOZ yaratadi — sotuvchi uni qo'la olmaydi.
-              */}
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push('/seller/product-new')}
-                style={styles.emptyAction}
-              >
-                <View style={styles.emptyActionIcon}>
-                  <Icon name="premium" size={14} color={colors.text} />
-                </View>
-                <Text style={styles.emptyActionText}>{t.seller.addProduct}</Text>
-              </Pressable>
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            <OrderCard
-              order={item}
-              busy={act.isPending && act.variables?.id === item.id}
-              onAction={(action, body) => act.mutate({ id: item.id, action, body })}
-            />
-          </View>
-        )}
+      {/* Tez ishga tushadigan amallar */}
+      <Text style={styles.section}>{t.sellerDashboard.quickActions}</Text>
+      <QuickAction
+        icon="camera"
+        title={t.sellerDashboard.addProduct}
+        desc={t.sellerDashboard.addProductDesc}
+        onPress={() => router.push('/seller/product-new')}
       />
-    </Screen>
+      <QuickAction
+        icon="orders"
+        title={t.sellerDashboard.viewOrders}
+        desc={
+          data.newOrders > 0
+            ? t.sellerDashboard.viewOrdersDesc.replace('{n}', String(data.newOrders))
+            : t.sellerDashboard.viewOrdersEmpty
+        }
+        onPress={() => router.push('/seller/orders')}
+        badge={data.newOrders > 0 ? data.newOrders : undefined}
+      />
+      <QuickAction
+        icon="settings"
+        title={t.sellerDashboard.editStore}
+        desc={t.sellerDashboard.editStoreDesc}
+        onPress={() => router.push('/seller/settings')}
+      />
+    </ScrollView>
   );
 }
 
-function ManageTile({
+function QuickAction({
   icon,
-  label,
-  hint,
+  title,
+  desc,
   onPress,
+  badge,
 }: {
-  icon: 'slotTop' | 'settings';
-  label: string;
-  hint: string;
+  icon: IconName;
+  title: string;
+  desc: string;
   onPress: () => void;
+  badge?: number;
 }): JSX.Element {
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
+      style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
       onPress={onPress}
-      style={({ pressed }) => [styles.manageTile, pressed && styles.manageTilePressed]}
+      accessibilityRole="button"
     >
-      <View style={styles.manageIcon}>
+      <View style={styles.actionIco}>
         <Icon name={icon} size={20} color={colors.accent} />
       </View>
-      <Text style={styles.manageLabel} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text style={styles.manageHint} numberOfLines={1}>
-        {hint}
-      </Text>
+      <View style={styles.actionBody}>
+        <Text style={styles.actionTitle}>{title}</Text>
+        <Text style={styles.actionDesc} numberOfLines={1}>
+          {desc}
+        </Text>
+      </View>
+      {badge !== undefined ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : (
+        <Icon name="next" size={18} color={colors.textMuted} />
+      )}
     </Pressable>
   );
 }
 
-function OrderCard({
-  order,
-  busy,
-  onAction,
-}: {
-  order: StoreOrder;
-  busy: boolean;
-  onAction: (
-    action: 'confirm' | 'ready' | 'complete' | 'reject',
-    body?: Record<string, unknown>,
-  ) => void;
-}): JSX.Element {
-  const t = useI18n((state) => state.t);
-  const next = NEXT_ACTION[order.status] ?? null;
-
-  /*
-   * Rad etish sababsiz yuborilmaydi — server `reason` talab qiladi.
-   * To'liq ro'yxat o'rniga uchta eng ko'p uchraydigani beriladi: uzun
-   * ro'yxat tez javob berishga xalaqit qiladi.
-   */
-  const reject = (): void => {
-    Alert.alert(t.seller.rejectTitle, t.seller.rejectPrompt, [
-      { text: t.seller.rejectOutOfStock, onPress: () => onAction('reject', { reason: 'out_of_stock' }) },
-      { text: t.seller.rejectNoSize, onPress: () => onAction('reject', { reason: 'size_unavailable' }) },
-      { text: t.seller.rejectOther, onPress: () => onAction('reject', { reason: 'other' }) },
-      { text: t.common.cancel, style: 'cancel' },
-    ]);
-  };
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <Text style={styles.orderNumber}>{order.orderNumber}</Text>
-
-        {/*
-          Qolgan vaqt — eng muhim raqam. Muddati o'tsa buyurtma avtomatik
-          bekor bo'ladi va mijoz boshqa do'konga ketadi.
-        */}
-        {order.minutesLeft !== null ? (
-          <View style={[styles.timer, order.minutesLeft <= 5 && styles.timerUrgent]}>
-            <Text style={[styles.timerText, order.minutesLeft <= 5 && { color: colors.danger }]}>
-              {order.minutesLeft} {t.seller.minutesWord}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      <Text style={styles.customer}>{order.customer.name}</Text>
-
-      {order.items.map((item, index) => (
-        <Text key={index} style={styles.item} numberOfLines={1}>
-          {item.qty}× {item.title}
-          {item.size ? ` · ${item.size}` : ''}
-        </Text>
-      ))}
-
-      <View style={styles.cardBottom}>
-        <Text style={styles.total}>{money(order.total, order.currency)}</Text>
-        <Text style={styles.delivery}>
-          {order.deliveryType === 'pickup' ? t.seller.pickupShort : t.seller.deliveryShort}
-          {order.deliveryWhen ? ` · ${order.deliveryWhen}` : ''}
-        </Text>
-      </View>
-
-      {addressText(order.address) ? (
-        <Text style={styles.address} numberOfLines={2}>
-          {addressText(order.address)}
-        </Text>
-      ) : null}
-
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mijozga qo`ng`iroq"
-          onPress={() => void Linking.openURL(`tel:${order.customer.phone}`)}
-          style={styles.callButton}
-        >
-          <Icon name="phone" size={18} color={colors.accent} />
-        </Pressable>
-
-        {next ? (
-          <View style={styles.actionMain}>
-            <Button
-              title={t.seller[next.labelKey]}
-              onPress={() => onAction(next.action)}
-              loading={busy}
-            />
-          </View>
-        ) : null}
-
-        {order.status === 'new' || order.status === 'seen' ? (
-          <View style={styles.actionSecondary}>
-            <Button title={t.seller.reject} variant="danger" onPress={reject} disabled={busy} />
-          </View>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: spacing.xxl },
+  flex: { flex: 1, backgroundColor: colors.bg },
+  content: { paddingHorizontal: spacing.md },
 
-  // ── Sarlavha ──
   header: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: 'rgba(20, 18, 28, 0.74)',
-  },
-  eyebrow: { ...text.wordmark, fontSize: 11, letterSpacing: 2.5, color: colors.textMuted },
-  eyebrowAccent: { color: colors.accent },
-  bellBadge: {
-    position: 'absolute',
-    top: -3,
-    right: -3,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  bellBadgeText: { ...text.tiny, color: colors.text, fontWeight: '700' },
+  headerText: { flex: 1, minWidth: 0 },
+  hello: { ...text.tiny, color: colors.textMuted, letterSpacing: 1 },
+  storeName: { ...text.h3, color: colors.text, marginTop: 2 },
+  statusDot: { width: 10, height: 10, borderRadius: 5 },
 
-  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  logoTile: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: colors.primary,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.5,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-  },
-  logoImg: { width: '100%', height: '100%' },
-  identityText: { flex: 1, gap: spacing.xs },
-  storeName: { ...text.h1, color: colors.text },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs + 2,
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  statusOpen: { borderColor: 'rgba(34,197,94,0.35)', backgroundColor: 'rgba(34,197,94,0.1)' },
-  statusClosed: { borderColor: colors.border, backgroundColor: colors.surface2 },
-  statusDot: { width: 7, height: 7, borderRadius: radius.pill },
-  statusText: { ...text.tiny },
-  subtitle: { ...text.body, color: colors.textMuted },
-  subtitleStrong: { color: colors.text, fontWeight: '700' },
-
-  // ── Hero: oylik tushum ──
-  hero: {
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
+  revenueCard: {
+    borderRadius: radius.xl,
     padding: spacing.lg,
-    borderRadius: radius.xxl,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    gap: spacing.sm,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    minHeight: 120,
   },
-  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  heroLabel: { ...text.label, color: colors.accent },
-  heroBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.md,
+  revenueTextWrap: { flex: 1 },
+  revenueLabel: {
+    ...text.tiny,
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  revenueValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  revenueHint: { ...text.small, color: 'rgba(255,255,255,0.85)' },
+  revenueIco: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
   },
-  heroValue: { ...text.hero, color: colors.text, marginTop: spacing.xs },
-  heroStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  heroStat: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
-  heroStatText: { ...text.small, color: colors.textMuted },
-  heroDivider: { width: 1, height: 14, backgroundColor: colors.borderStrong },
 
-  // ── Boshqaruv plitalari ──
-  manage: {
+  tiles: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
-  manageTile: {
-    flex: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
+  tile: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 4,
   },
-  manageTilePressed: { borderColor: colors.accent, backgroundColor: colors.surface2 },
-  manageIcon: {
+  tileIco: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  tileValue: { fontSize: 22, fontWeight: '800', color: colors.text },
+  tileLabel: { ...text.tiny, color: colors.textMuted },
+
+  section: {
+    ...text.tiny,
+    color: colors.textDim,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  actionPressed: { opacity: 0.7 },
+  actionIco: {
     width: 42,
     height: 42,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 12,
     backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  manageLabel: { ...text.bodyMed, color: colors.text, marginTop: spacing.xs },
-  manageHint: { ...text.tiny, color: colors.textDim },
-
-  // ── Filtrlar ──
-  filters: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-    padding: spacing.xs,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: 'rgba(15, 13, 22, 0.92)',
-  },
-  filterWrap: { flex: 1 },
-  filter: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-  },
-  filterIdle: { borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
-  filterText: { ...text.small, color: colors.textMuted, fontWeight: '600' },
-
-  statePad: { paddingHorizontal: spacing.md, marginTop: spacing.md },
-
-  // ── Bo'sh holat ──
-  emptyBox: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.xl,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.borderStrong,
-    backgroundColor: 'rgba(20, 18, 28, 0.55)',
-  },
-  emptyIcon: {
-    width: 76,
-    height: 76,
-    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.primarySoft,
-    marginBottom: spacing.xs,
   },
-  emptyTitle: { ...text.h3, color: colors.text, textAlign: 'center' },
-  emptyHint: { ...text.small, color: colors.textDim, textAlign: 'center', maxWidth: 260 },
-  emptyAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    paddingLeft: spacing.xs + 2,
-    paddingRight: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  emptyActionIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.pill,
+  actionBody: { flex: 1, minWidth: 0 },
+  actionTitle: { ...text.bodyMed, color: colors.text },
+  actionDesc: { ...text.tiny, color: colors.textMuted, marginTop: 2 },
+
+  badge: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.danger,
   },
-  emptyActionText: { ...text.small, color: colors.text, fontWeight: '600' },
-
-  // ── Buyurtma kartasi ──
-  cardWrap: { paddingHorizontal: spacing.md, marginTop: spacing.md },
-  card: {
-    backgroundColor: 'rgba(20, 18, 28, 0.95)',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    padding: spacing.md,
-    gap: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 12 },
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  orderNumber: { ...text.bodyMed, color: colors.text },
-
-  timer: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface2,
-  },
-  timerUrgent: { backgroundColor: 'rgba(239, 68, 68, 0.14)' },
-  timerText: { ...text.tiny, color: colors.textMuted },
-
-  customer: { ...text.small, color: colors.textMuted },
-  item: { ...text.small, color: colors.text },
-
-  cardBottom: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  total: { ...text.h3, color: colors.text },
-  delivery: { ...text.tiny, color: colors.textDim },
-  address: { ...text.tiny, color: colors.textDim },
-
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  callButton: {
-    width: 48,
-    height: 52,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-  },
-  actionMain: { flex: 1 },
-  actionSecondary: { flex: 1 },
+  badgeText: { ...text.tiny, color: colors.text, fontWeight: '800' },
 });
